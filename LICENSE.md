@@ -1,4 +1,12 @@
-GNU GENERAL PUBLIC LICENSE
+## Exceptions
+
+The usage of this library with PocketMine-MP will allow the creation
+of derivated non open-source works, without direct usage of RakLib.
+Only PocketMine-MP and their plugins will be able to use the library
+without license restrictions.
+
+
+# GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. {http://fsf.org/}
