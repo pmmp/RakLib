@@ -81,11 +81,25 @@ class SessionManager{
 	}
 
 	public function run(){
+		if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
+			$this->tickProcessorWindows();
+		}else{
+			$this->tickProcessor();
+		}
+	}
+
+	private function tickProcessorWindows(){
+		$lastLoop = 0;
 		$ticks = 0;
-		while($this->shutdown !== true){
-			$this->receivePacket();
-			$this->receiveStream();
-			//TODO: add different Windows / Linux usleep()
+		while(!$this->shutdown){
+			if($this->receivePacket()){
+				$lastLoop = 0;
+			}
+
+			if($this->receiveStream()){
+				$lastLoop = 0;
+			}
+
 			++$ticks;
 			if($ticks % 20 === 0){
 				$time = microtime(true);
@@ -95,9 +109,47 @@ class SessionManager{
 					}
 				}
 			}
-		}
 
+			++$lastLoop;
+			if($lastLoop > 128){
+				usleep(1000);
+			}
+		}
 	}
+
+	private function tickProcessor(){
+		$lastLoop = 0;
+		$ticks = 0;
+		while(!$this->shutdown){
+			if($this->receivePacket()){
+				$lastLoop = 0;
+			}
+
+			if($this->receiveStream()){
+				$lastLoop = 0;
+			}
+
+			++$ticks;
+			if($ticks % 20 === 0){
+				$time = microtime(true);
+				foreach($this->sessions as $session){
+					if($session->needUpdate()){
+						$session->update($time);
+					}
+				}
+			}
+
+			++$lastLoop;
+			if($lastLoop > 16 and $lastLoop < 128){
+				usleep(200);
+			}elseif($lastLoop < 512){
+				usleep(400);
+			}else{
+				usleep(1000);
+			}
+		}
+	}
+
 
 	private function receivePacket(){
 		$buffer = $source = $port = null;
@@ -109,7 +161,11 @@ class SessionManager{
 				$packet->buffer = $buffer;
 				$this->getSession($source, $port)->handlePacket($packet);
 			} //TODO: handle unknown packets
+
+			return true;
 		}
+
+		return false;
 	}
 
 	public function sendPacket(Packet $packet, $dest, $port){
@@ -189,7 +245,11 @@ class SessionManager{
 			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
 			}
+
+			return true;
 		}
+
+		return false;
 	}
 
 	/**

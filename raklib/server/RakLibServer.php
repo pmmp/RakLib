@@ -55,7 +55,7 @@ class RakLibServer extends \Thread{
 		$this->shutdown = false;
 
 		$sockets = [];
-		if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) == 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
+		if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
 			throw new \Exception("Could not create IPC sockets. Reason: ".socket_strerror(socket_last_error()));
 		}
 
