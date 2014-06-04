@@ -119,7 +119,7 @@ class SessionManager{
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet){
 		$id = $session->getAddress() . ":" . $session->getPort();
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . $packet->toBinary();
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . $packet->toBinary(true);
 		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
@@ -161,7 +161,7 @@ class SessionManager{
 				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
 					$buffer = substr($packet, 2 + $len);
-					$this->sessions[$identifier]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer));
+					$this->sessions[$identifier]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer, true));
 				}else{
 					$this->streamInvalid($identifier);
 				}

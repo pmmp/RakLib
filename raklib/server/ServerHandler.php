@@ -34,7 +34,7 @@ class ServerHandler{
 	}
 
 	public function sendEncapsulated($identifier, EncapsulatedPacket $packet){
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . $packet->toBinary();
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . $packet->toBinary(true);
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
@@ -85,7 +85,7 @@ class ServerHandler{
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
 				$buffer = substr($packet, $offset);
-				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer));
+				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer, true));
 			}elseif($id === RakLib::PACKET_OPEN_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);

@@ -41,6 +41,8 @@ class Session{
 
 	public static $WINDOW_SIZE = 1024;
 
+	protected $messageIndex = 0;
+
 	/** @var SessionManager */
 	protected $sessionManager;
 	protected $address;
@@ -48,6 +50,7 @@ class Session{
 	protected $state = self::STATE_UNCONNECTED;
 	protected $mtuSize = 548; //Min size
 	protected $id = 0;
+	protected $splitID = 0;
 
 	protected $lastSeqNumber = 0;
 	protected $sendSeqNumber = 0;
@@ -151,7 +154,31 @@ class Session{
 	}
 
 	public function addEncapsulatedToQueue(EncapsulatedPacket $packet){
-		$this->addToQueue($packet);
+		if($packet->getTotalLength() + 4 > $this->mtuSize){
+			$packet->hasSplit = true;
+			$buffers = str_split($packet->buffer, $this->mtuSize - 34);
+			$packet->buffer = "";
+			$packet->splitID = $packet->splitIndex = ++$this->splitID % 65536;
+			$packet->splitCount = count($buffers);
+			$packet->reliability = 2;
+			foreach($buffers as $count => $buffer){
+				$pk = clone $packet;
+				$pk->splitIndex = $count;
+				$pk->buffer = $buffer;
+				$pk->messageIndex = $this->messageIndex++;
+				$this->addToQueue($pk);
+			}
+		}else{
+			if(
+				$packet->reliability === 2 or
+				$packet->reliability === 4 or
+				$packet->reliability === 6 or
+				$packet->reliability === 7
+			){
+				$packet->messageIndex = $this->messageIndex++;
+			}
+			$this->addToQueue($packet);
+		}
 	}
 
 	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){
@@ -221,10 +248,12 @@ class Session{
 				}
 			}else{
 				if($packet instanceof ACK){
+					$packet->decode();
 					foreach($packet->packets as $seq){
 						unset($this->recoveryQueue[$seq]);
 					}
 				}elseif($packet instanceof NACK){
+					$packet->decode();
 					foreach($packet->packets as $seq){
 						if(isset($this->recoveryQueue[$seq])){
 							$this->sendPacket($this->recoveryQueue[$seq]);

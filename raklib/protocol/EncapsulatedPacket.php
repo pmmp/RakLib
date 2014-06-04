@@ -37,17 +37,24 @@ class EncapsulatedPacket{
 
 	/**
 	 * @param string $binary
+	 * @param bool   $internal
 	 * @param int    &$offset
 	 *
 	 * @return EncapsulatedPacket
 	 */
-	public static function fromBinary($binary, &$offset = null){
+	public static function fromBinary($binary, $internal = false, &$offset = null){
 		$packet = new EncapsulatedPacket;
 		$flags = ord($binary{0});
 		$packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
 		$packet->hasSplit = $hasSplit = ($flags & 0b0010000) > 0;
-		$length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
-		$offset = 3;
+		if($internal){
+			$length = Binary::readInt(substr($binary, 1, 4));
+			$offset = 5;
+		}else{
+			$length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
+			$offset = 3;
+		}
+
 
 		/*
 		 * From http://www.jenkinssoftware.com/raknet/manual/reliabilitytypes.html
@@ -105,9 +112,18 @@ class EncapsulatedPacket{
 		return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) +  + ($this->hasSplit ? 9 : 0);
 	}
 
-	public function toBinary(){
+	/**
+	 * @param bool $internal
+	 *
+	 * @return string
+	 */
+	public function toBinary($internal = false){
 		$binary = chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0));
-		$binary .= Binary::writeShort(strlen($this->buffer) << 3);
+		if($internal){
+			$binary .= Binary::writeInt(strlen($this->buffer));
+		}else{
+			$binary .= Binary::writeShort(strlen($this->buffer) << 3);
+		}
 		if(
 			$this->reliability === 2 or
 			$this->reliability === 4 or
