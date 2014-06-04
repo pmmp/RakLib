@@ -52,7 +52,60 @@ abstract class RakLib{
 	const PROTOCOL = 5;
 	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
+	/*
+	 * Internal Packet:
+	 * int32 (length without this field)
+	 * byte (packet ID)
+	 * payload
+	 */
+
+	/*
+	 * ENCAPSULATED payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 * payload (binary EncapsulatedPacket)
+	 */
 	const PACKET_ENCAPSULATED = 0x01;
+
+	/*
+	 * OPEN_SESSION payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 * byte (address length)
+	 * byte[] (address)
+	 * short (port)
+	 * long (clientID)
+	 */
+	const PACKET_OPEN_SESSION = 0x02;
+
+	/*
+	 * CLOSE_SESSION payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 * string (reason)
+	 */
+	const PACKET_CLOSE_SESSION = 0x03;
+
+	/*
+	 * INVALID_SESSION payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 */
+	const PACKET_INVALID_SESSION = 0x04;
+
+	/*
+	 * No payload
+	 *
+	 * Sends the disconnect message, removes sessions correctly, closes sockets.
+	 */
+	const PACKET_SHUTDOWN = 0x7e;
+
+	/*
+	 * No payload
+	 *
+	 * Leaves everything as-is and halts, other Threads can be in a post-crash condition.
+	 */
+	const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
 
 	public static function bootstrap(\SplAutoloader $loader){
 		$loader->add("raklib", array(

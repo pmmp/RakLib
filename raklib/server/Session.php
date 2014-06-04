@@ -55,6 +55,7 @@ class Session{
 	protected $timeout;
 
 	protected $lastUpdate;
+	protected $startTime;
 
 	protected $isActive;
 
@@ -75,6 +76,7 @@ class Session{
 		$this->port = $port;
 		$this->sendQueue = new DATA_PACKET_4();
 		$this->lastUpdate = microtime(true);
+		$this->startTime = microtime(true);
 		$this->isActive = false;
 	}
 
@@ -116,8 +118,8 @@ class Session{
 		$this->sendQueue();
 	}
 
-	public function disconnect(){
-		$this->sessionManager->removeSession($this);
+	public function disconnect($reason = "unknown"){
+		$this->sessionManager->removeSession($this, $reason);
 	}
 
 	public function needUpdate(){
@@ -128,7 +130,7 @@ class Session{
 		$this->sessionManager->sendPacket($packet, $this->address, $this->port);
 	}
 
-	protected function sendQueue(){
+	public function sendQueue(){
 		if(count($this->sendQueue->packets) > 0){
 			$this->sendQueue->seqNumber = $this->sendSeqNumber++;
 			$this->sendPacket($this->sendQueue);
@@ -178,13 +180,14 @@ class Session{
 
 					if($dataPacket->port === $this->sessionManager->getPort()){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
+						$this->sessionManager->openSession($this);
 					}
 				}
 			}elseif($id === CLIENT_DISCONNECT_DataPacket::$ID){
-				$this->disconnect(); //TODO: reasons
+				$this->disconnect("client disconnect");
 			}//TODO: add PING/PONG (0x00/0x03) automatic latency measure
 		}elseif($this->state === self::STATE_CONNECTED){
-
+			$this->sessionManager->streamEncapsulated($this, $packet);
 			//TODO: split packet handling
 			//TODO: packet reordering
 			//TODO: stream channels

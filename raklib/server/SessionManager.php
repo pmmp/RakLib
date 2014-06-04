@@ -62,6 +62,8 @@ class SessionManager{
 	/** @var Session[] */
 	protected $sessions = [];
 
+	protected $shutdown = false;
+
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
@@ -80,9 +82,9 @@ class SessionManager{
 
 	public function run(){
 		$ticks = 0;
-		while(true){
+		while($this->shutdown !== false){
 			$this->receivePacket();
-			//$this->sendPacket();
+			$this->receiveStream();
 			//TODO: add different Windows / Linux usleep()
 			++$ticks;
 			if($ticks % 20 === 0){
@@ -117,7 +119,23 @@ class SessionManager{
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet){
 		$id = $session->getAddress() . ":" . $session->getPort();
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . Binary::writeInt($packet->toBinary());
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . $packet->toBinary();
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
+	protected function streamClose($identifier, $reason){
+		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
+	protected function streamInvalid($identifier){
+		$buffer = chr(RakLib::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
+	protected function streamOpen(Session $session){
+		$identifier = $session->getAddress() . ":" . $session->getPort();
+		$buffer = chr(RakLib::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($session->getAddress())) . $session->getAddress() . Binary::writeShort($session->getPort()) . Binary::writeLong($session->getID());
 		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
@@ -125,14 +143,39 @@ class SessionManager{
 		if(($len = @socket_read($this->internalSocket, 4)) !== ""){
 			$packet = socket_read($this->internalSocket, Binary::readInt($len));
 			$id = ord($packet{0});
+			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){
-				$len = ord($packet{1});
-				$identifier = substr($packet, 2, $len);
+				$len = ord($packet{$offset++});
+				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
 					$buffer = substr($packet, 2 + $len);
+					$this->sessions[$identifier]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer));
 				}else{
-					//TODO: reply with close notification
+					$this->streamInvalid($identifier);
 				}
+			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
+				$len = ord($packet{$offset++});
+				$identifier = substr($packet, $offset, $len);
+				if(isset($this->sessions[$identifier])){
+					$this->removeSession($this->sessions[$identifier]);
+				}else{
+					$this->streamInvalid($identifier);
+				}
+			}elseif($id === RakLib::PACKET_INVALID_SESSION){
+				$len = ord($packet{$offset++});
+				$identifier = substr($packet, $offset, $len);
+				if(isset($this->sessions[$identifier])){
+					$this->removeSession($this->sessions[$identifier]);
+				}
+			}elseif($id === RakLib::PACKET_SHUTDOWN){
+				foreach($this->sessions as $session){
+					$this->removeSession($session);
+				}
+				@socket_close($this->internalSocket);
+				$this->socket->close();
+				$this->shutdown = true;
+			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
+				$this->shutdown = true;
 			}
 		}
 	}
@@ -151,8 +194,18 @@ class SessionManager{
 		return $this->sessions[$id];
 	}
 
-	public function removeSession(Session $session){
-		unset($this->sessions[$session->getAddress() . ":" . $session->getPort()]);
+	public function removeSession(Session $session, $reason = "unknown"){
+		$id = $session->getAddress() . ":" . $session->getPort();
+		if(isset($this->sessions[$id])){
+			$this->sessions[$id]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary("\x00\x00\x08\x15")); //CLIENT_DISCONNECT packet 0x15
+			$this->sessions[$id]->sendQueue();
+			unset($this->sessions[$id]);
+			$this->streamClose($id, $reason);
+		}
+	}
+
+	public function openSession(Session $session){
+		$this->streamOpen($session);
 	}
 
 	public function getName(){
