@@ -82,7 +82,7 @@ class SessionManager{
 
 	public function run(){
 		$ticks = 0;
-		while($this->shutdown !== false){
+		while($this->shutdown !== true){
 			$this->receivePacket();
 			$this->receiveStream();
 			//TODO: add different Windows / Linux usleep()

@@ -151,7 +151,7 @@ class Session{
 	}
 
 	public function addEncapsulatedToQueue(EncapsulatedPacket $packet){
-		//$packet->reliability =
+		$this->addToQueue($packet);
 	}
 
 	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){

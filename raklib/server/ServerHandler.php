@@ -47,10 +47,12 @@ class ServerHandler{
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 		@socket_close($this->socket);
+		$this->server->join();
 	}
 
 	public function emergencyShutdown(){
 		@socket_write($this->socket, "\x00\x00\x00\x01\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
+		$this->server->join();
 	}
 
 	protected function invalidSession($identifier){
@@ -58,6 +60,9 @@ class ServerHandler{
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function handlePacket(){
 		if(($len = @socket_read($this->socket, 4)) !== ""){
 			$packet = socket_read($this->socket, Binary::readInt($len));
@@ -92,6 +97,9 @@ class ServerHandler{
 				$identifier = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, "Invalid session");
 			}
+			return true;
 		}
+
+		return false;
 	}
 }
