@@ -52,6 +52,8 @@ abstract class RakLib{
 	const PROTOCOL = 5;
 	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
+	const PACKET_ENCAPSULATED = 0x01;
+
 	public static function bootstrap(\SplAutoloader $loader){
 		$loader->add("raklib", array(
 			dirname(__FILE__) . DIRECTORY_SEPARATOR . ".."

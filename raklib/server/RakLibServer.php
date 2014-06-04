@@ -28,6 +28,9 @@ class RakLibServer extends \Thread{
 
 	protected $shutdown;
 
+	protected $externalSocket;
+	protected $internalSocket;
+
 	/**
 	 * @param \ThreadedLogger $logger
 	 * @param \SplAutoloader  $loader
@@ -50,6 +53,17 @@ class RakLibServer extends \Thread{
 		$this->addDependency($loadPaths, new \ReflectionClass($loader));
 		$this->loadPaths = array_reverse($loadPaths);
 		$this->shutdown = false;
+
+		$sockets = [];
+		if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) == 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
+			throw new \Exception("Could not create IPC sockets. Reason: ".socket_strerror(socket_last_error()));
+		}
+
+		$this->internalSocket = $sockets[0];
+		socket_set_nonblock($this->internalSocket);
+		$this->externalSocket = $sockets[1];
+		socket_set_nonblock($this->externalSocket);
+
 		$this->start(PTHREADS_INHERIT_ALL & ~PTHREADS_INHERIT_CLASSES);
 	}
 
@@ -72,7 +86,10 @@ class RakLibServer extends \Thread{
 	}
 
 	public function shutdown(){
+		$this->lock();
 		$this->shutdown = true;
+		socket_close($this->internalSocket);
+		$this->unlock();
 	}
 
 	public function getPort(){
@@ -88,6 +105,14 @@ class RakLibServer extends \Thread{
 	 */
 	public function getLogger(){
 		return $this->logger;
+	}
+
+	public function getExternalSocket(){
+		return $this->externalSocket;
+	}
+
+	public function getInternalSocket(){
+		return $this->internalSocket;
 	}
 
 	public function run(){

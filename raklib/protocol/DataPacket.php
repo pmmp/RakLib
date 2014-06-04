@@ -52,11 +52,10 @@ abstract class DataPacket extends Packet{
 		while(!$this->feof()){
 			$offset = 0;
 			$packet = EncapsulatedPacket::fromBinary(substr($this->buffer, $this->offset), $offset);
+			$this->offset += $offset;
 			if(strlen($packet->buffer) === 0){
 				break;
 			}
-
-			$this->offset += $offset;
 			$this->packets[] = $packet;
 		}
 	}

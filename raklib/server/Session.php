@@ -103,12 +103,14 @@ class Session{
 			$pk = new ACK();
 			$pk->packets = $this->ACKQueue;
 			$this->sendPacket($pk);
+			$this->ACKQueue = [];
 		}
 
 		if(count($this->NACKQueue) > 0){
 			$pk = new NACK();
 			$pk->packets = $this->NACKQueue;
 			$this->sendPacket($pk);
+			$this->NACKQueue = [];
 		}
 
 		$this->sendQueue();
@@ -146,9 +148,12 @@ class Session{
 		$this->sendQueue->packets[] = $pk;
 	}
 
+	public function addEncapsulatedToQueue(EncapsulatedPacket $packet){
+		//$packet->reliability =
+	}
+
 	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){
 		$id = ord($packet->buffer{0});
-
 		if($id < 0x80){ //internal data packet
 			if($this->state === self::STATE_CONNECTING_2){
 				if($id === CLIENT_CONNECT_DataPacket::$ID){
@@ -160,6 +165,7 @@ class Session{
 					$pk->session = $dataPacket->session;
 					$pk->session2 = Binary::readLong("\x00\x00\x00\x00\x04\x44\x0b\xa9");
 					$pk->encode();
+
 					$sendPacket = new EncapsulatedPacket();
 					$sendPacket->reliability = 0;
 					$sendPacket->buffer = $pk->buffer;
@@ -169,6 +175,7 @@ class Session{
 					$dataPacket = new CLIENT_HANDSHAKE_DataPacket;
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
+
 					if($dataPacket->port === $this->sessionManager->getPort()){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
 					}
@@ -177,6 +184,7 @@ class Session{
 				$this->disconnect(); //TODO: reasons
 			}//TODO: add PING/PONG (0x00/0x03) automatic latency measure
 		}elseif($this->state === self::STATE_CONNECTED){
+
 			//TODO: split packet handling
 			//TODO: packet reordering
 			//TODO: stream channels
@@ -185,34 +193,7 @@ class Session{
 
 	public function handlePacket(Packet $packet){
 		$this->isActive = true;
-		if($this->state !== self::STATE_CONNECTED and $packet::$ID > 0x00 and $packet::$ID < 0x80){ //Not Data packet :)
-			$packet->decode();
-			if($packet instanceof UNCONNECTED_PING){
-				$pk = new UNCONNECTED_PONG();
-				$pk->serverID = $this->sessionManager->getID();
-				$pk->pingID = $packet->pingID;
-				$pk->serverName = $this->sessionManager->getName();
-				$this->sendPacket($pk);
-			}elseif($packet instanceof OPEN_CONNECTION_REQUEST_1){
-				$packet->protocol; //TODO: check protocol number and refuse connections
-				$pk = new OPEN_CONNECTION_REPLY_1;
-				$pk->mtuSize = $packet->mtuSize;
-				$pk->serverID = $this->sessionManager->getID();
-				$this->sendPacket($pk);
-				$this->state = self::STATE_CONNECTING_1;
-			}elseif($this->state === self::STATE_CONNECTING_1 and $packet instanceof OPEN_CONNECTION_REQUEST_2){
-				$this->id = $packet->clientID;
-				if($packet->serverPort === $this->sessionManager->getPort()){
-					$this->mtuSize = min($packet->mtuSize, 1464); //Max size, do not allow creating large buffers to fill server memory
-					$pk = new OPEN_CONNECTION_REPLY_2;
-					$pk->mtuSize = $this->mtuSize;
-					$pk->serverID = $this->sessionManager->getID();
-					$pk->clientPort = $this->port;
-					$this->sendPacket($pk);
-					$this->state = self::STATE_CONNECTING_2;
-				}
-			}
-		}elseif($this->state === self::STATE_CONNECTED or $this->state === self::STATE_CONNECTING_2){
+		if($this->state === self::STATE_CONNECTED or $this->state === self::STATE_CONNECTING_2){
 			if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
 				$packet->decode();
 				$diff = $packet->seqNumber - $this->lastSeqNumber;
@@ -249,6 +230,33 @@ class Session{
 				}
 			}
 
+		}elseif($packet::$ID > 0x00 and $packet::$ID < 0x80){ //Not Data packet :)
+			$packet->decode();
+			if($packet instanceof UNCONNECTED_PING){
+				$pk = new UNCONNECTED_PONG();
+				$pk->serverID = $this->sessionManager->getID();
+				$pk->pingID = $packet->pingID;
+				$pk->serverName = $this->sessionManager->getName();
+				$this->sendPacket($pk);
+			}elseif($packet instanceof OPEN_CONNECTION_REQUEST_1){
+				$packet->protocol; //TODO: check protocol number and refuse connections
+				$pk = new OPEN_CONNECTION_REPLY_1;
+				$pk->mtuSize = $packet->mtuSize;
+				$pk->serverID = $this->sessionManager->getID();
+				$this->sendPacket($pk);
+				$this->state = self::STATE_CONNECTING_1;
+			}elseif($this->state === self::STATE_CONNECTING_1 and $packet instanceof OPEN_CONNECTION_REQUEST_2){
+				$this->id = $packet->clientID;
+				if($packet->serverPort === $this->sessionManager->getPort()){
+					$this->mtuSize = min($packet->mtuSize, 1464); //Max size, do not allow creating large buffers to fill server memory
+					$pk = new OPEN_CONNECTION_REPLY_2;
+					$pk->mtuSize = $this->mtuSize;
+					$pk->serverID = $this->sessionManager->getID();
+					$pk->clientPort = $this->port;
+					$this->sendPacket($pk);
+					$this->state = self::STATE_CONNECTING_2;
+				}
+			}
 		}
 	}
 }

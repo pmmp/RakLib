@@ -42,15 +42,31 @@ class EncapsulatedPacket{
 	 * @return EncapsulatedPacket
 	 */
 	public static function fromBinary($binary, &$offset = null){
-		$flags = ord($binary{0});
 		$packet = new EncapsulatedPacket;
+		$flags = ord($binary{0});
 		$packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
 		$packet->hasSplit = $hasSplit = ($flags & 0b0010000) > 0;
 		$length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
 		$offset = 3;
 
+		/*
+		 * From http://www.jenkinssoftware.com/raknet/manual/reliabilitytypes.html
+		 *
+		 * Default: 0b010 (2) or 0b011 (3)
+		 *
+		 * 0: UNRELIABLE
+		 * 1: UNRELIABLE_SEQUENCED
+		 * 2: RELIABLE
+		 * 3: RELIABLE_ORDERED
+		 * 4: RELIABLE_SEQUENCED
+		 * 5: UNRELIABLE_WITH_ACK_RECEIPT
+		 * 6: RELIABLE_WITH_ACK_RECEIPT
+		 * 7: RELIABLE_ORDERED_WITH_ACK_RECEIPT
+		 */
+
 		if(
 			$reliability === 2 or
+			$reliability === 3 or
 			$reliability === 4 or
 			$reliability === 6 or
 			$reliability === 7
@@ -67,8 +83,7 @@ class EncapsulatedPacket{
 		){
 			$packet->orderIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
 			$offset += 3;
-			$packet->orderChannel = ord($binary{$offset});
-			++$offset;
+			$packet->orderChannel = ord($binary{$offset++});
 		}
 
 		if($hasSplit){

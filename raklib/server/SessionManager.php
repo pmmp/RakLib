@@ -15,6 +15,7 @@
 
 namespace raklib\server;
 
+use raklib\Binary;
 use raklib\protocol\ACK;
 use raklib\protocol\ADVERTISE_SYSTEM;
 use raklib\protocol\DATA_PACKET_0;
@@ -33,6 +34,7 @@ use raklib\protocol\DATA_PACKET_C;
 use raklib\protocol\DATA_PACKET_D;
 use raklib\protocol\DATA_PACKET_E;
 use raklib\protocol\DATA_PACKET_F;
+use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\OPEN_CONNECTION_REPLY_1;
 use raklib\protocol\OPEN_CONNECTION_REPLY_2;
@@ -42,6 +44,7 @@ use raklib\protocol\UNCONNECTED_PING;
 use raklib\protocol\UNCONNECTED_PING_OPEN_CONNECTIONS;
 use raklib\protocol\UNCONNECTED_PONG;
 use raklib\protocol\Packet;
+use raklib\RakLib;
 
 class SessionManager{
 	/** @var Packet */
@@ -50,6 +53,8 @@ class SessionManager{
 	protected $server;
 
 	protected $socket;
+
+	protected $internalSocket;
 
 	protected $receiveBytes = 0;
 	protected $sendBytes = 0;
@@ -61,7 +66,7 @@ class SessionManager{
 		$this->server = $server;
 		$this->socket = $socket;
 		$this->registerPackets();
-
+		$this->internalSocket = $this->server->getInternalSocket();
 		$this->run();
 	}
 
@@ -108,6 +113,28 @@ class SessionManager{
 	public function sendPacket(Packet $packet, $dest, $port){
 		$packet->encode();
 		$this->sendBytes += $this->socket->writePacket($packet->buffer, $dest, $port);
+	}
+
+	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet){
+		$id = $session->getAddress() . ":" . $session->getPort();
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . Binary::writeInt($packet->toBinary());
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
+	public function receiveStream(){
+		if(($len = @socket_read($this->internalSocket, 4)) !== ""){
+			$packet = socket_read($this->internalSocket, Binary::readInt($len));
+			$id = ord($packet{0});
+			if($id === RakLib::PACKET_ENCAPSULATED){
+				$len = ord($packet{1});
+				$identifier = substr($packet, 2, $len);
+				if(isset($this->sessions[$identifier])){
+					$buffer = substr($packet, 2 + $len);
+				}else{
+					//TODO: reply with close notification
+				}
+			}
+		}
 	}
 
 	/**
