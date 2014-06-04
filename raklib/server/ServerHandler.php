@@ -73,7 +73,7 @@ class ServerHandler{
 	 * @return bool
 	 */
 	public function handlePacket(){
-		if(($len = @socket_read($this->socket, 4)) !== ""){
+		if(($len = @socket_read($this->socket, 4)) !== false){
 			if(strlen($len) < 4){
 				$len .= $this->socketRead(4 - strlen($len));
 			}

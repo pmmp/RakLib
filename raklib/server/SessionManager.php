@@ -149,7 +149,7 @@ class SessionManager{
 	}
 
 	public function receiveStream(){
-		if(($len = @socket_read($this->internalSocket, 4)) !== ""){
+		if(($len = @socket_read($this->internalSocket, 4)) !== false){
 			if(strlen($len) < 4){
 				$len .= $this->socketRead(4 - strlen($len));
 			}
