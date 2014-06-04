@@ -126,6 +126,7 @@ class EncapsulatedPacket{
 		}
 		if(
 			$this->reliability === 2 or
+			$this->reliability === 3 or
 			$this->reliability === 4 or
 			$this->reliability === 6 or
 			$this->reliability === 7
