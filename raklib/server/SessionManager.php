@@ -139,9 +139,21 @@ class SessionManager{
 		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	protected function socketRead($len){
+		$buffer = "";
+		while(strlen($buffer) < $len){
+			$buffer .= @socket_read($this->internalSocket, $len - strlen($buffer));
+		}
+
+		return $buffer;
+	}
+
 	public function receiveStream(){
 		if(($len = @socket_read($this->internalSocket, 4)) !== ""){
-			$packet = socket_read($this->internalSocket, Binary::readInt($len));
+			if(strlen($len) < 4){
+				$len .= $this->socketRead(4 - strlen($len));
+			}
+			$packet = $this->socketRead(Binary::readInt($len));
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){

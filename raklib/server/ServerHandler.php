@@ -60,12 +60,24 @@ class ServerHandler{
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	protected function socketRead($len){
+		$buffer = "";
+		while(strlen($buffer) < $len){
+			$buffer .= @socket_read($this->socket, $len - strlen($buffer));
+		}
+
+		return $buffer;
+	}
+
 	/**
 	 * @return bool
 	 */
 	public function handlePacket(){
 		if(($len = @socket_read($this->socket, 4)) !== ""){
-			$packet = socket_read($this->socket, Binary::readInt($len));
+			if(strlen($len) < 4){
+				$len .= $this->socketRead(4 - strlen($len));
+			}
+			$packet = $this->socketRead(Binary::readInt($len));
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){
