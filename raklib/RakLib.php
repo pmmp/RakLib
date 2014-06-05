@@ -52,6 +52,11 @@ abstract class RakLib{
 	const PROTOCOL = 5;
 	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
+	const PRIORITY_NORMAL = 0;
+	const PRIORITY_IMMEDIATE = 1;
+
+	const FLAG_NEED_ACK = 0b00001000;
+
 	/*
 	 * Internal Packet:
 	 * int32 (length without this field)
@@ -63,7 +68,8 @@ abstract class RakLib{
 	 * ENCAPSULATED payload:
 	 * byte (identifier length)
 	 * byte[] (identifier)
-	 * payload (binary EncapsulatedPacket)
+	 * byte (flags, last 3 bits, priority)
+	 * payload (binary internal EncapsulatedPacket)
 	 */
 	const PACKET_ENCAPSULATED = 0x01;
 
@@ -92,6 +98,21 @@ abstract class RakLib{
 	 * byte[] (identifier)
 	 */
 	const PACKET_INVALID_SESSION = 0x04;
+
+	/* TODO: implement this
+	 * SEND_QUEUE payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 */
+	const PACKET_SEND_QUEUE = 0x05;
+
+	/*
+	 * ACK_NOTIFICATION payload:
+	 * byte (identifier length)
+	 * byte[] (identifier)
+	 * int (identifierACK)
+	 */
+	const PACKET_ACK_NOTIFICATION = 0x06;
 
 	/*
 	 * No payload

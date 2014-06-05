@@ -20,6 +20,7 @@ use raklib\protocol\ACK;
 use raklib\protocol\CLIENT_CONNECT_DataPacket;
 use raklib\protocol\CLIENT_DISCONNECT_DataPacket;
 use raklib\protocol\CLIENT_HANDSHAKE_DataPacket;
+use raklib\protocol\DATA_PACKET_0;
 use raklib\protocol\DATA_PACKET_4;
 use raklib\protocol\DataPacket;
 use raklib\protocol\EncapsulatedPacket;
@@ -32,6 +33,7 @@ use raklib\protocol\Packet;
 use raklib\protocol\SERVER_HANDSHAKE_DataPacket;
 use raklib\protocol\UNCONNECTED_PING;
 use raklib\protocol\UNCONNECTED_PONG;
+use raklib\RakLib;
 
 class Session{
 	const STATE_UNCONNECTED = 0;
@@ -70,6 +72,9 @@ class Session{
 	/** @var DataPacket[] */
 	protected $recoveryQueue = [];
 
+	/** @var int[][] */
+	protected $needACK = [];
+
 	/** @var DataPacket */
 	protected $sendQueue;
 
@@ -97,7 +102,7 @@ class Session{
 
 	public function update($time){
 		if(!$this->isActive and ($this->lastUpdate + 10) < $time){
-			$this->disconnect();
+			$this->disconnect("timeout");
 			return;
 		}else{
 			$this->lastUpdate = $time;
@@ -116,6 +121,13 @@ class Session{
 			$pk->packets = $this->NACKQueue;
 			$this->sendPacket($pk);
 			$this->NACKQueue = [];
+		}
+
+		foreach($this->needACK as $identifierACK => $indexes){
+			if(count($indexes) === 0){
+				unset($this->needACK[$identifierACK]);
+				$this->sessionManager->notifyACK($this, $identifierACK);
+			}
 		}
 
 		$this->sendQueue();
@@ -143,9 +155,22 @@ class Session{
 	}
 
 	/**
-	 * @param EncapsulatedPacket|string $pk
+	 * @param EncapsulatedPacket $pk
+	 * @param int                $flags
 	 */
-	protected function addToQueue($pk){
+	protected function addToQueue(EncapsulatedPacket $pk, $flags = RakLib::PRIORITY_NORMAL){
+		$priority = $flags & 0b0000111;
+		if($pk->needACK and $pk->messageIndex !== null){
+			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
+		}
+		if($priority === RakLib::PRIORITY_IMMEDIATE){ //Skip queues
+			$packet = new DATA_PACKET_0();
+			$packet->seqNumber = $this->sendSeqNumber++;
+			$packet->packets[] = $pk;
+			$this->sendPacket($packet);
+			$this->recoveryQueue[$packet->seqNumber] = $packet;
+			return;
+		}
 		$length = $this->sendQueue->length();
 		if($length + $pk->getTotalLength() > $this->mtuSize){
 			$this->sendQueue();
@@ -153,7 +178,15 @@ class Session{
 		$this->sendQueue->packets[] = $pk;
 	}
 
-	public function addEncapsulatedToQueue(EncapsulatedPacket $packet){
+	/**
+	 * @param EncapsulatedPacket $packet
+	 * @param int                $flags
+	 */
+	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
+
+		$packet->needACK = ($flags & RakLib::FLAG_NEED_ACK) > 0;
+		$this->needACK[$packet->identifierACK] = [];
+
 		if($packet->getTotalLength() + 4 > $this->mtuSize){
 			$packet->hasSplit = true;
 			$buffers = str_split($packet->buffer, $this->mtuSize - 34);
@@ -166,7 +199,7 @@ class Session{
 				$pk->splitIndex = $count;
 				$pk->buffer = $buffer;
 				$pk->messageIndex = $this->messageIndex++;
-				$this->addToQueue($pk);
+				$this->addToQueue($pk, $flags);
 			}
 		}else{
 			if(
@@ -177,7 +210,7 @@ class Session{
 			){
 				$packet->messageIndex = $this->messageIndex++;
 			}
-			$this->addToQueue($packet);
+			$this->addToQueue($packet, $flags);
 		}
 	}
 
@@ -198,8 +231,7 @@ class Session{
 					$sendPacket = new EncapsulatedPacket();
 					$sendPacket->reliability = 0;
 					$sendPacket->buffer = $pk->buffer;
-					$this->addToQueue($sendPacket);
-					$this->sendQueue();
+					$this->addToQueue($sendPacket, RakLib::PRIORITY_IMMEDIATE);
 				}elseif($id === CLIENT_HANDSHAKE_DataPacket::$ID){
 					$dataPacket = new CLIENT_HANDSHAKE_DataPacket;
 					$dataPacket->buffer = $packet->buffer;
@@ -234,14 +266,13 @@ class Session{
 					for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){
 						$this->NACKQueue[$i] = $i;
 					}
-				}else{
-					if($diff < 0){
-						unset($this->NACKQueue[$packet->seqNumber]);
-					}else{
-						$this->lastSeqNumber = $packet->seqNumber;
-					}
-					$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
 				}
+
+				if($packet->seqNumber > $this->lastSeqNumber){
+					$this->lastSeqNumber = $packet->seqNumber;
+				}
+				unset($this->NACKQueue[$packet->seqNumber]);
+				$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
 
 				foreach($packet->packets as $pk){
 					$this->handleEncapsulatedPacket($pk);
@@ -250,7 +281,14 @@ class Session{
 				if($packet instanceof ACK){
 					$packet->decode();
 					foreach($packet->packets as $seq){
-						unset($this->recoveryQueue[$seq]);
+						if(isset($this->recoveryQueue[$seq])){
+							foreach($this->recoveryQueue[$seq]->packets as $pk){
+								if($pk->needACK and $pk->messageIndex !== null){
+									unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
+								}
+							}
+							unset($this->recoveryQueue[$seq]);
+						}
 					}
 				}elseif($packet instanceof NACK){
 					$packet->decode();

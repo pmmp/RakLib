@@ -33,8 +33,8 @@ class ServerHandler{
 		$this->socket = $this->server->getExternalSocket();
 	}
 
-	public function sendEncapsulated($identifier, EncapsulatedPacket $packet){
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . $packet->toBinary(true);
+	public function sendEncapsulated($identifier, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toBinary(true);
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
@@ -84,8 +84,9 @@ class ServerHandler{
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
+				$flags = ord($packet{$offset++});
 				$buffer = substr($packet, $offset);
-				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer, true));
+				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer, true), $flags);
 			}elseif($id === RakLib::PACKET_OPEN_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
@@ -108,6 +109,12 @@ class ServerHandler{
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, "Invalid session");
+			}elseif($id === RakLib::PACKET_ACK_NOTIFICATION){
+				$len = ord($packet{$offset++});
+				$identifier = substr($packet, $offset, $len);
+				$offset += $len;
+				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
+				$this->instance->notifyACK($identifier, $identifierACK);
 			}
 			return true;
 		}

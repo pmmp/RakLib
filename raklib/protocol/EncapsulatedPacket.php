@@ -34,6 +34,8 @@ class EncapsulatedPacket{
 	public $splitID = null;
 	public $splitIndex = null;
 	public $buffer;
+	public $needACK = false;
+	public $identifierACK = null;
 
 	/**
 	 * @param string $binary
@@ -49,7 +51,8 @@ class EncapsulatedPacket{
 		$packet->hasSplit = $hasSplit = ($flags & 0b0010000) > 0;
 		if($internal){
 			$length = Binary::readInt(substr($binary, 1, 4));
-			$offset = 5;
+			$packet->identifierACK = Binary::readInt(substr($binary, 5, 4));
+			$offset = 9;
 		}else{
 			$length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
 			$offset = 3;
@@ -121,6 +124,7 @@ class EncapsulatedPacket{
 		$binary = chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0));
 		if($internal){
 			$binary .= Binary::writeInt(strlen($this->buffer));
+			$binary .= Binary::writeInt($this->identifierACK);
 		}else{
 			$binary .= Binary::writeShort(strlen($this->buffer) << 3);
 		}
