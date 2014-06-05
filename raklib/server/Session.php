@@ -107,7 +107,7 @@ class Session{
 		}else{
 			$this->lastUpdate = $time;
 		}
-		$this->isActive = true;
+		$this->isActive = false;
 
 		if(count($this->ACKQueue) > 0){
 			$pk = new ACK();
