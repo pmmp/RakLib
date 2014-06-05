@@ -43,6 +43,11 @@ class ServerHandler{
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	public function sendOption($name, $value){
+		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
+		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
 	public function shutdown(){
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);

@@ -45,4 +45,10 @@ interface ServerInstance{
 	 * @param int $identifierACK
 	 */
 	public function notifyACK($identifier, $identifierACK);
+
+	/**
+	 * @param string $option
+	 * @param string $value
+	 */
+	public function handleOption($option, $value);
 }

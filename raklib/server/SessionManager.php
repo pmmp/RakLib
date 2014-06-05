@@ -62,6 +62,8 @@ class SessionManager{
 	/** @var Session[] */
 	protected $sessions = [];
 
+	protected $name = "";
+
 	protected $shutdown = false;
 
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
@@ -200,6 +202,11 @@ class SessionManager{
 		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	protected function streamOption($name, $value){
+		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
 	protected function socketRead($len){
 		$buffer = "";
 		while(strlen($buffer) < $len){
@@ -241,6 +248,16 @@ class SessionManager{
 				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
 					$this->removeSession($this->sessions[$identifier]);
+				}
+			}elseif($id === RakLib::PACKET_SET_OPTION){
+				$len = ord($packet{$offset++});
+				$name = substr($packet, $offset, $len);
+				$offset += $len;
+				$value = substr($packet, $offset);
+				switch($name){
+					case "name":
+						$this->name = $value;
+						break;
 				}
 			}elseif($id === RakLib::PACKET_SHUTDOWN){
 				foreach($this->sessions as $session){
@@ -291,7 +308,7 @@ class SessionManager{
 	}
 
 	public function getName(){
-		return "MCCPP;Demo;TEST"; //TODO
+		return $this->name;
 	}
 
 	public function getID(){

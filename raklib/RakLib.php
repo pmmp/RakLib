@@ -115,6 +115,14 @@ abstract class RakLib{
 	const PACKET_ACK_NOTIFICATION = 0x06;
 
 	/*
+	 * SET_OPTION payload:
+	 * byte (option name length)
+	 * byte[] (option name)
+	 * byte[] (option value)
+	 */
+	const PACKET_SET_OPTION = 0x07;
+
+	/*
 	 * No payload
 	 *
 	 * Sends the disconnect message, removes sessions correctly, closes sockets.
