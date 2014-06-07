@@ -25,35 +25,47 @@ abstract class AcknowledgePacket extends Packet{
 	public function encode(){
 		parent::encode();
 		$payload = "";
-		$records = 0;
-		$pointer = 0;
 		sort($this->packets, SORT_NUMERIC);
-		$max = count($this->packets);
+		$count = count($this->packets);
+		$records = 0;
 
-		while($pointer < $max){
-			$type = true;
-			$curr = $start = $this->packets[$pointer];
-			for($i = $start + 1; $i < $max; ++$i){
-				$n = $this->packets[$i];
-				if(($n - $curr) === 1){
-					$curr = $end = $n;
-					$type = false;
-					$pointer = $i + 1;
-				}else{
-					break;
+		if($count > 0){
+			$pointer = 1;
+			$start = $this->packets[0];
+			$last = $this->packets[0];
+			$current = -1;
+
+			while($pointer < $count){
+				$current = $this->packets[$pointer++];
+				$diff = $current - $last;
+				if($diff === 1){
+					$last = $current;
+				}elseif($diff > 1){ //Forget about duplicated packets (bad queues?)
+					if($start === $last){
+						$payload .= "\x01";
+						$payload .= strrev(Binary::writeTriad($start));
+						$start = $last = $current;
+					}else{
+						$payload .= "\x00";
+						$payload .= strrev(Binary::writeTriad($start));
+						$payload .= strrev(Binary::writeTriad($last));
+						$start = $last = $current;
+					}
+					++$records;
 				}
 			}
-			++$pointer;
-			if($type === false and isset($end)){
+
+			if($start === $last){
+				$payload .= "\x01";
+				$payload .= strrev(Binary::writeTriad($start));
+			}else{
 				$payload .= "\x00";
 				$payload .= strrev(Binary::writeTriad($start));
-				$payload .= strrev(Binary::writeTriad($end));
-			}else{
-				$payload .= Binary::writeBool(true);
-				$payload .= strrev(Binary::writeTriad($start));
+				$payload .= strrev(Binary::writeTriad($last));
 			}
 			++$records;
 		}
+
 		$this->putShort($records);
 		$this->buffer .= $payload;
 	}
