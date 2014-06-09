@@ -67,7 +67,7 @@ class RakLibServer extends \Thread{
 		$this->start(PTHREADS_INHERIT_ALL & ~PTHREADS_INHERIT_CLASSES);
 	}
 
-	public function addDependency(array &$loadPaths, \ReflectionClass $dep){
+	protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
 		if($dep->getFileName() !== false){
 			$loadPaths[$dep->getName()] = $dep->getFileName();
 		}
