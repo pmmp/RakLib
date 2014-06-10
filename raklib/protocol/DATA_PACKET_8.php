@@ -15,7 +15,7 @@
 
 namespace raklib\protocol;
 
-use raklib\RakLib;
+
 
 class DATA_PACKET_8 extends DataPacket{
 	public static $ID = 0x88;

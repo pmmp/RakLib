@@ -16,7 +16,7 @@
 namespace raklib\protocol;
 
 
-use raklib\Binary;
+
 
 class NACK extends AcknowledgePacket{
 	public static $ID = 0xa0;

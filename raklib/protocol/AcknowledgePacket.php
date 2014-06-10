@@ -33,7 +33,6 @@ abstract class AcknowledgePacket extends Packet{
 			$pointer = 1;
 			$start = $this->packets[0];
 			$last = $this->packets[0];
-			$current = -1;
 
 			while($pointer < $count){
 				$current = $this->packets[$pointer++];

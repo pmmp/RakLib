@@ -15,7 +15,7 @@
 
 namespace raklib\server;
 
-use raklib\RakLib;
+
 
 class RakLibServer extends \Thread{
 	protected $port;
