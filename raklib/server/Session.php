@@ -78,6 +78,11 @@ class Session{
 	/** @var DataPacket */
 	protected $sendQueue;
 
+	protected $windowStart;
+	protected $receivedWindow = [];
+	protected $lastWindowIndex = 0;
+	protected $windowEnd;
+
 	public function __construct(SessionManager $sessionManager, $address, $port){
 		$this->sessionManager = $sessionManager;
 		$this->address = $address;
@@ -86,6 +91,8 @@ class Session{
 		$this->lastUpdate = microtime(true);
 		$this->startTime = microtime(true);
 		$this->isActive = false;
+		$this->windowStart = -(self::$WINDOW_SIZE / 2);
+		$this->windowEnd = self::$WINDOW_SIZE / 2;
 	}
 
 	public function getAddress(){
@@ -130,6 +137,24 @@ class Session{
 			}
 		}
 
+		if(count($this->recoveryQueue) > 0){
+			$timeLimit = microtime(true) - 1.5;
+			foreach($this->recoveryQueue as $packet){
+				if($packet->sendTime < $timeLimit){
+					$this->sendPacket($packet);
+					$packet->sendTime = microtime(true);
+				}
+			}
+		}
+
+		foreach($this->receivedWindow as $seq => $bool){
+			if($seq < $this->windowStart){
+				unset($this->receivedWindow[$seq]);
+			}else{
+				break;
+			}
+		}
+
 		$this->sendQueue();
 	}
 
@@ -149,6 +174,7 @@ class Session{
 		if(count($this->sendQueue->packets) > 0){
 			$this->sendQueue->seqNumber = $this->sendSeqNumber++;
 			$this->sendPacket($this->sendQueue);
+			$this->sendQueue->sendTime = microtime(true);
 			$this->recoveryQueue[$this->sendQueue->seqNumber] = $this->sendQueue;
 			$this->sendQueue = new DATA_PACKET_4();
 		}
@@ -168,6 +194,7 @@ class Session{
 			$packet->seqNumber = $this->sendSeqNumber++;
 			$packet->packets[] = $pk;
 			$this->sendPacket($packet);
+			$packet->sendTime = microtime(true);
 			$this->recoveryQueue[$packet->seqNumber] = $packet;
 			return;
 		}
@@ -215,6 +242,21 @@ class Session{
 	}
 
 	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){
+
+		if($packet->messageIndex !== null){
+			if($packet->messageIndex < $this->windowStart or $packet->messageIndex > $this->windowEnd or isset($this->receivedWindow[$packet->messageIndex])){
+				return;
+			}
+			$diff = $packet->messageIndex - $this->lastWindowIndex;
+			$this->receivedWindow[$packet->messageIndex] = true;
+
+			if($diff >= 1){
+				$this->lastWindowIndex = $packet->messageIndex;
+				$this->windowStart += $diff;
+				$this->windowEnd += $diff;
+			}
+		}
+
 		$id = ord($packet->buffer{0});
 		if($id < 0x80){ //internal data packet
 			if($this->state === self::STATE_CONNECTING_2){
@@ -258,9 +300,10 @@ class Session{
 		if($this->state === self::STATE_CONNECTED or $this->state === self::STATE_CONNECTING_2){
 			if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
 				$packet->decode();
+
 				$diff = $packet->seqNumber - $this->lastSeqNumber;
 
-				if($diff > static::$WINDOW_SIZE){
+				if($diff > self::$WINDOW_SIZE){
 					return;
 				}elseif($diff > 1){
 					for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){

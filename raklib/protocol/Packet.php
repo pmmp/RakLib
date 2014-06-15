@@ -22,6 +22,7 @@ abstract class Packet{
 
 	protected $offset = 0;
 	public $buffer;
+	public $sendTime;
 
 	protected function get($len){
 		if($len < 0){
