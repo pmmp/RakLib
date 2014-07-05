@@ -41,6 +41,13 @@ interface ServerInstance{
 	public function handleEncapsulated($identifier, EncapsulatedPacket $packet, $flags);
 
 	/**
+	 * @param string $address
+	 * @param int    $port
+	 * @param string $payload
+	 */
+	public function handleRaw($address, $port, $payload);
+
+	/**
 	 * @param string $identifier
 	 * @param int $identifierACK
 	 */

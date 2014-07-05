@@ -162,7 +162,9 @@ class SessionManager{
 				$packet = clone $this->packetPool[$pid];
 				$packet->buffer = $buffer;
 				$this->getSession($source, $port)->handlePacket($packet);
-			} //TODO: handle unknown packets
+			}else{
+				$this->streamRaw($source, $port, $buffer);
+			}
 
 			return true;
 		}
@@ -179,6 +181,11 @@ class SessionManager{
 		$id = $session->getAddress() . ":" . $session->getPort();
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toBinary(true);
 		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
+	public function streamRaw($address, $port, $payload){
+		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
+		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
 	protected function streamClose($identifier, $reason){
@@ -235,6 +242,14 @@ class SessionManager{
 				}else{
 					$this->streamInvalid($identifier);
 				}
+			}elseif($id === RakLib::PACKET_RAW){
+				$len = ord($packet{$offset++});
+				$address = substr($packet, $offset, $len);
+				$offset += $len;
+				$port = substr($packet, $offset, 2);
+				$offset += 2;
+				$payload = substr($packet, $offset);
+				$this->socket->writePacket($payload, $address, $port);
 			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);

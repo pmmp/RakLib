@@ -38,6 +38,11 @@ class ServerHandler{
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	public function sendRaw($address, $port, $payload){
+		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
+		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+	}
+
 	public function closeSession($identifier, $reason){
 		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
@@ -92,6 +97,14 @@ class ServerHandler{
 				$flags = ord($packet{$offset++});
 				$buffer = substr($packet, $offset);
 				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer, true), $flags);
+			}elseif($id === RakLib::PACKET_RAW){
+				$len = ord($packet{$offset++});
+				$address = substr($packet, $offset, $len);
+				$offset += $len;
+				$port = substr($packet, $offset, 2);
+				$offset += 2;
+				$payload = substr($packet, $offset);
+				$this->instance->handleRaw($address, $port, $payload);
 			}elseif($id === RakLib::PACKET_OPEN_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
