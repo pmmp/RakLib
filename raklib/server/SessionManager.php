@@ -185,7 +185,7 @@ class SessionManager{
 
 	public function streamRaw($address, $port, $payload){
 		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
 	protected function streamClose($identifier, $reason){
@@ -246,7 +246,7 @@ class SessionManager{
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
-				$port = substr($packet, $offset, 2);
+				$port = Binary::readShort(substr($packet, $offset, 2), false);
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$this->socket->writePacket($payload, $address, $port);

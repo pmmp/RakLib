@@ -101,7 +101,7 @@ class ServerHandler{
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
-				$port = substr($packet, $offset, 2);
+				$port = Binary::readShort(substr($packet, $offset, 2), false);
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$this->instance->handleRaw($address, $port, $payload);
