@@ -83,14 +83,14 @@ class SessionManager{
 	}
 
 	public function run(){
-		if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
-			$this->tickProcessorWindows();
-		}else{
+		//if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
+		//	$this->tickProcessorWindows();
+		//}else{
 			$this->tickProcessor();
-		}
+		//}
 	}
 
-	private function tickProcessorWindows(){
+	/*private function tickProcessorWindows(){
 		$lastLoop = 0;
 		$ticks = 0;
 		while(!$this->shutdown){
@@ -113,11 +113,11 @@ class SessionManager{
 			}
 
 			++$lastLoop;
-			if($lastLoop > 128){
+			if($lastLoop > 8){
 				usleep(1000);
 			}
 		}
-	}
+	}*/
 
 	private function tickProcessor(){
 		$lastLoop = 0;
@@ -142,12 +142,12 @@ class SessionManager{
 			}
 
 			++$lastLoop;
-			if($lastLoop > 16 and $lastLoop < 128){
-				usleep(200);
-			}elseif($lastLoop < 512){
-				usleep(400);
-			}else{
+			if($lastLoop > 2 and $lastLoop < 16){
 				usleep(1000);
+			}elseif($lastLoop < 128){
+				usleep(2000);
+			}else{
+				usleep(10000);
 			}
 		}
 	}
