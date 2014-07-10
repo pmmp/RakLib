@@ -48,7 +48,7 @@ if($errors > 0){
 unset($errors);
 
 abstract class RakLib{
-	const VERSION = "0.1.0";
+	const VERSION = "0.2.0";
 	const PROTOCOL = 5;
 	const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
@@ -130,6 +130,11 @@ abstract class RakLib{
 	 * byte[] (payload)
 	 */
 	const PACKET_RAW = 0x08;
+
+	/*
+	 * No payload
+	 */
+	const PACKET_TICK = 0x09;
 
 	/*
 	 * No payload

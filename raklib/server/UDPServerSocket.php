@@ -37,7 +37,11 @@ class UDPServerSocket{
 			$logger->critical("Perhaps a server is already running on that port?", true, true, 0);
 			exit(1);
 		}
-		socket_set_nonblock($this->socket);
+		socket_set_block($this->socket);
+	}
+
+	public function getSocket(){
+		return $this->socket;
 	}
 
 	public function close(){

@@ -83,72 +83,27 @@ class SessionManager{
 	}
 
 	public function run(){
-		//if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
-		//	$this->tickProcessorWindows();
-		//}else{
-			$this->tickProcessor();
-		//}
+		$this->tickProcessor();
 	}
 
-	/*private function tickProcessorWindows(){
-		$lastLoop = 0;
-		$ticks = 0;
-		while(!$this->shutdown){
-			if($this->receivePacket()){
-				$lastLoop = 0;
-			}
-
-			if($this->receiveStream()){
-				$lastLoop = 0;
-			}
-
-			++$ticks;
-			if($ticks % 20 === 0){
-				$time = microtime(true);
-				foreach($this->sessions as $session){
-					if($session->needUpdate()){
-						$session->update($time);
-					}
-				}
-			}
-
-			++$lastLoop;
-			if($lastLoop > 8){
-				usleep(1000);
-			}
-		}
-	}*/
-
 	private function tickProcessor(){
-		$lastLoop = 0;
 		$ticks = 0;
+		$serverSocket = $this->socket->getSocket();
+
 		while(!$this->shutdown){
-			if($this->receivePacket()){
-				$lastLoop = 0;
-			}
-
-			if($this->receiveStream()){
-				$lastLoop = 0;
-			}
-
-			++$ticks;
-			if($ticks % 20 === 0){
-				$time = microtime(true);
-				foreach($this->sessions as $session){
-					if($session->needUpdate()){
-						$session->update($time);
+			$sockets = [$serverSocket, $this->internalSocket];
+			$write = null;
+			$except = null;
+			if(socket_select($sockets, $write, $except, null) > 0){
+				foreach($sockets as $socket){
+					if($socket === $serverSocket){
+						$this->receivePacket();
+					}else{
+						$this->receiveStream();
 					}
 				}
 			}
 
-			++$lastLoop;
-			if($lastLoop > 2 and $lastLoop < 16){
-				usleep(1000);
-			}elseif($lastLoop < 128){
-				usleep(2000);
-			}else{
-				usleep(10000);
-			}
 		}
 	}
 
@@ -250,6 +205,13 @@ class SessionManager{
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$this->socket->writePacket($payload, $address, $port);
+			}elseif($id === RakLib::PACKET_TICK){
+				$time = microtime(true);
+				foreach($this->sessions as $session){
+					if($session->needUpdate()){
+						$session->update($time);
+					}
+				}
 			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);

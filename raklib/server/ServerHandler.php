@@ -38,6 +38,10 @@ class ServerHandler{
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
 	}
 
+	public function sendTick(){
+		@socket_write($this->socket, Binary::writeInt(1) . chr(RakLib::PACKET_TICK));
+	}
+
 	public function sendRaw($address, $port, $payload){
 		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
 		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
