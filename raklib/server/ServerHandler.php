@@ -109,6 +109,12 @@ class ServerHandler{
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$this->instance->handleRaw($address, $port, $payload);
+			}elseif($id === RakLib::PACKET_SET_OPTION){
+				$len = ord($packet{$offset++});
+				$name = substr($packet, $offset, $len);
+				$offset += $len;
+				$value = substr($packet, $offset);
+				$this->instance->handleOption($name, $value);
 			}elseif($id === RakLib::PACKET_OPEN_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
