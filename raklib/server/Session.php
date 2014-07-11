@@ -163,7 +163,7 @@ class Session{
 	}
 
 	public function needUpdate(){
-		return count($this->ACKQueue) > 0 or count($this->NACKQueue) > 0 or count($this->sendQueue->packets) > 0 or !$this->isActive;
+		return count($this->ACKQueue) > 0 or count($this->NACKQueue) > 0 or count($this->sendQueue->packets) > 0;
 	}
 
 	protected function sendPacket(Packet $packet){

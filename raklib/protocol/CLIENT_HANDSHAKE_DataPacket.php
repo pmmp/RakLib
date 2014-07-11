@@ -41,7 +41,7 @@ class CLIENT_HANDSHAKE_DataPacket extends Packet{
 		parent::decode();
 		$this->cookie = $this->get(4);
 		$this->security = $this->get(1);
-		$this->port = $this->getShort(true);
+		$this->port = $this->getShort(false);
 		$this->dataArray0 = $this->get($this->getByte());
 		$this->dataArray = $this->getDataArray(9);
 		$this->timestamp = $this->get(2);

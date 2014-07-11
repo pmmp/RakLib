@@ -38,8 +38,8 @@ class OPEN_CONNECTION_REPLY_2 extends Packet{
 		parent::decode();
 		$this->offset += 16; //Magic
 		$this->serverID = $this->getLong();
-		$this->clientPort = $this->getShort(true);
-		$this->mtuSize = $this->getShort(true);
+		$this->clientPort = $this->getShort(false);
+		$this->mtuSize = $this->getShort(false);
 		//server security
 	}
 }

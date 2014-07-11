@@ -41,16 +41,16 @@ abstract class Packet{
 		return $buffer;
 	}
 
-	protected function getLong($unsigned = false){
-		return Binary::readLong($this->get(8), $unsigned);
+	protected function getLong($signed = true){
+		return Binary::readLong($this->get(8), $signed);
 	}
 
 	protected function getInt(){
 		return Binary::readInt($this->get(4));
 	}
 
-	protected function getShort($unsigned = false){
-		return Binary::readShort($this->get(2), $unsigned);
+	protected function getShort($signed = true){
+		return Binary::readShort($this->get(2), $signed);
 	}
 
 	protected function getTriad(){
@@ -66,7 +66,7 @@ abstract class Packet{
 	}
 
 	protected function getString(){
-		return $this->get($this->getShort(true));
+		return $this->get($this->getShort(false));
 	}
 
 	protected function feof(){
