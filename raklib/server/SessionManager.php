@@ -66,6 +66,9 @@ class SessionManager{
 
 	protected $shutdown = false;
 
+	protected $ticks = 0;
+	protected $lastMeasure;
+
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
@@ -88,6 +91,7 @@ class SessionManager{
 
 	private function tickProcessor(){
 		$ticks = 0;
+		$this->lastMeasure = microtime(true);
 		$serverSocket = $this->socket->getSocket();
 
 		while(!$this->shutdown){
@@ -211,6 +215,18 @@ class SessionManager{
 					if($session->needUpdate()){
 						$session->update($time);
 					}
+				}
+
+				++$this->ticks;
+				if(($this->ticks & 0b1111) === 0){
+					$diff = $time - $this->lastMeasure;
+					$this->streamOption("bandwidth", serialize([
+						"up" => $this->sendBytes / $diff,
+						"down" => $this->receiveBytes / $diff
+					]));
+					$this->lastMeasure = $time;
+					$this->sendBytes = 0;
+					$this->receiveBytes = 0;
 				}
 			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
 				$len = ord($packet{$offset++});
