@@ -111,8 +111,6 @@ class Session{
 		if(!$this->isActive and ($this->lastUpdate + 10) < $time){
 			$this->disconnect("timeout");
 			return;
-		}else{
-			$this->lastUpdate = $time;
 		}
 		$this->isActive = false;
 
@@ -299,6 +297,7 @@ class Session{
 
 	public function handlePacket(Packet $packet){
 		$this->isActive = true;
+		$this->lastUpdate = microtime(true);
 		if($this->state === self::STATE_CONNECTED or $this->state === self::STATE_CONNECTING_2){
 			if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
 				$packet->decode();

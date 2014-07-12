@@ -219,7 +219,7 @@ class SessionManager{
 
 				++$this->ticks;
 				if(($this->ticks & 0b1111) === 0){
-					$diff = $time - $this->lastMeasure;
+					$diff = max(0.005, $time - $this->lastMeasure);
 					$this->streamOption("bandwidth", serialize([
 						"up" => $this->sendBytes / $diff,
 						"down" => $this->receiveBytes / $diff
