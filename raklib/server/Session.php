@@ -139,10 +139,12 @@ class Session{
 
 		if(count($this->recoveryQueue) > 0){
 			$timeLimit = microtime(true) - 1.5;
-			foreach($this->recoveryQueue as $packet){
-				if($packet->sendTime < $timeLimit){
+			foreach($this->recoveryQueue as $key => $packet){
+				if($packet->sendTime === null){
+					unserialize($this->recoveryQueue[$key]);
+				}elseif($packet->sendTime < $timeLimit){
 					$this->sendPacket($packet);
-					$packet->sendTime = microtime(true);
+					$packet->sendTime = null;
 				}
 			}
 		}
@@ -163,7 +165,7 @@ class Session{
 	}
 
 	public function needUpdate(){
-		return count($this->ACKQueue) > 0 or count($this->NACKQueue) > 0 or count($this->sendQueue->packets) > 0;
+		return count($this->ACKQueue) > 0 or count($this->NACKQueue) > 0 or count($this->sendQueue->packets) > 0 or !$this->isActive;
 	}
 
 	protected function sendPacket(Packet $packet){
