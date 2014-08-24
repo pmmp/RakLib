@@ -279,7 +279,7 @@ class Session{
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
 
-					if($dataPacket->port === $this->sessionManager->getPort()){
+					if($dataPacket->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
 						$this->sessionManager->openSession($this);
 					}

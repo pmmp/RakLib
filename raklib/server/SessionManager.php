@@ -69,6 +69,8 @@ class SessionManager{
 	protected $ticks = 0;
 	protected $lastMeasure;
 
+	public $portChecking = true;
+
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
@@ -250,6 +252,9 @@ class SessionManager{
 				switch($name){
 					case "name":
 						$this->name = $value;
+						break;
+					case "portChecking":
+						$this->portChecking = (bool) $value;
 						break;
 				}
 			}elseif($id === RakLib::PACKET_SHUTDOWN){
