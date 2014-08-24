@@ -361,7 +361,7 @@ class Session{
 				$this->state = self::STATE_CONNECTING_1;
 			}elseif($this->state === self::STATE_CONNECTING_1 and $packet instanceof OPEN_CONNECTION_REQUEST_2){
 				$this->id = $packet->clientID;
-				if($packet->serverPort === $this->sessionManager->getPort()){
+				if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
 					$this->mtuSize = min($packet->mtuSize, 1464); //Max size, do not allow creating large buffers to fill server memory
 					$pk = new OPEN_CONNECTION_REPLY_2;
 					$pk->mtuSize = $this->mtuSize;
