@@ -33,13 +33,13 @@ class RakLibServer extends \Thread{
 
 	/**
 	 * @param \ThreadedLogger $logger
-	 * @param \SplAutoloader  $loader
+	 * @param \ClassLoader    $loader
 	 * @param int             $port 1-65536
 	 * @param string          $interface
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, \SplAutoloader $loader, $port, $interface = "0.0.0.0"){
+	public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
 		$this->port = (int) $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
