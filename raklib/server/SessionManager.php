@@ -69,7 +69,7 @@ class SessionManager{
 	protected $ticks = 0;
 	protected $lastMeasure;
 
-	public $portChecking = true;
+	public $portChecking = false;
 
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
