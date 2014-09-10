@@ -68,7 +68,7 @@ class RakLibServer extends \Thread{
 		@socket_set_option($this->externalSocket, SOL_SOCKET, SO_SNDBUF, 1024 * 1024 * 2);
 		@socket_set_option($this->externalSocket, SOL_SOCKET, SO_RCVBUF, 1024 * 1024 * 2);
 
-		$this->start(PTHREADS_INHERIT_ALL & ~PTHREADS_INHERIT_CLASSES);
+		$this->start();
 	}
 
 	protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
@@ -122,7 +122,7 @@ class RakLibServer extends \Thread{
 	public function run(){
 		//Load removed dependencies, can't use require_once()
 		foreach($this->loadPaths as $name => $path){
-			if(!class_exists($name, false) and !class_exists($name, false)){
+			if(!class_exists($name, false) and !interface_exists($name, false)){
 				require($path);
 			}
 		}
