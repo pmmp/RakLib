@@ -52,9 +52,9 @@ class SessionManager{
 	/** @var RakLibServer */
 	protected $server;
 
-	protected $socket;
-
 	protected $internalSocket;
+
+	protected $socket;
 
 	protected $receiveBytes = 0;
 	protected $sendBytes = 0;
@@ -92,7 +92,6 @@ class SessionManager{
 	}
 
 	private function tickProcessor(){
-		$ticks = 0;
 		$this->lastMeasure = microtime(true);
 		$serverSocket = $this->socket->getSocket();
 
@@ -141,55 +140,43 @@ class SessionManager{
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
 		$id = $session->getAddress() . ":" . $session->getPort();
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toBinary(true);
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	public function streamRaw($address, $port, $payload){
 		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamClose($identifier, $reason){
 		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamInvalid($identifier){
 		$buffer = chr(RakLib::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamOpen(Session $session){
 		$identifier = $session->getAddress() . ":" . $session->getPort();
 		$buffer = chr(RakLib::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($session->getAddress())) . $session->getAddress() . Binary::writeShort($session->getPort()) . Binary::writeLong($session->getID());
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamACK($identifier, $identifierACK){
 		$buffer = chr(RakLib::PACKET_ACK_NOTIFICATION) . chr(strlen($identifier)) . $identifier . Binary::writeInt($identifierACK);
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamOption($name, $value){
 		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		@socket_write($this->internalSocket, Binary::writeInt(strlen($buffer)) . $buffer);
-	}
-
-	protected function socketRead($len){
-		$buffer = "";
-		while(strlen($buffer) < $len){
-			$buffer .= @socket_read($this->internalSocket, $len - strlen($buffer));
-		}
-
-		return $buffer;
+		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	public function receiveStream(){
-		if(($len = @socket_read($this->internalSocket, 4)) !== false){
-			if(strlen($len) < 4){
-				$len .= $this->socketRead(4 - strlen($len));
-			}
-			$packet = $this->socketRead(Binary::readInt($len));
+		@socket_read($this->internalSocket, 1);
+		if(strlen($packet = $this->server->readMainToThreadPacket()) > 0){
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){
@@ -261,7 +248,7 @@ class SessionManager{
 				foreach($this->sessions as $session){
 					$this->removeSession($session);
 				}
-				@socket_close($this->internalSocket);
+
 				$this->socket->close();
 				$this->shutdown = true;
 			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){

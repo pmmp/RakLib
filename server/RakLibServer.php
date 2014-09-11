@@ -28,6 +28,11 @@ class RakLibServer extends \Thread{
 
 	protected $shutdown;
 
+	/** @var \Threaded */
+	protected $externalQueue;
+	/** @var \Threaded */
+	protected $internalQueue;
+
 	protected $externalSocket;
 	protected $internalSocket;
 
@@ -54,6 +59,9 @@ class RakLibServer extends \Thread{
 		$this->loadPaths = array_reverse($loadPaths);
 		$this->shutdown = false;
 
+		$this->externalQueue = new \Threaded();
+		$this->internalQueue = new \Threaded();
+
 		$sockets = [];
 		if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
 			throw new \Exception("Could not create IPC sockets. Reason: ".socket_strerror(socket_last_error()));
@@ -61,12 +69,8 @@ class RakLibServer extends \Thread{
 
 		$this->internalSocket = $sockets[0];
 		socket_set_block($this->internalSocket);
-		@socket_set_option($this->internalSocket, SOL_SOCKET, SO_SNDBUF, 1024 * 1024 * 2);
-		@socket_set_option($this->internalSocket, SOL_SOCKET, SO_RCVBUF, 1024 * 1024 * 2);
 		$this->externalSocket = $sockets[1];
 		socket_set_nonblock($this->externalSocket);
-		@socket_set_option($this->externalSocket, SOL_SOCKET, SO_SNDBUF, 1024 * 1024 * 2);
-		@socket_set_option($this->externalSocket, SOL_SOCKET, SO_RCVBUF, 1024 * 1024 * 2);
 
 		$this->start();
 	}
@@ -92,7 +96,6 @@ class RakLibServer extends \Thread{
 	public function shutdown(){
 		$this->lock();
 		$this->shutdown = true;
-		socket_close($this->internalSocket);
 		$this->unlock();
 	}
 
@@ -111,12 +114,39 @@ class RakLibServer extends \Thread{
 		return $this->logger;
 	}
 
-	public function getExternalSocket(){
-		return $this->externalSocket;
+	/**
+	 * @return \Threaded
+	 */
+	public function getExternalQueue(){
+		return $this->externalQueue;
+	}
+
+	/**
+	 * @return \Threaded
+	 */
+	public function getInternalQueue(){
+		return $this->internalQueue;
 	}
 
 	public function getInternalSocket(){
 		return $this->internalSocket;
+	}
+
+	public function pushMainToThreadPacket($str){
+		$this->internalQueue[] = $str;
+		@socket_write($this->externalSocket, "\xff", 1); //Notify
+	}
+
+	public function readMainToThreadPacket(){
+		return $this->internalQueue->shift();
+	}
+
+	public function pushThreadToMainPacket($str){
+		$this->externalQueue[] = $str;
+	}
+
+	public function readThreadToMainPacket(){
+		return $this->externalQueue->shift();
 	}
 
 	public function run(){

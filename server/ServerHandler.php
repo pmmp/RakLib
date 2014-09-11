@@ -25,73 +25,57 @@ class ServerHandler{
 	protected $server;
 	/** @var ServerInstance */
 	protected $instance;
-	protected $socket;
 
 	public function __construct(RakLibServer $server, ServerInstance $instance){
 		$this->server = $server;
 		$this->instance = $instance;
-		$this->socket = $this->server->getExternalSocket();
 	}
 
 	public function sendEncapsulated($identifier, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toBinary(true);
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushMainToThreadPacket($buffer);
 	}
 
 	public function sendTick(){
-		@socket_write($this->socket, Binary::writeInt(1) . chr(RakLib::PACKET_TICK));
+		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_TICK));
 	}
 
 	public function sendRaw($address, $port, $payload){
 		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushMainToThreadPacket($buffer);
 	}
 
 	public function closeSession($identifier, $reason){
 		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushMainToThreadPacket($buffer);
 	}
 
 	public function sendOption($name, $value){
 		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
+		$this->server->pushMainToThreadPacket($buffer);
 	}
 
 	public function shutdown(){
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
-		@socket_close($this->socket);
+		$this->server->pushMainToThreadPacket($buffer);
 		$this->server->join();
 	}
 
 	public function emergencyShutdown(){
-		@socket_write($this->socket, "\x00\x00\x00\x01\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
+		$this->server->pushMainToThreadPacket("\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
 		$this->server->join();
 	}
 
 	protected function invalidSession($identifier){
 		$buffer = chr(RakLib::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
-		@socket_write($this->socket, Binary::writeInt(strlen($buffer)) . $buffer);
-	}
-
-	protected function socketRead($len){
-		$buffer = "";
-		while(strlen($buffer) < $len){
-			$buffer .= @socket_read($this->socket, $len - strlen($buffer));
-		}
-
-		return $buffer;
+		$this->server->pushMainToThreadPacket($buffer);
 	}
 
 	/**
 	 * @return bool
 	 */
 	public function handlePacket(){
-		if(($len = @socket_read($this->socket, 4)) !== false){
-			if(strlen($len) < 4){
-				$len .= $this->socketRead(4 - strlen($len));
-			}
-			$packet = $this->socketRead(Binary::readInt($len));
+		if(strlen($packet = $this->server->readThreadToMainPacket()) > 0){
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){
