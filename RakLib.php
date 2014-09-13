@@ -37,8 +37,8 @@ if(!extension_loaded("pthreads")){
 		$pthreads_version = "0.$pthreads_version";
 	}
 
-	if(version_compare($pthreads_version, "2.0.4") < 0){
-		echo "[CRITICAL] pthreads >= 2.0.4 is required, while you have $pthreads_version.";
+	if(version_compare($pthreads_version, "2.0.8") < 0){
+		echo "[CRITICAL] pthreads >= 2.0.8 is required, while you have $pthreads_version.";
 		++$errors;
 	}
 }
