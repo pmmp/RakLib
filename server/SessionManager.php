@@ -104,7 +104,7 @@ class SessionManager{
 					if($socket === $serverSocket){
 						$this->receivePacket();
 					}else{
-						$this->receiveStream();
+						while($this->receiveStream()){}
 					}
 				}
 			}

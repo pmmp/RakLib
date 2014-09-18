@@ -68,7 +68,7 @@ class RakLibServer extends \Thread{
 		}
 
 		$this->internalSocket = $sockets[0];
-		socket_set_block($this->internalSocket);
+		socket_set_nonblock($this->internalSocket);
 		$this->externalSocket = $sockets[1];
 		socket_set_nonblock($this->externalSocket);
 
