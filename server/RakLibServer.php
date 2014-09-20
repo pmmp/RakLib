@@ -16,150 +16,149 @@
 namespace raklib\server;
 
 
-
 class RakLibServer extends \Thread{
-	protected $port;
-	protected $interface;
-	/** @var \ThreadedLogger */
-	protected $logger;
-	protected $loader;
+    protected $port;
+    protected $interface;
+    /** @var \ThreadedLogger */
+    protected $logger;
+    protected $loader;
 
-	public $loadPaths = [];
+    public $loadPaths = [];
 
-	protected $shutdown;
+    protected $shutdown;
 
-	/** @var \Threaded */
-	protected $externalQueue;
-	/** @var \Threaded */
-	protected $internalQueue;
+    /** @var \Threaded */
+    protected $externalQueue;
+    /** @var \Threaded */
+    protected $internalQueue;
 
-	protected $externalSocket;
-	protected $internalSocket;
+    protected $externalSocket;
+    protected $internalSocket;
 
-	/**
-	 * @param \ThreadedLogger $logger
-	 * @param \ClassLoader    $loader
-	 * @param int             $port 1-65536
-	 * @param string          $interface
-	 *
-	 * @throws \Exception
-	 */
-	public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
-		$this->port = (int) $port;
-		if($port < 1 or $port > 65536){
-			throw new \Exception("Invalid port range");
-		}
+    /**
+     * @param \ThreadedLogger $logger
+     * @param \ClassLoader    $loader
+     * @param int             $port 1-65536
+     * @param string          $interface
+     *
+     * @throws \Exception
+     */
+    public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
+        $this->port = (int) $port;
+        if($port < 1 or $port > 65536){
+            throw new \Exception("Invalid port range");
+        }
 
-		$this->interface = $interface;
-		$this->logger = $logger;
-		$this->loader = $loader;
-		$loadPaths = [];
-		$this->addDependency($loadPaths, new \ReflectionClass($logger));
-		$this->addDependency($loadPaths, new \ReflectionClass($loader));
-		$this->loadPaths = array_reverse($loadPaths);
-		$this->shutdown = false;
+        $this->interface = $interface;
+        $this->logger = $logger;
+        $this->loader = $loader;
+        $loadPaths = [];
+        $this->addDependency($loadPaths, new \ReflectionClass($logger));
+        $this->addDependency($loadPaths, new \ReflectionClass($loader));
+        $this->loadPaths = array_reverse($loadPaths);
+        $this->shutdown = false;
 
-		$this->externalQueue = new \Threaded();
-		$this->internalQueue = new \Threaded();
+        $this->externalQueue = new \Threaded();
+        $this->internalQueue = new \Threaded();
 
-		$sockets = [];
-		if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
-			throw new \Exception("Could not create IPC sockets. Reason: ".socket_strerror(socket_last_error()));
-		}
+        $sockets = [];
+        if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
+            throw new \Exception("Could not create IPC sockets. Reason: " . socket_strerror(socket_last_error()));
+        }
 
-		$this->internalSocket = $sockets[0];
-		socket_set_nonblock($this->internalSocket);
-		$this->externalSocket = $sockets[1];
-		socket_set_nonblock($this->externalSocket);
+        $this->internalSocket = $sockets[0];
+        socket_set_nonblock($this->internalSocket);
+        $this->externalSocket = $sockets[1];
+        socket_set_nonblock($this->externalSocket);
 
-		$this->start();
-	}
+        $this->start();
+    }
 
-	protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
-		if($dep->getFileName() !== false){
-			$loadPaths[$dep->getName()] = $dep->getFileName();
-		}
+    protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
+        if($dep->getFileName() !== false){
+            $loadPaths[$dep->getName()] = $dep->getFileName();
+        }
 
-		if($dep->getParentClass() instanceof \ReflectionClass){
-			$this->addDependency($loadPaths, $dep->getParentClass());
-		}
+        if($dep->getParentClass() instanceof \ReflectionClass){
+            $this->addDependency($loadPaths, $dep->getParentClass());
+        }
 
-		foreach($dep->getInterfaces() as $interface){
-			$this->addDependency($loadPaths, $interface);
-		}
-	}
+        foreach($dep->getInterfaces() as $interface){
+            $this->addDependency($loadPaths, $interface);
+        }
+    }
 
-	public function isShutdown(){
-		return $this->shutdown === true;
-	}
+    public function isShutdown(){
+        return $this->shutdown === true;
+    }
 
-	public function shutdown(){
-		$this->lock();
-		$this->shutdown = true;
-		$this->unlock();
-	}
+    public function shutdown(){
+        $this->lock();
+        $this->shutdown = true;
+        $this->unlock();
+    }
 
-	public function getPort(){
-		return $this->port;
-	}
+    public function getPort(){
+        return $this->port;
+    }
 
-	public function getInterface(){
-		return $this->interface;
-	}
+    public function getInterface(){
+        return $this->interface;
+    }
 
-	/**
-	 * @return \ThreadedLogger
-	 */
-	public function getLogger(){
-		return $this->logger;
-	}
+    /**
+     * @return \ThreadedLogger
+     */
+    public function getLogger(){
+        return $this->logger;
+    }
 
-	/**
-	 * @return \Threaded
-	 */
-	public function getExternalQueue(){
-		return $this->externalQueue;
-	}
+    /**
+     * @return \Threaded
+     */
+    public function getExternalQueue(){
+        return $this->externalQueue;
+    }
 
-	/**
-	 * @return \Threaded
-	 */
-	public function getInternalQueue(){
-		return $this->internalQueue;
-	}
+    /**
+     * @return \Threaded
+     */
+    public function getInternalQueue(){
+        return $this->internalQueue;
+    }
 
-	public function getInternalSocket(){
-		return $this->internalSocket;
-	}
+    public function getInternalSocket(){
+        return $this->internalSocket;
+    }
 
-	public function pushMainToThreadPacket($str){
-		$this->internalQueue[] = $str;
-		@socket_write($this->externalSocket, "\xff", 1); //Notify
-	}
+    public function pushMainToThreadPacket($str){
+        $this->internalQueue[] = $str;
+        @socket_write($this->externalSocket, "\xff", 1); //Notify
+    }
 
-	public function readMainToThreadPacket(){
-		return $this->internalQueue->shift();
-	}
+    public function readMainToThreadPacket(){
+        return $this->internalQueue->shift();
+    }
 
-	public function pushThreadToMainPacket($str){
-		$this->externalQueue[] = $str;
-	}
+    public function pushThreadToMainPacket($str){
+        $this->externalQueue[] = $str;
+    }
 
-	public function readThreadToMainPacket(){
-		return $this->externalQueue->shift();
-	}
+    public function readThreadToMainPacket(){
+        return $this->externalQueue->shift();
+    }
 
-	public function run(){
-		//Load removed dependencies, can't use require_once()
-		foreach($this->loadPaths as $name => $path){
-			if(!class_exists($name, false) and !interface_exists($name, false)){
-				require($path);
-			}
-		}
-		$this->loader->register();
+    public function run(){
+        //Load removed dependencies, can't use require_once()
+        foreach($this->loadPaths as $name => $path){
+            if(!class_exists($name, false) and !interface_exists($name, false)){
+                require($path);
+            }
+        }
+        $this->loader->register();
 
-		$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-		$sessionManager = new SessionManager($this, $socket);
-	}
+        $socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
+        $sessionManager = new SessionManager($this, $socket);
+    }
 
 }

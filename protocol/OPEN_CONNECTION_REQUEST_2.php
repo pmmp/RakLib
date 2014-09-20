@@ -19,27 +19,27 @@ namespace raklib\protocol;
 use raklib\RakLib;
 
 class OPEN_CONNECTION_REQUEST_2 extends Packet{
-	public static $ID = 0x07;
+    public static $ID = 0x07;
 
-	public $clientID;
-	public $serverPort;
-	public $mtuSize;
+    public $clientID;
+    public $serverPort;
+    public $mtuSize;
 
-	public function encode(){
-		parent::encode();
-		$this->put(RakLib::MAGIC);
-		$this->put(0); //client security (5 bytes?)
-		$this->putShort($this->serverPort);
-		$this->putShort($this->mtuSize);
-		$this->putLong($this->clientID);
-	}
+    public function encode(){
+        parent::encode();
+        $this->put(RakLib::MAGIC);
+        $this->put(0); //client security (5 bytes?)
+        $this->putShort($this->serverPort);
+        $this->putShort($this->mtuSize);
+        $this->putLong($this->clientID);
+    }
 
-	public function decode(){
-		parent::decode();
-		$this->offset += 16; //Magic
-		$this->get(5); //Client security
-		$this->serverPort = $this->getShort(false);
-		$this->mtuSize = $this->getShort(false);
-		$this->clientID = $this->getLong();
-	}
+    public function decode(){
+        parent::decode();
+        $this->offset += 16; //Magic
+        $this->get(5); //Client security
+        $this->serverPort = $this->getShort(false);
+        $this->mtuSize = $this->getShort(false);
+        $this->clientID = $this->getLong();
+    }
 }

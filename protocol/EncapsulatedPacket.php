@@ -24,137 +24,137 @@ namespace raklib\protocol;
 use raklib\Binary;
 
 class EncapsulatedPacket{
-	public $reliability;
-	public $hasSplit = false;
-	public $length = 0;
-	public $messageIndex = null;
-	public $orderIndex = null;
-	public $orderChannel = null;
-	public $splitCount = null;
-	public $splitID = null;
-	public $splitIndex = null;
-	public $buffer;
-	public $needACK = false;
-	public $identifierACK = null;
+    public $reliability;
+    public $hasSplit = false;
+    public $length = 0;
+    public $messageIndex = null;
+    public $orderIndex = null;
+    public $orderChannel = null;
+    public $splitCount = null;
+    public $splitID = null;
+    public $splitIndex = null;
+    public $buffer;
+    public $needACK = false;
+    public $identifierACK = null;
 
-	/**
-	 * @param string $binary
-	 * @param bool   $internal
-	 * @param int    &$offset
-	 *
-	 * @return EncapsulatedPacket
-	 */
-	public static function fromBinary($binary, $internal = false, &$offset = null){
-		$packet = new EncapsulatedPacket;
-		$flags = ord($binary{0});
-		$packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
-		$packet->hasSplit = $hasSplit = ($flags & 0b00010000) > 0;
-		if($internal){
-			$length = Binary::readInt(substr($binary, 1, 4));
-			$packet->identifierACK = Binary::readInt(substr($binary, 5, 4));
-			$offset = 9;
-		}else{
-			$length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
-			$offset = 3;
-		}
+    /**
+     * @param string $binary
+     * @param bool   $internal
+     * @param int    &$offset
+     *
+     * @return EncapsulatedPacket
+     */
+    public static function fromBinary($binary, $internal = false, &$offset = null){
+        $packet = new EncapsulatedPacket;
+        $flags = ord($binary{0});
+        $packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
+        $packet->hasSplit = $hasSplit = ($flags & 0b00010000) > 0;
+        if($internal){
+            $length = Binary::readInt(substr($binary, 1, 4));
+            $packet->identifierACK = Binary::readInt(substr($binary, 5, 4));
+            $offset = 9;
+        }else{
+            $length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
+            $offset = 3;
+        }
 
 
-		/*
-		 * From http://www.jenkinssoftware.com/raknet/manual/reliabilitytypes.html
-		 *
-		 * Default: 0b010 (2) or 0b011 (3)
-		 *
-		 * 0: UNRELIABLE
-		 * 1: UNRELIABLE_SEQUENCED
-		 * 2: RELIABLE
-		 * 3: RELIABLE_ORDERED
-		 * 4: RELIABLE_SEQUENCED
-		 * 5: UNRELIABLE_WITH_ACK_RECEIPT
-		 * 6: RELIABLE_WITH_ACK_RECEIPT
-		 * 7: RELIABLE_ORDERED_WITH_ACK_RECEIPT
-		 */
+        /*
+         * From http://www.jenkinssoftware.com/raknet/manual/reliabilitytypes.html
+         *
+         * Default: 0b010 (2) or 0b011 (3)
+         *
+         * 0: UNRELIABLE
+         * 1: UNRELIABLE_SEQUENCED
+         * 2: RELIABLE
+         * 3: RELIABLE_ORDERED
+         * 4: RELIABLE_SEQUENCED
+         * 5: UNRELIABLE_WITH_ACK_RECEIPT
+         * 6: RELIABLE_WITH_ACK_RECEIPT
+         * 7: RELIABLE_ORDERED_WITH_ACK_RECEIPT
+         */
 
-		if(
-			$reliability === 2 or
-			$reliability === 3 or
-			$reliability === 4 or
-			$reliability === 6 or
-			$reliability === 7
-		){
-			$packet->messageIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
-			$offset += 3;
-		}
+        if(
+            $reliability === 2 or
+            $reliability === 3 or
+            $reliability === 4 or
+            $reliability === 6 or
+            $reliability === 7
+        ){
+            $packet->messageIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
+            $offset += 3;
+        }
 
-		if(
-			$reliability === 1 or
-			$reliability === 3 or
-			$reliability === 4 or
-			$reliability === 7
-		){
-			$packet->orderIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
-			$offset += 3;
-			$packet->orderChannel = ord($binary{$offset++});
-		}
+        if(
+            $reliability === 1 or
+            $reliability === 3 or
+            $reliability === 4 or
+            $reliability === 7
+        ){
+            $packet->orderIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
+            $offset += 3;
+            $packet->orderChannel = ord($binary{$offset++});
+        }
 
-		if($hasSplit){
-			$packet->splitCount = Binary::readInt(substr($binary, $offset, 4));
-			$offset += 4;
-			$packet->splitID = Binary::readShort(substr($binary, $offset, 2));
-			$offset += 2;
-			$packet->splitIndex = Binary::readInt(substr($binary, $offset, 4));
-			$offset += 4;
-		}
+        if($hasSplit){
+            $packet->splitCount = Binary::readInt(substr($binary, $offset, 4));
+            $offset += 4;
+            $packet->splitID = Binary::readShort(substr($binary, $offset, 2));
+            $offset += 2;
+            $packet->splitIndex = Binary::readInt(substr($binary, $offset, 4));
+            $offset += 4;
+        }
 
-		$packet->buffer = substr($binary, $offset, $length);
-		$offset += $length;
+        $packet->buffer = substr($binary, $offset, $length);
+        $offset += $length;
 
-		return $packet;
-	}
+        return $packet;
+    }
 
-	public function getTotalLength(){
-		return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) +  + ($this->hasSplit ? 9 : 0);
-	}
+    public function getTotalLength(){
+        return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + +($this->hasSplit ? 9 : 0);
+    }
 
-	/**
-	 * @param bool $internal
-	 *
-	 * @return string
-	 */
-	public function toBinary($internal = false){
-		$binary = chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0));
-		if($internal){
-			$binary .= Binary::writeInt(strlen($this->buffer));
-			$binary .= Binary::writeInt($this->identifierACK);
-		}else{
-			$binary .= Binary::writeShort(strlen($this->buffer) << 3);
-		}
-		if(
-			$this->reliability === 2 or
-			$this->reliability === 3 or
-			$this->reliability === 4 or
-			$this->reliability === 6 or
-			$this->reliability === 7
-		){
-			$binary .= strrev(Binary::writeTriad($this->messageIndex));
-		}
+    /**
+     * @param bool $internal
+     *
+     * @return string
+     */
+    public function toBinary($internal = false){
+        $binary = chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0));
+        if($internal){
+            $binary .= Binary::writeInt(strlen($this->buffer));
+            $binary .= Binary::writeInt($this->identifierACK);
+        }else{
+            $binary .= Binary::writeShort(strlen($this->buffer) << 3);
+        }
+        if(
+            $this->reliability === 2 or
+            $this->reliability === 3 or
+            $this->reliability === 4 or
+            $this->reliability === 6 or
+            $this->reliability === 7
+        ){
+            $binary .= strrev(Binary::writeTriad($this->messageIndex));
+        }
 
-		if(
-			$this->reliability === 1 or
-			$this->reliability === 3 or
-			$this->reliability === 4 or
-			$this->reliability === 7
-		){
-			$binary .= strrev(Binary::writeTriad($this->orderIndex)) . chr($this->orderChannel);
-		}
+        if(
+            $this->reliability === 1 or
+            $this->reliability === 3 or
+            $this->reliability === 4 or
+            $this->reliability === 7
+        ){
+            $binary .= strrev(Binary::writeTriad($this->orderIndex)) . chr($this->orderChannel);
+        }
 
-		if($this->hasSplit){
-			$binary .= Binary::writeInt($this->splitCount) . Binary::writeShort($this->splitID) . Binary::writeInt($this->splitIndex);
-		}
+        if($this->hasSplit){
+            $binary .= Binary::writeInt($this->splitCount) . Binary::writeShort($this->splitID) . Binary::writeInt($this->splitIndex);
+        }
 
-		return $binary . $this->buffer;
-	}
+        return $binary . $this->buffer;
+    }
 
-	public function __toString(){
-		return $this->toBinary();
-	}
+    public function __toString(){
+        return $this->toBinary();
+    }
 }

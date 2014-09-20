@@ -22,43 +22,43 @@
 namespace raklib\protocol;
 
 class SERVER_HANDSHAKE_DataPacket extends Packet{
-	public static $ID = 0x10;
+    public static $ID = 0x10;
 
-	public $port;
-	public $session;
-	public $session2;
+    public $port;
+    public $session;
+    public $session2;
 
-	public function encode(){
-		parent::encode();
-		$this->put("\x04\x3f\x57\xfe"); //cookie
-		$this->put("\xcd"); //security flags
-		$this->putShort($this->port);
-		$this->putDataArray([
-			"\xf5\xff\xff\xf5",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-			"\xff\xff\xff\xff",
-		]);
-		$this->put("\x00\x00");
-		$this->putLong($this->session);
-		$this->putLong($this->session2);
-	}
+    public function encode(){
+        parent::encode();
+        $this->put("\x04\x3f\x57\xfe"); //cookie
+        $this->put("\xcd"); //security flags
+        $this->putShort($this->port);
+        $this->putDataArray([
+            "\xf5\xff\xff\xf5",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+            "\xff\xff\xff\xff",
+        ]);
+        $this->put("\x00\x00");
+        $this->putLong($this->session);
+        $this->putLong($this->session2);
+    }
 
-	public function decode(){
-		parent::decode();
-		//TODO, not needed yet
-	}
+    public function decode(){
+        parent::decode();
+        //TODO, not needed yet
+    }
 
-	private function putDataArray(array $data = []){
-		foreach($data as $v){
-			$this->putTriad(strlen($v));
-			$this->put($v);
-		}
-	}
+    private function putDataArray(array $data = []){
+        foreach($data as $v){
+            $this->putTriad(strlen($v));
+            $this->put($v);
+        }
+    }
 }

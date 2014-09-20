@@ -23,40 +23,40 @@ namespace raklib\protocol;
 
 abstract class DataPacket extends Packet{
 
-	/** @var EncapsulatedPacket[] */
-	public $packets = [];
+    /** @var EncapsulatedPacket[] */
+    public $packets = [];
 
-	public $seqNumber;
+    public $seqNumber;
 
-	public function encode(){
-		parent::encode();
-		$this->putLTriad($this->seqNumber);
-		foreach($this->packets as $packet){
-			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : (string) $packet);
-		}
-	}
+    public function encode(){
+        parent::encode();
+        $this->putLTriad($this->seqNumber);
+        foreach($this->packets as $packet){
+            $this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : (string) $packet);
+        }
+    }
 
-	public function length(){
-		$length = 4;
-		foreach($this->packets as $packet){
-			$length += $packet instanceof EncapsulatedPacket ? $packet->getTotalLength() : strlen($packet);
-		}
+    public function length(){
+        $length = 4;
+        foreach($this->packets as $packet){
+            $length += $packet instanceof EncapsulatedPacket ? $packet->getTotalLength() : strlen($packet);
+        }
 
-		return $length;
-	}
+        return $length;
+    }
 
-	public function decode(){
-		parent::decode();
-		$this->seqNumber = $this->getLTriad();
+    public function decode(){
+        parent::decode();
+        $this->seqNumber = $this->getLTriad();
 
-		while(!$this->feof()){
-			$offset = 0;
-			$packet = EncapsulatedPacket::fromBinary(substr($this->buffer, $this->offset), false, $offset);
-			$this->offset += $offset;
-			if(strlen($packet->buffer) === 0){
-				break;
-			}
-			$this->packets[] = $packet;
-		}
-	}
+        while(!$this->feof()){
+            $offset = 0;
+            $packet = EncapsulatedPacket::fromBinary(substr($this->buffer, $this->offset), false, $offset);
+            $this->offset += $offset;
+            if(strlen($packet->buffer) === 0){
+                break;
+            }
+            $this->packets[] = $packet;
+        }
+    }
 }

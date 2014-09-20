@@ -22,23 +22,23 @@
 namespace raklib\protocol;
 
 class CLIENT_CONNECT_DataPacket extends Packet{
-	public static $ID = 0x09;
+    public static $ID = 0x09;
 
-	public $clientID;
-	public $session;
-	public $unknown;
+    public $clientID;
+    public $session;
+    public $unknown;
 
-	public function encode(){
-		parent::encode();
-		$this->putLong($this->clientID);
-		$this->putLong($this->session);
-		$this->put("\x00");
-	}
+    public function encode(){
+        parent::encode();
+        $this->putLong($this->clientID);
+        $this->putLong($this->session);
+        $this->put("\x00");
+    }
 
-	public function decode(){
-		parent::decode();
-		$this->clientID = $this->getLong();
-		$this->session = $this->getLong();
-		$this->unknown = $this->get(1);
-	}
+    public function decode(){
+        parent::decode();
+        $this->clientID = $this->getLong();
+        $this->session = $this->getLong();
+        $this->unknown = $this->get(1);
+    }
 }
