@@ -102,10 +102,15 @@ class SessionManager{
             if(socket_select($sockets, $write, $except, null) > 0){
                 foreach($sockets as $socket){
                     if($socket === $serverSocket){
-                        $this->receivePacket();
+	                    $count = 0;
+	                    while($this->receivePacket() and $count < 32){
+		                    ++$count;
+	                    }
                     }else{
-                        while($this->receiveStream()){
-                        }
+                        $count = 0;
+	                    while($this->receiveStream() and $count < 32){
+		                    ++$count;
+	                    }
                     }
                 }
             }
@@ -200,9 +205,10 @@ class SessionManager{
                 $payload = substr($packet, $offset);
                 $this->socket->writePacket($payload, $address, $port);
             }elseif($id === RakLib::PACKET_TICK){
+	            $time = microtime(true);
                 foreach($this->sessions as $session){
                     if($session->needUpdate()){
-                        $session->update(microtime(true));
+                        $session->update($time);
                     }
                 }
 
