@@ -200,10 +200,9 @@ class SessionManager{
                 $payload = substr($packet, $offset);
                 $this->socket->writePacket($payload, $address, $port);
             }elseif($id === RakLib::PACKET_TICK){
-                $time = microtime(true);
                 foreach($this->sessions as $session){
                     if($session->needUpdate()){
-                        $session->update($time);
+                        $session->update(microtime(true));
                     }
                 }
 

@@ -57,8 +57,6 @@ class Session{
     protected $lastSeqNumber = 0;
     protected $sendSeqNumber = 0;
 
-    protected $timeout;
-
     protected $lastUpdate;
     protected $startTime;
 
