@@ -107,10 +107,7 @@ class SessionManager{
 		                    ++$count;
 	                    }
                     }else{
-                        $count = 0;
-	                    while($this->receiveStream() and $count < 32){
-		                    ++$count;
-	                    }
+	                    while($this->receiveStream()){}
                     }
                 }
             }
