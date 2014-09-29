@@ -103,9 +103,7 @@ class SessionManager{
                 foreach($sockets as $socket){
                     if($socket === $serverSocket){
 	                    $count = 0;
-	                    while($this->receivePacket() and $count < 32){
-		                    ++$count;
-	                    }
+	                    while($this->receivePacket()){}
                     }else{
 	                    while($this->receiveStream()){}
                     }
