@@ -58,12 +58,10 @@ class ServerHandler{
     public function shutdown(){
         $buffer = chr(RakLib::PACKET_SHUTDOWN);
         $this->server->pushMainToThreadPacket($buffer);
-        $this->server->join();
     }
 
     public function emergencyShutdown(){
         $this->server->pushMainToThreadPacket("\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
-        $this->server->join();
     }
 
     protected function invalidSession($identifier){
