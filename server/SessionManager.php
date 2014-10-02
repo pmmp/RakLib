@@ -102,8 +102,7 @@ class SessionManager{
             if(socket_select($sockets, $write, $except, null) > 0){
                 foreach($sockets as $socket){
                     if($socket === $serverSocket){
-	                    $count = 0;
-	                    while($this->receivePacket()){}
+	                    $this->receivePacket();
                     }else{
 	                    while($this->receiveStream()){}
                     }
@@ -254,6 +253,8 @@ class SessionManager{
                 $this->shutdown = true;
             }elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
                 $this->shutdown = true;
+            }else{
+	            return false;
             }
 
             return true;

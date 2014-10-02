@@ -35,15 +35,17 @@ class RakLibServer extends \Thread{
     protected $externalSocket;
     protected $internalSocket;
 
-    /**
-     * @param \ThreadedLogger $logger
-     * @param \ClassLoader    $loader
-     * @param int             $port 1-65536
-     * @param string          $interface
-     *
-     * @throws \Exception
-     */
-    public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
+	/**
+	 * @param \Threaded       $externalThreaded
+	 * @param \Threaded       $internalThreaded
+	 * @param \ThreadedLogger $logger
+	 * @param \ClassLoader    $loader
+	 * @param int             $port
+	 * @param string          $interface
+	 *
+	 * @throws \Exception
+	 */
+    public function __construct( \Threaded $externalThreaded, \Threaded $internalThreaded, \ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
         $this->port = (int) $port;
         if($port < 1 or $port > 65536){
             throw new \Exception("Invalid port range");
@@ -58,8 +60,8 @@ class RakLibServer extends \Thread{
         $this->loadPaths = array_reverse($loadPaths);
         $this->shutdown = false;
 
-        $this->externalQueue = new \Threaded();
-        $this->internalQueue = new \Threaded();
+        $this->externalQueue = $externalThreaded;
+        $this->internalQueue = $internalThreaded;
 
         $sockets = [];
         if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
