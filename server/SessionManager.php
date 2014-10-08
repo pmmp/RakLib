@@ -76,6 +76,9 @@ class SessionManager{
         $this->socket = $socket;
         $this->registerPackets();
         $this->internalSocket = $this->server->getInternalSocket();
+
+	    $this->serverId = mt_rand(0, PHP_INT_MAX);
+
         $this->run();
     }
 
@@ -102,7 +105,7 @@ class SessionManager{
             if(socket_select($sockets, $write, $except, null) > 0){
                 foreach($sockets as $socket){
                     if($socket === $serverSocket){
-	                    $this->receivePacket();
+	                    while($this->receivePacket()){}
                     }else{
 	                    while($this->receiveStream()){}
                     }
@@ -122,11 +125,15 @@ class SessionManager{
                 $packet = clone $this->packetPool[$pid];
                 $packet->buffer = $buffer;
                 $this->getSession($source, $port)->handlePacket($packet);
-            }else{
+	            return true;
+            }elseif($buffer !== ""){
                 $this->streamRaw($source, $port, $buffer);
+	            return true;
+            }else{
+	            return false;
             }
 
-            return true;
+
         }
 
         return false;
@@ -300,7 +307,7 @@ class SessionManager{
     }
 
     public function getID(){
-        return 0; //TODO
+        return $this->serverId;
     }
 
     private function registerPackets(){

@@ -45,7 +45,7 @@ class RakLibServer extends \Thread{
 	 *
 	 * @throws \Exception
 	 */
-    public function __construct( \Threaded $externalThreaded, \Threaded $internalThreaded, \ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
+    public function __construct(\Threaded $externalThreaded, \Threaded $internalThreaded, \ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
         $this->port = (int) $port;
         if($port < 1 or $port > 65536){
             throw new \Exception("Invalid port range");
@@ -160,7 +160,7 @@ class RakLibServer extends \Thread{
         $this->loader->register();
 
         $socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-        $sessionManager = new SessionManager($this, $socket);
+        new SessionManager($this, $socket);
     }
 
 }

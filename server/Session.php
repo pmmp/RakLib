@@ -50,6 +50,7 @@ class Session{
     protected $address;
     protected $port;
     protected $state = self::STATE_UNCONNECTED;
+	protected $preJoinQueue = [];
     protected $mtuSize = 548; //Min size
     protected $id = 0;
     protected $splitID = 0;
@@ -135,7 +136,7 @@ class Session{
         }
 
         if(count($this->recoveryQueue) > 0){
-            $timeLimit = microtime(true) - 1.5;
+            $timeLimit = microtime(true) - 1;
             foreach($this->recoveryQueue as $key => $packet){
                 if($packet->sendTime === null){
                     unset($this->recoveryQueue[$key]);
@@ -282,6 +283,10 @@ class Session{
                     if($dataPacket->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
                         $this->state = self::STATE_CONNECTED; //FINALLY!
                         $this->sessionManager->openSession($this);
+	                    foreach($this->preJoinQueue as $p){
+		                    $this->sessionManager->streamEncapsulated($this, $p);
+	                    }
+	                    $this->preJoinQueue = [];
                     }
                 }
             }elseif($id === CLIENT_DISCONNECT_DataPacket::$ID){
@@ -292,6 +297,8 @@ class Session{
             //TODO: split packet handling
             //TODO: packet reordering
             //TODO: stream channels
+        }else{
+	        $this->preJoinQueue[] = $packet;
         }
     }
 
@@ -362,7 +369,7 @@ class Session{
             }elseif($this->state === self::STATE_CONNECTING_1 and $packet instanceof OPEN_CONNECTION_REQUEST_2){
                 $this->id = $packet->clientID;
                 if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
-                    $this->mtuSize = min($packet->mtuSize, 1464); //Max size, do not allow creating large buffers to fill server memory
+                    $this->mtuSize = min(abs($packet->mtuSize), 1464); //Max size, do not allow creating large buffers to fill server memory
                     $pk = new OPEN_CONNECTION_REPLY_2;
                     $pk->mtuSize = $this->mtuSize;
                     $pk->serverID = $this->sessionManager->getID();
