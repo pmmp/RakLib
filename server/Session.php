@@ -30,6 +30,8 @@ use raklib\protocol\OPEN_CONNECTION_REPLY_2;
 use raklib\protocol\OPEN_CONNECTION_REQUEST_1;
 use raklib\protocol\OPEN_CONNECTION_REQUEST_2;
 use raklib\protocol\Packet;
+use raklib\protocol\PING_DataPacket;
+use raklib\protocol\PONG_DataPacket;
 use raklib\protocol\SERVER_HANDSHAKE_DataPacket;
 use raklib\protocol\UNCONNECTED_PING;
 use raklib\protocol\UNCONNECTED_PONG;
@@ -291,6 +293,19 @@ class Session{
                 }
             }elseif($id === CLIENT_DISCONNECT_DataPacket::$ID){
                 $this->disconnect("client disconnect");
+            }elseif($id === PING_DataPacket::$ID){
+				$dataPacket = new PING_DataPacket;
+	            $dataPacket->buffer = $packet->buffer;
+	            $dataPacket->decode();
+
+	            $pk = new PONG_DataPacket;
+	            $pk->pingID = $dataPacket->pingID;
+	            $pk->encode();
+
+	            $sendPacket = new EncapsulatedPacket();
+	            $sendPacket->reliability = 0;
+	            $sendPacket->buffer = $pk->buffer;
+	            $this->addToQueue($sendPacket);
             }//TODO: add PING/PONG (0x00/0x03) automatic latency measure
         }elseif($this->state === self::STATE_CONNECTED){
             $this->sessionManager->streamEncapsulated($this, $packet);
