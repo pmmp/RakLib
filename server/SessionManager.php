@@ -182,7 +182,7 @@ class SessionManager{
     }
 
     public function receiveStream(){
-        @socket_read($this->internalSocket, 1);
+        socket_read($this->internalSocket, 1);
         if(strlen($packet = $this->server->readMainToThreadPacket()) > 0){
             $id = ord($packet{0});
             $offset = 1;

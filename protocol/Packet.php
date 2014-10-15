@@ -35,7 +35,7 @@ abstract class Packet{
 
         $buffer = "";
         for(; $len > 0; --$len, ++$this->offset){
-            $buffer .= @$this->buffer{$this->offset};
+            $buffer .= $this->buffer{$this->offset};
         }
 
         return $buffer;

@@ -135,7 +135,7 @@ class RakLibServer extends \Thread{
 
     public function pushMainToThreadPacket($str){
         $this->internalQueue[] = $str;
-        @socket_write($this->externalSocket, "\xff", 1); //Notify
+        socket_write($this->externalSocket, "\xff", 1); //Notify
     }
 
     public function readMainToThreadPacket(){
