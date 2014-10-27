@@ -359,7 +359,7 @@ class Session{
                     foreach($packet->packets as $seq){
                         if(isset($this->recoveryQueue[$seq])){
                             foreach($this->recoveryQueue[$seq]->packets as $pk){
-                                if($pk->needACK and $pk->messageIndex !== null){
+                                if($pk instanceof EncapsulatedPacket and $pk->needACK and $pk->messageIndex !== null){
                                     unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
                                 }
                             }

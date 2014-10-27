@@ -56,11 +56,13 @@ class ServerHandler{
     }
 
     public function shutdown(){
+	    $this->server->shutdown();
         $buffer = chr(RakLib::PACKET_SHUTDOWN);
         $this->server->pushMainToThreadPacket($buffer);
     }
 
     public function emergencyShutdown(){
+	    $this->server->shutdown();
         $this->server->pushMainToThreadPacket("\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
     }
 

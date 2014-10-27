@@ -35,6 +35,8 @@ class RakLibServer extends \Thread{
     protected $externalSocket;
     protected $internalSocket;
 
+	protected $mainPath;
+
 	/**
 	 * @param \Threaded       $externalThreaded
 	 * @param \Threaded       $internalThreaded
@@ -62,6 +64,12 @@ class RakLibServer extends \Thread{
 
         $this->externalQueue = $externalThreaded;
         $this->internalQueue = $internalThreaded;
+
+	    if(\Phar::running(true) !== ""){
+		    $this->mainPath = \Phar::running(true);
+	    }else{
+		    $this->mainPath = \getcwd() . DIRECTORY_SEPARATOR;
+	    }
 
         $sockets = [];
         if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
@@ -150,6 +158,84 @@ class RakLibServer extends \Thread{
         return $this->externalQueue->shift();
     }
 
+	public function shutdownHandler(){
+		if($this->shutdown !== true){
+			$this->getLogger()->emergency("[RakLib Thread #". \Thread::getCurrentThreadId() ."] RakLib crashed!");
+		}
+	}
+
+	public function errorHandler($errno, $errstr, $errfile, $errline, $context, $trace = null){
+		if(error_reporting() === 0){
+			return false;
+		}
+		$errorConversion = [
+			E_ERROR => "E_ERROR",
+			E_WARNING => "E_WARNING",
+			E_PARSE => "E_PARSE",
+			E_NOTICE => "E_NOTICE",
+			E_CORE_ERROR => "E_CORE_ERROR",
+			E_CORE_WARNING => "E_CORE_WARNING",
+			E_COMPILE_ERROR => "E_COMPILE_ERROR",
+			E_COMPILE_WARNING => "E_COMPILE_WARNING",
+			E_USER_ERROR => "E_USER_ERROR",
+			E_USER_WARNING => "E_USER_WARNING",
+			E_USER_NOTICE => "E_USER_NOTICE",
+			E_STRICT => "E_STRICT",
+			E_RECOVERABLE_ERROR => "E_RECOVERABLE_ERROR",
+			E_DEPRECATED => "E_DEPRECATED",
+			E_USER_DEPRECATED => "E_USER_DEPRECATED",
+		];
+		$type = ($errno === E_ERROR or $errno === E_USER_ERROR) ? \LogLevel::ERROR : (($errno === E_USER_WARNING or $errno === E_WARNING) ? \LogLevel::WARNING : \LogLevel::NOTICE);
+		$errno = isset($errorConversion[$errno]) ? $errorConversion[$errno] : $errno;
+		if(($pos = strpos($errstr, "\n")) !== false){
+			$errstr = substr($errstr, 0, $pos);
+		}
+		$oldFile = $errfile;
+		$errfile = $this->cleanPath($errfile);
+
+		$this->getLogger()->log($type, "[RakLib Thread #". \Thread::getCurrentThreadId() ."] An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
+
+		foreach(($trace = $this->getTrace($trace === null ? 3 : 0, $trace)) as $i => $line){
+			$this->getLogger()->debug($line);
+		}
+
+		return true;
+	}
+
+	public function getTrace($start = 1, $trace = null){
+		if($trace === null){
+			if(function_exists("xdebug_get_function_stack")){
+				$trace = array_reverse(xdebug_get_function_stack());
+			}else{
+				$e = new \Exception();
+				$trace = $e->getTrace();
+			}
+		}
+
+		$messages = [];
+		$j = 0;
+		for($i = (int) $start; isset($trace[$i]); ++$i, ++$j){
+			$params = "";
+			if(isset($trace[$i]["args"]) or isset($trace[$i]["params"])){
+				if(isset($trace[$i]["args"])){
+					$args = $trace[$i]["args"];
+				}else{
+					$args = $trace[$i]["params"];
+				}
+				foreach($args as $name => $value){
+					$params .= (is_object($value) ? get_class($value) . " " . (method_exists($value, "__toString") ? $value->__toString() : "object") : gettype($value) . " " . @strval($value)) . ", ";
+				}
+			}
+			$messages[] = "#$j " . (isset($trace[$i]["file"]) ? $this->cleanPath($trace[$i]["file"]) : "") . "(" . (isset($trace[$i]["line"]) ? $trace[$i]["line"] : "") . "): " . (isset($trace[$i]["class"]) ? $trace[$i]["class"] . (($trace[$i]["type"] === "dynamic" or $trace[$i]["type"] === "->") ? "->" : "::") : "") . $trace[$i]["function"] . "(" . substr($params, 0, -2) . ")";
+		}
+
+		return $messages;
+	}
+
+	public function cleanPath($path){
+		return rtrim(str_replace(["\\", ".php", "phar://", rtrim(str_replace(["\\", "phar://"], ["/", ""], $this->mainPath), "/")], ["/", "", "", ""], $path), "/");
+	}
+
     public function run(){
         //Load removed dependencies, can't use require_once()
         foreach($this->loadPaths as $name => $path){
@@ -158,6 +244,15 @@ class RakLibServer extends \Thread{
             }
         }
         $this->loader->register();
+
+	    gc_enable();
+	    error_reporting(-1);
+	    ini_set("display_errors", 1);
+	    ini_set("display_startup_errors", 1);
+
+	    set_error_handler([$this, "errorHandler"], E_ALL);
+	    register_shutdown_function([$this, "shutdownHandler"]);
+
 
         $socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
         new SessionManager($this, $socket);
