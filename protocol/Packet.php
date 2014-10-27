@@ -113,4 +113,11 @@ abstract class Packet{
     public function decode(){
         $this->offset = 1;
     }
+
+	public function clean(){
+		$this->buffer = null;
+		$this->offset = 0;
+		$this->sendTime = null;
+		return $this;
+	}
 }

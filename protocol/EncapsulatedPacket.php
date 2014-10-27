@@ -24,6 +24,25 @@ namespace raklib\protocol;
 use raklib\Binary;
 
 class EncapsulatedPacket{
+
+	/** @var EncapsulatedPacket[] */
+	private static $packetPool = [];
+	private static $nextPacket = 0;
+
+	public static function cleanPacketPool(){
+		if(self::$nextPacket > 4096){
+			self::$nextPacket = [];
+		}
+		self::$nextPacket = 0;
+	}
+
+	public static function getPacketFromPool(){
+		if(self::$nextPacket >= count(self::$packetPool)){
+			self::$packetPool[] = new EncapsulatedPacket;
+		}
+		return self::$packetPool[self::$nextPacket++];
+	}
+
     public $reliability;
     public $hasSplit = false;
     public $length = 0;
@@ -45,7 +64,9 @@ class EncapsulatedPacket{
      * @return EncapsulatedPacket
      */
     public static function fromBinary($binary, $internal = false, &$offset = null){
-        $packet = new EncapsulatedPacket;
+
+	    $packet = self::getPacketFromPool();
+
         $flags = ord($binary{0});
         $packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
         $packet->hasSplit = $hasSplit = ($flags & 0b00010000) > 0;
@@ -56,6 +77,7 @@ class EncapsulatedPacket{
         }else{
             $length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
             $offset = 3;
+	        $packet->identifierACK = null;
         }
 
 
@@ -83,6 +105,8 @@ class EncapsulatedPacket{
         ){
             $packet->messageIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
             $offset += 3;
+        }else{
+	        $packet->messageIndex = null;
         }
 
         if(
@@ -94,6 +118,9 @@ class EncapsulatedPacket{
             $packet->orderIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
             $offset += 3;
             $packet->orderChannel = ord($binary{$offset++});
+        }else{
+	        $packet->orderIndex = null;
+	        $packet->orderChannel = null;
         }
 
         if($hasSplit){
@@ -103,6 +130,10 @@ class EncapsulatedPacket{
             $offset += 2;
             $packet->splitIndex = Binary::readInt(substr($binary, $offset, 4));
             $offset += 4;
+        }else{
+	        $packet->splitCount = null;
+	        $packet->splitID = null;
+	        $packet->splitIndex = null;
         }
 
         $packet->buffer = substr($binary, $offset, $length);
@@ -112,7 +143,7 @@ class EncapsulatedPacket{
     }
 
     public function getTotalLength(){
-        return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + +($this->hasSplit ? 9 : 0);
+        return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 9 : 0);
     }
 
     /**

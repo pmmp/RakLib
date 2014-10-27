@@ -117,14 +117,14 @@ class Session{
         $this->isActive = false;
 
         if(count($this->ACKQueue) > 0){
-            $pk = new ACK();
+            $pk = $this->sessionManager->getPacketFromPool(ACK::$ID);
             $pk->packets = $this->ACKQueue;
             $this->sendPacket($pk);
             $this->ACKQueue = [];
         }
 
         if(count($this->NACKQueue) > 0){
-            $pk = new NACK();
+            $pk = $this->sessionManager->getPacketFromPool(NACK::$ID);
             $pk->packets = $this->NACKQueue;
             $this->sendPacket($pk);
             $this->NACKQueue = [];
@@ -194,7 +194,11 @@ class Session{
         if($priority === RakLib::PRIORITY_IMMEDIATE){ //Skip queues
             $packet = new DATA_PACKET_0();
             $packet->seqNumber = $this->sendSeqNumber++;
-            $packet->packets[] = $pk;
+	        if($pk->needACK){
+		        $packet->packets[] = clone $pk;
+	        }else{
+		        $packet->packets[] = $pk->toBinary();
+	        }
             $this->sendPacket($packet);
             $packet->sendTime = microtime(true);
             $this->recoveryQueue[$packet->seqNumber] = $packet;
@@ -205,7 +209,12 @@ class Session{
         if($length + $pk->getTotalLength() > $this->mtuSize){
             $this->sendQueue();
         }
-        $this->sendQueue->packets[] = $pk;
+
+	    if($pk->needACK){
+		    $this->sendQueue->packets[] = clone $pk;
+	    }else{
+		    $this->sendQueue->packets[] = $pk->toBinary();
+	    }
     }
 
     /**
@@ -214,8 +223,9 @@ class Session{
      */
     public function addEncapsulatedToQueue(EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
 
-        $packet->needACK = ($flags & RakLib::FLAG_NEED_ACK) > 0;
-        $this->needACK[$packet->identifierACK] = [];
+        if(($packet->needACK = ($flags & RakLib::FLAG_NEED_ACK) > 0) === true){
+	        $this->needACK[$packet->identifierACK] = [];
+        }
 
         if($packet->getTotalLength() + 4 > $this->mtuSize){
             $packet->hasSplit = true;
@@ -225,11 +235,11 @@ class Session{
             $packet->splitCount = count($buffers);
             $packet->reliability = 2;
             foreach($buffers as $count => $buffer){
-                $pk = clone $packet;
+                $pk = EncapsulatedPacket::getPacketFromPool($packet);
                 $pk->splitIndex = $count;
                 $pk->buffer = $buffer;
                 $pk->messageIndex = $this->messageIndex++;
-                $this->addToQueue($pk, $flags);
+                $this->addToQueue($pk, $flags | RakLib::PRIORITY_IMMEDIATE);
             }
         }else{
             if(
@@ -273,7 +283,7 @@ class Session{
                     $pk->session2 = Binary::readLong("\x00\x00\x00\x00\x04\x44\x0b\xa9");
                     $pk->encode();
 
-                    $sendPacket = new EncapsulatedPacket();
+                    $sendPacket = EncapsulatedPacket::getPacketFromPool();
                     $sendPacket->reliability = 0;
                     $sendPacket->buffer = $pk->buffer;
                     $this->addToQueue($sendPacket, RakLib::PRIORITY_IMMEDIATE);
@@ -302,7 +312,7 @@ class Session{
 	            $pk->pingID = $dataPacket->pingID;
 	            $pk->encode();
 
-	            $sendPacket = new EncapsulatedPacket();
+	            $sendPacket = EncapsulatedPacket::getPacketFromPool();
 	            $sendPacket->reliability = 0;
 	            $sendPacket->buffer = $pk->buffer;
 	            $this->addToQueue($sendPacket);
@@ -369,14 +379,14 @@ class Session{
         }elseif($packet::$ID > 0x00 and $packet::$ID < 0x80){ //Not Data packet :)
             $packet->decode();
             if($packet instanceof UNCONNECTED_PING){
-                $pk = new UNCONNECTED_PONG();
+                $pk = $this->sessionManager->getPacketFromPool(UNCONNECTED_PONG::$ID);
                 $pk->serverID = $this->sessionManager->getID();
                 $pk->pingID = $packet->pingID;
                 $pk->serverName = $this->sessionManager->getName();
                 $this->sendPacket($pk);
             }elseif($packet instanceof OPEN_CONNECTION_REQUEST_1){
                 $packet->protocol; //TODO: check protocol number and refuse connections
-                $pk = new OPEN_CONNECTION_REPLY_1;
+                $pk = $this->sessionManager->getPacketFromPool(OPEN_CONNECTION_REPLY_1::$ID);
                 $pk->mtuSize = $packet->mtuSize;
                 $pk->serverID = $this->sessionManager->getID();
                 $this->sendPacket($pk);
@@ -385,7 +395,7 @@ class Session{
                 $this->id = $packet->clientID;
                 if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
                     $this->mtuSize = min(abs($packet->mtuSize), 1464); //Max size, do not allow creating large buffers to fill server memory
-                    $pk = new OPEN_CONNECTION_REPLY_2;
+                    $pk = $this->sessionManager->getPacketFromPool(OPEN_CONNECTION_REPLY_2::$ID);
                     $pk->mtuSize = $this->mtuSize;
                     $pk->serverID = $this->sessionManager->getID();
                     $pk->clientPort = $this->port;

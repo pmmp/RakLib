@@ -47,8 +47,13 @@ use raklib\protocol\UNCONNECTED_PONG;
 use raklib\RakLib;
 
 class SessionManager{
-    /** @var Packet */
     protected $packetPool;
+
+	/** @var Packet[][] */
+	protected $allocatedPacketPool = [];
+	/** @var int[] */
+	protected $nextAllocatedPacket = [];
+
     /** @var RakLibServer */
     protected $server;
 
@@ -121,8 +126,7 @@ class SessionManager{
         if(($len = $this->socket->readPacket($buffer, $source, $port)) > 0){
             $this->receiveBytes += $len;
             $pid = ord($buffer{0});
-            if(isset($this->packetPool[$pid])){
-                $packet = clone $this->packetPool[$pid];
+            if(($packet = $this->getPacketFromPool($pid)) !== null){
                 $packet->buffer = $buffer;
                 $this->getSession($source, $port)->handlePacket($packet);
 	            return true;
@@ -214,6 +218,10 @@ class SessionManager{
                 }
 
                 ++$this->ticks;
+
+	            $this->cleanPacketPool();
+	            EncapsulatedPacket::cleanPacketPool();
+
                 if(($this->ticks & 0b1111) === 0){
                     $diff = max(0.005, $time - $this->lastMeasure);
                     $this->streamOption("bandwidth", serialize([
@@ -310,32 +318,64 @@ class SessionManager{
         return $this->serverId;
     }
 
+	private function registerPacket($id, $class){
+		$this->packetPool[$id] = $class;
+		$this->allocatedPacketPool[$id] = [];
+		$this->nextAllocatedPacket[$id] = 0;
+	}
+
+	/**
+	 * @param $id
+	 *
+	 * @return Packet
+	 */
+	public function getPacketFromPool($id){
+		if(isset($this->allocatedPacketPool[$id])){
+			if($this->nextAllocatedPacket[$id] >= count($this->allocatedPacketPool[$id])){
+				$packet = $this->packetPool[$id];
+				$this->allocatedPacketPool[$id][] = new $packet;
+			}
+			return $this->allocatedPacketPool[$id][$this->nextAllocatedPacket[$id]++]->clean();
+		}
+
+		return null;
+	}
+
+	public function cleanPacketPool(){
+		foreach($this->nextAllocatedPacket as $id => $value){
+			if($value > 4096){
+				$this->allocatedPacketPool[$id] = [];
+			}
+			$this->nextAllocatedPacket[$id] = 0;
+		}
+	}
+
     private function registerPackets(){
-        $this->packetPool[UNCONNECTED_PING::$ID] = new UNCONNECTED_PING;
-        $this->packetPool[UNCONNECTED_PING_OPEN_CONNECTIONS::$ID] = new UNCONNECTED_PING_OPEN_CONNECTIONS;
-        $this->packetPool[OPEN_CONNECTION_REQUEST_1::$ID] = new OPEN_CONNECTION_REQUEST_1;
-        $this->packetPool[OPEN_CONNECTION_REPLY_1::$ID] = new OPEN_CONNECTION_REPLY_1;
-        $this->packetPool[OPEN_CONNECTION_REQUEST_2::$ID] = new OPEN_CONNECTION_REQUEST_2;
-        $this->packetPool[OPEN_CONNECTION_REPLY_2::$ID] = new OPEN_CONNECTION_REPLY_2;
-        $this->packetPool[UNCONNECTED_PONG::$ID] = new UNCONNECTED_PONG;
-        $this->packetPool[ADVERTISE_SYSTEM::$ID] = new ADVERTISE_SYSTEM;
-        $this->packetPool[DATA_PACKET_0::$ID] = new DATA_PACKET_0;
-        $this->packetPool[DATA_PACKET_1::$ID] = new DATA_PACKET_1;
-        $this->packetPool[DATA_PACKET_2::$ID] = new DATA_PACKET_2;
-        $this->packetPool[DATA_PACKET_3::$ID] = new DATA_PACKET_3;
-        $this->packetPool[DATA_PACKET_4::$ID] = new DATA_PACKET_4;
-        $this->packetPool[DATA_PACKET_5::$ID] = new DATA_PACKET_5;
-        $this->packetPool[DATA_PACKET_6::$ID] = new DATA_PACKET_6;
-        $this->packetPool[DATA_PACKET_7::$ID] = new DATA_PACKET_7;
-        $this->packetPool[DATA_PACKET_8::$ID] = new DATA_PACKET_8;
-        $this->packetPool[DATA_PACKET_9::$ID] = new DATA_PACKET_9;
-        $this->packetPool[DATA_PACKET_A::$ID] = new DATA_PACKET_A;
-        $this->packetPool[DATA_PACKET_B::$ID] = new DATA_PACKET_B;
-        $this->packetPool[DATA_PACKET_C::$ID] = new DATA_PACKET_C;
-        $this->packetPool[DATA_PACKET_D::$ID] = new DATA_PACKET_D;
-        $this->packetPool[DATA_PACKET_E::$ID] = new DATA_PACKET_E;
-        $this->packetPool[DATA_PACKET_F::$ID] = new DATA_PACKET_F;
-        $this->packetPool[NACK::$ID] = new NACK;
-        $this->packetPool[ACK::$ID] = new ACK;
+        $this->registerPacket(UNCONNECTED_PING::$ID, UNCONNECTED_PING::class);
+        $this->registerPacket(UNCONNECTED_PING_OPEN_CONNECTIONS::$ID, UNCONNECTED_PING_OPEN_CONNECTIONS::class);
+        $this->registerPacket(OPEN_CONNECTION_REQUEST_1::$ID, OPEN_CONNECTION_REQUEST_1::class);
+        $this->registerPacket(OPEN_CONNECTION_REPLY_1::$ID, OPEN_CONNECTION_REPLY_1::class);
+        $this->registerPacket(OPEN_CONNECTION_REQUEST_2::$ID, OPEN_CONNECTION_REQUEST_2::class);
+        $this->registerPacket(OPEN_CONNECTION_REPLY_2::$ID, OPEN_CONNECTION_REPLY_2::class);
+        $this->registerPacket(UNCONNECTED_PONG::$ID, UNCONNECTED_PONG::class);
+        $this->registerPacket(ADVERTISE_SYSTEM::$ID, ADVERTISE_SYSTEM::class);
+        $this->registerPacket(DATA_PACKET_0::$ID, DATA_PACKET_0::class);
+        $this->registerPacket(DATA_PACKET_1::$ID, DATA_PACKET_1::class);
+        $this->registerPacket(DATA_PACKET_2::$ID, DATA_PACKET_2::class);
+        $this->registerPacket(DATA_PACKET_3::$ID, DATA_PACKET_3::class);
+        $this->registerPacket(DATA_PACKET_4::$ID, DATA_PACKET_4::class);
+        $this->registerPacket(DATA_PACKET_5::$ID, DATA_PACKET_5::class);
+        $this->registerPacket(DATA_PACKET_6::$ID, DATA_PACKET_6::class);
+        $this->registerPacket(DATA_PACKET_7::$ID, DATA_PACKET_7::class);
+        $this->registerPacket(DATA_PACKET_8::$ID, DATA_PACKET_8::class);
+        $this->registerPacket(DATA_PACKET_9::$ID, DATA_PACKET_9::class);
+        $this->registerPacket(DATA_PACKET_A::$ID, DATA_PACKET_A::class);
+        $this->registerPacket(DATA_PACKET_B::$ID, DATA_PACKET_B::class);
+        $this->registerPacket(DATA_PACKET_C::$ID, DATA_PACKET_C::class);
+        $this->registerPacket(DATA_PACKET_D::$ID, DATA_PACKET_D::class);
+        $this->registerPacket(DATA_PACKET_E::$ID, DATA_PACKET_E::class);
+        $this->registerPacket(DATA_PACKET_F::$ID, DATA_PACKET_F::class);
+        $this->registerPacket(NACK::$ID, NACK::class);
+        $this->registerPacket(ACK::$ID, ACK::class);
     }
 }
