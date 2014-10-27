@@ -30,7 +30,7 @@ class EncapsulatedPacket{
 	private static $nextPacket = 0;
 
 	public static function cleanPacketPool(){
-		if(self::$nextPacket > 4096){
+		if(self::$nextPacket > 16384){
 			self::$nextPacket = [];
 		}
 		self::$nextPacket = 0;

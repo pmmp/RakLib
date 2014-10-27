@@ -228,14 +228,14 @@ class Session{
         }
 
         if($packet->getTotalLength() + 4 > $this->mtuSize){
-            $packet->hasSplit = true;
             $buffers = str_split($packet->buffer, $this->mtuSize - 34);
-            $packet->buffer = "";
-            $packet->splitID = $packet->splitIndex = ++$this->splitID % 65536;
-            $packet->splitCount = count($buffers);
-            $packet->reliability = 2;
+            $splitID = ++$this->splitID % 65536;
             foreach($buffers as $count => $buffer){
-                $pk = EncapsulatedPacket::getPacketFromPool($packet);
+                $pk = EncapsulatedPacket::getPacketFromPool();
+	            $pk->splitID = $splitID;
+	            $pk->hasSplit = true;
+	            $pk->splitCount = count($buffers);
+	            $pk->reliability = 2;
                 $pk->splitIndex = $count;
                 $pk->buffer = $buffer;
                 $pk->messageIndex = $this->messageIndex++;
