@@ -57,8 +57,6 @@ class SessionManager{
     /** @var RakLibServer */
     protected $server;
 
-    protected $internalSocket;
-
     protected $socket;
 
     protected $receiveBytes = 0;
@@ -80,7 +78,6 @@ class SessionManager{
         $this->server = $server;
         $this->socket = $socket;
         $this->registerPackets();
-        $this->internalSocket = $this->server->getInternalSocket();
 
 	    $this->serverId = mt_rand(0, PHP_INT_MAX);
 
@@ -104,18 +101,16 @@ class SessionManager{
         $serverSocket = $this->socket->getSocket();
 
         while(!$this->shutdown){
-            $sockets = [$serverSocket, $this->internalSocket];
+            $sockets = [$serverSocket];
             $write = null;
             $except = null;
-            if(socket_select($sockets, $write, $except, null) > 0){
-                foreach($sockets as $socket){
-                    if($socket === $serverSocket){
-	                    while($this->receivePacket()){}
-                    }else{
-	                    while($this->receiveStream()){}
-                    }
+
+            if(socket_select($sockets, $write, $except, 0, 20000) > 0){
+                if(count($sockets) > 0){
+	                while($this->receivePacket());
                 }
             }
+	        while($this->receiveStream());
 
         }
     }
@@ -186,7 +181,6 @@ class SessionManager{
     }
 
     public function receiveStream(){
-        socket_read($this->internalSocket, 1);
         if(strlen($packet = $this->server->readMainToThreadPacket()) > 0){
             $id = ord($packet{0});
             $offset = 1;

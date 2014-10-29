@@ -32,9 +32,6 @@ class RakLibServer extends \Thread{
     /** @var \Threaded */
     protected $internalQueue;
 
-    protected $externalSocket;
-    protected $internalSocket;
-
 	protected $mainPath;
 
 	/**
@@ -70,16 +67,6 @@ class RakLibServer extends \Thread{
 	    }else{
 		    $this->mainPath = \getcwd() . DIRECTORY_SEPARATOR;
 	    }
-
-        $sockets = [];
-        if(!socket_create_pair((strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? AF_INET : AF_UNIX), SOCK_STREAM, 0, $sockets)){
-            throw new \Exception("Could not create IPC sockets. Reason: " . socket_strerror(socket_last_error()));
-        }
-
-        $this->internalSocket = $sockets[0];
-        socket_set_nonblock($this->internalSocket);
-        $this->externalSocket = $sockets[1];
-        socket_set_nonblock($this->externalSocket);
 
         $this->start();
     }
@@ -137,13 +124,8 @@ class RakLibServer extends \Thread{
         return $this->internalQueue;
     }
 
-    public function getInternalSocket(){
-        return $this->internalSocket;
-    }
-
     public function pushMainToThreadPacket($str){
         $this->internalQueue[] = $str;
-        socket_write($this->externalSocket, "\xff", 1); //Notify
     }
 
     public function readMainToThreadPacket(){
