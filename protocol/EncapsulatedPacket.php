@@ -21,13 +21,17 @@
 
 namespace raklib\protocol;
 
+#ifndef COMPILE
 use raklib\Binary;
+#endif
+
+#include <rules/RakLibPacket.h>
 
 class EncapsulatedPacket{
 
 	/** @var EncapsulatedPacket[] */
-	private static $packetPool = [];
-	private static $nextPacket = 0;
+	public static $packetPool = [];
+	public static $nextPacket = 0;
 
 	public static function cleanPacketPool(){
 		if(self::$nextPacket > 16384){
@@ -65,7 +69,7 @@ class EncapsulatedPacket{
      */
     public static function fromBinary($binary, $internal = false, &$offset = null){
 
-	    $packet = self::getPacketFromPool();
+	    $packet = EncapsulatedPacket::getPacketFromPool();
 
         $flags = ord($binary{0});
         $packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
@@ -166,7 +170,7 @@ class EncapsulatedPacket{
             $this->reliability === 6 or
             $this->reliability === 7
         ){
-            $binary .= strrev(Binary::writeTriad($this->messageIndex));
+            $binary .= Binary::writeLTriad($this->messageIndex);
         }
 
         if(
@@ -175,7 +179,7 @@ class EncapsulatedPacket{
             $this->reliability === 4 or
             $this->reliability === 7
         ){
-            $binary .= strrev(Binary::writeTriad($this->orderIndex)) . chr($this->orderChannel);
+            $binary .= Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel);
         }
 
         if($this->hasSplit){
