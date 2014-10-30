@@ -75,7 +75,7 @@ class EncapsulatedPacket{
             $packet->identifierACK = Binary::readInt(substr($binary, 5, 4));
             $offset = 9;
         }else{
-            $length = (int) ceil(Binary::readShort(substr($binary, 1, 2), false) / 8);
+            $length = (int) ceil(Binary::readShort(substr($binary, 1, 2)) / 8);
             $offset = 3;
 	        $packet->identifierACK = null;
         }

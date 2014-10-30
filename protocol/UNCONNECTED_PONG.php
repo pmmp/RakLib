@@ -15,6 +15,8 @@
 
 namespace raklib\protocol;
 
+#include <rules/RakLibPacket.h>
+
 
 use raklib\RakLib;
 

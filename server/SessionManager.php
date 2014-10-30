@@ -199,7 +199,7 @@ class SessionManager{
                 $len = ord($packet{$offset++});
                 $address = substr($packet, $offset, $len);
                 $offset += $len;
-                $port = Binary::readShort(substr($packet, $offset, 2), false);
+                $port = Binary::readShort(substr($packet, $offset, 2));
                 $offset += 2;
                 $payload = substr($packet, $offset);
                 $this->socket->writePacket($payload, $address, $port);

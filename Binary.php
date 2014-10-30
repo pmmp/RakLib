@@ -100,26 +100,30 @@ class Binary{
     }
 
     /**
-     * Reads a 16-bit signed/unsigned big-endian number
+     * Reads a 16-bit unsigned big-endian number
      *
-     * @param      $str
-     * @param bool $signed
+     * @param $str
      *
      * @return int
      */
-    public static function readShort($str, $signed = true){
-        $unpacked = unpack("n", $str)[1];
-
-        if($signed){
-            if(PHP_INT_SIZE === 8){
-                return $unpacked << 48 >> 48;
-            }else{
-                return $unpacked << 16 >> 16;
-            }
-        }else{
-            return $unpacked;
-        }
+    public static function readShort($str){
+        return unpack("n", $str)[1];
     }
+
+	/**
+	 * Reads a 16-bit signed big-endian number
+	 *
+	 * @param $str
+	 *
+	 * @return int
+	 */
+	public static function readSignedShort($str){
+		if(PHP_INT_SIZE === 8){
+			return unpack("n", $str)[1] << 48 >> 48;
+		}else{
+			return unpack("n", $str)[1] << 16 >> 16;
+		}
+	}
 
     /**
      * Writes a 16-bit signed/unsigned big-endian number
@@ -230,7 +234,7 @@ class Binary{
             $value = "0";
             for($i = 0; $i < 8; $i += 2){
                 $value = bcmul($value, "65536", 0);
-                $value = bcadd($value, self::readShort(substr($x, $i, 2), false), 0);
+                $value = bcadd($value, self::readShort(substr($x, $i, 2)), 0);
             }
 
             if(bccomp($value, "9223372036854775807") == 1){

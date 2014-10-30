@@ -89,7 +89,7 @@ class ServerHandler{
                 $len = ord($packet{$offset++});
                 $address = substr($packet, $offset, $len);
                 $offset += $len;
-                $port = Binary::readShort(substr($packet, $offset, 2), false);
+                $port = Binary::readShort(substr($packet, $offset, 2));
                 $offset += 2;
                 $payload = substr($packet, $offset);
                 $this->instance->handleRaw($address, $port, $payload);
@@ -106,7 +106,7 @@ class ServerHandler{
                 $len = ord($packet{$offset++});
                 $address = substr($packet, $offset, $len);
                 $offset += $len;
-                $port = Binary::readShort(substr($packet, $offset, 2), false);
+                $port = Binary::readShort(substr($packet, $offset, 2));
                 $offset += 2;
                 $clientID = Binary::readLong(substr($packet, $offset, 8));
                 $this->instance->openSession($identifier, $address, $port, $clientID);

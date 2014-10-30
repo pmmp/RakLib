@@ -21,6 +21,8 @@
 
 namespace raklib\protocol;
 
+#include <rules/RakLibPacket.h>
+
 class CLIENT_CONNECT_DataPacket extends Packet{
     public static $ID = 0x09;
 

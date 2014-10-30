@@ -17,6 +17,8 @@ namespace raklib\protocol;
 
 use raklib\Binary;
 
+#include <rules/RakLibPacket.h>
+
 abstract class Packet{
     public static $ID = -1;
 
@@ -50,7 +52,7 @@ abstract class Packet{
     }
 
     protected function getShort($signed = true){
-        return Binary::readShort($this->get(2), $signed);
+        return $signed ? Binary::readSignedShort($this->get(2)) : Binary::readShort($this->get(2));
     }
 
     protected function getTriad(){
