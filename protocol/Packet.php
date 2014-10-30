@@ -15,7 +15,9 @@
 
 namespace raklib\protocol;
 
+#ifndef COMPILE
 use raklib\Binary;
+#endif
 
 #include <rules/RakLibPacket.h>
 
