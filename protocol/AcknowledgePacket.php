@@ -15,8 +15,11 @@
 
 namespace raklib\protocol;
 
-
+#ifndef COMPILE
 use raklib\Binary;
+#endif
+
+#include <rules/RakLibPacket.h>
 
 abstract class AcknowledgePacket extends Packet{
     /** @var int[] */
@@ -42,12 +45,12 @@ abstract class AcknowledgePacket extends Packet{
                 }elseif($diff > 1){ //Forget about duplicated packets (bad queues?)
                     if($start === $last){
                         $payload .= "\x01";
-                        $payload .= strrev(Binary::writeTriad($start));
+                        $payload .= Binary::writeLTriad($start);
                         $start = $last = $current;
                     }else{
                         $payload .= "\x00";
-                        $payload .= strrev(Binary::writeTriad($start));
-                        $payload .= strrev(Binary::writeTriad($last));
+                        $payload .= Binary::writeLTriad($start);
+                        $payload .= Binary::writeLTriad($last);
                         $start = $last = $current;
                     }
                     ++$records;
@@ -56,11 +59,11 @@ abstract class AcknowledgePacket extends Packet{
 
             if($start === $last){
                 $payload .= "\x01";
-                $payload .= strrev(Binary::writeTriad($start));
+                $payload .= Binary::writeLTriad($start);
             }else{
                 $payload .= "\x00";
-                $payload .= strrev(Binary::writeTriad($start));
-                $payload .= strrev(Binary::writeTriad($last));
+                $payload .= Binary::writeLTriad($start);
+                $payload .= Binary::writeLTriad($last);
             }
             ++$records;
         }

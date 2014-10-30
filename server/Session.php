@@ -140,11 +140,9 @@ class Session{
         if(count($this->recoveryQueue) > 0){
             $timeLimit = microtime(true) - 1;
             foreach($this->recoveryQueue as $key => $packet){
-                if($packet->sendTime === null){
-                    unset($this->recoveryQueue[$key]);
-                }elseif($packet->sendTime < $timeLimit){
+                if($packet->sendTime < $timeLimit){
                     $this->sendPacket($packet);
-                    $packet->sendTime = null;
+                    $packet->sendTime = $timeLimit + 1;
                 }
             }
         }
