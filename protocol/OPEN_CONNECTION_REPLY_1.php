@@ -39,6 +39,6 @@ class OPEN_CONNECTION_REPLY_1 extends Packet{
         $this->offset += 16; //Magic
         $this->serverID = $this->getLong();
         $this->getByte(); //security
-        $this->mtuSize = $this->getShort(false);
+        $this->mtuSize = $this->getShort();
     }
 }

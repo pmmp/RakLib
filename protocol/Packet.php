@@ -70,7 +70,7 @@ abstract class Packet{
     }
 
     protected function getString(){
-        return $this->get($this->getShort(false));
+        return $this->get($this->getShort());
     }
 
     protected function feof(){
