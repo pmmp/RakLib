@@ -44,6 +44,28 @@ class Binary{
         return substr(pack("N", $value), 1);
     }
 
+	/**
+	 * Reads a 3-byte little-endian number
+	 *
+	 * @param $str
+	 *
+	 * @return mixed
+	 */
+	public static function readLTriad($str){
+		return unpack("V", $str . "\x00")[1];
+	}
+
+	/**
+	 * Writes a 3-byte little-endian number
+	 *
+	 * @param $value
+	 *
+	 * @return string
+	 */
+	public static function writeLTriad($value){
+		return substr(pack("N", $value), 0, -1);
+	}
+
     /**
      * Reads a byte boolean
      *
