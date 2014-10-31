@@ -231,7 +231,7 @@ class Session{
             $buffers = str_split($packet->buffer, $this->mtuSize - 34);
             $splitID = ++$this->splitID % 65536;
             foreach($buffers as $count => $buffer){
-                $pk = EncapsulatedPacket::getPacketFromPool();
+                $pk = new EncapsulatedPacket();
 	            $pk->splitID = $splitID;
 	            $pk->hasSplit = true;
 	            $pk->splitCount = count($buffers);
@@ -283,7 +283,7 @@ class Session{
                     $pk->session2 = Binary::readLong("\x00\x00\x00\x00\x04\x44\x0b\xa9");
                     $pk->encode();
 
-                    $sendPacket = EncapsulatedPacket::getPacketFromPool();
+                    $sendPacket = new EncapsulatedPacket();
                     $sendPacket->reliability = 0;
                     $sendPacket->buffer = $pk->buffer;
                     $this->addToQueue($sendPacket, RakLib::PRIORITY_IMMEDIATE);
@@ -312,7 +312,7 @@ class Session{
 	            $pk->pingID = $dataPacket->pingID;
 	            $pk->encode();
 
-	            $sendPacket = EncapsulatedPacket::getPacketFromPool();
+	            $sendPacket = new EncapsulatedPacket();
 	            $sendPacket->reliability = 0;
 	            $sendPacket->buffer = $pk->buffer;
 	            $this->addToQueue($sendPacket);

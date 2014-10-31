@@ -47,12 +47,7 @@ use raklib\protocol\UNCONNECTED_PONG;
 use raklib\RakLib;
 
 class SessionManager{
-    protected $packetPool;
-
-	/** @var Packet[][] */
-	protected $allocatedPacketPool = [];
-	/** @var int[] */
-	protected $nextAllocatedPacket = [];
+    protected $packetPool = [];
 
     /** @var RakLibServer */
     protected $server;
@@ -213,9 +208,6 @@ class SessionManager{
 
                 ++$this->ticks;
 
-	            $this->cleanPacketPool();
-	            EncapsulatedPacket::cleanPacketPool();
-
                 if(($this->ticks & 0b1111) === 0){
                     $diff = max(0.005, $time - $this->lastMeasure);
                     $this->streamOption("bandwidth", serialize([
@@ -314,8 +306,6 @@ class SessionManager{
 
 	private function registerPacket($id, $class){
 		$this->packetPool[$id] = $class;
-		$this->allocatedPacketPool[$id] = [];
-		$this->nextAllocatedPacket[$id] = 0;
 	}
 
 	/**
@@ -324,24 +314,12 @@ class SessionManager{
 	 * @return Packet
 	 */
 	public function getPacketFromPool($id){
-		if(isset($this->allocatedPacketPool[$id])){
-			if($this->nextAllocatedPacket[$id] >= count($this->allocatedPacketPool[$id])){
-				$packet = $this->packetPool[$id];
-				$this->allocatedPacketPool[$id][] = new $packet;
-			}
-			return $this->allocatedPacketPool[$id][$this->nextAllocatedPacket[$id]++]->clean();
+		if(isset($this->packetPool[$id])){
+			$packet = $this->packetPool[$id];
+			return new $packet;
 		}
 
 		return null;
-	}
-
-	public function cleanPacketPool(){
-		foreach($this->nextAllocatedPacket as $id => $value){
-			if($value > 4096){
-				$this->allocatedPacketPool[$id] = [];
-			}
-			$this->nextAllocatedPacket[$id] = 0;
-		}
 	}
 
     private function registerPackets(){

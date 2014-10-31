@@ -29,24 +29,6 @@ use raklib\Binary;
 
 class EncapsulatedPacket{
 
-	/** @var EncapsulatedPacket[] */
-	public static $packetPool = [];
-	public static $nextPacket = 0;
-
-	public static function cleanPacketPool(){
-		if(self::$nextPacket > 16384){
-			self::$nextPacket = [];
-		}
-		self::$nextPacket = 0;
-	}
-
-	public static function getPacketFromPool(){
-		if(self::$nextPacket >= count(self::$packetPool)){
-			self::$packetPool[] = new EncapsulatedPacket;
-		}
-		return self::$packetPool[self::$nextPacket++];
-	}
-
     public $reliability;
     public $hasSplit = false;
     public $length = 0;
@@ -69,7 +51,7 @@ class EncapsulatedPacket{
      */
     public static function fromBinary($binary, $internal = false, &$offset = null){
 
-	    $packet = EncapsulatedPacket::getPacketFromPool();
+	    $packet = new EncapsulatedPacket();
 
         $flags = ord($binary{0});
         $packet->reliability = $reliability = ($flags & 0b11100000) >> 5;
