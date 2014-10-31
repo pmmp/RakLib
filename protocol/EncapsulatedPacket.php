@@ -107,7 +107,7 @@ class EncapsulatedPacket{
             $reliability === 6 or
             $reliability === 7
         ){
-            $packet->messageIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
+            $packet->messageIndex = Binary::readLTriad(substr($binary, $offset, 3));
             $offset += 3;
         }else{
 	        $packet->messageIndex = null;
@@ -119,7 +119,7 @@ class EncapsulatedPacket{
             $reliability === 4 or
             $reliability === 7
         ){
-            $packet->orderIndex = Binary::readTriad(strrev(substr($binary, $offset, 3)));
+            $packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
             $offset += 3;
             $packet->orderChannel = ord($binary{$offset++});
         }else{

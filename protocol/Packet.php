@@ -62,7 +62,7 @@ abstract class Packet{
     }
 
     protected function getLTriad(){
-        return Binary::readTriad(strrev($this->get(3)));
+        return Binary::readLTriad($this->get(3));
     }
 
     protected function getByte(){
@@ -98,7 +98,7 @@ abstract class Packet{
     }
 
     protected function putLTriad($v){
-        $this->buffer .= strrev(Binary::writeTriad($v));
+        $this->buffer .= Binary::writeLTriad($v);
     }
 
     protected function putByte($v){
