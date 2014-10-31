@@ -194,6 +194,7 @@ class Session{
             $packet->seqNumber = $this->sendSeqNumber++;
 	        if($pk->needACK){
 		        $packet->packets[] = clone $pk;
+		        $pk->needACK = false;
 	        }else{
 		        $packet->packets[] = $pk->toBinary();
 	        }
@@ -210,6 +211,7 @@ class Session{
 
 	    if($pk->needACK){
 		    $this->sendQueue->packets[] = clone $pk;
+		    $pk->needACK = false;
 	    }else{
 		    $this->sendQueue->packets[] = $pk->toBinary();
 	    }
