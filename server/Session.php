@@ -137,15 +137,15 @@ class Session{
             }
         }
 
-        if(count($this->recoveryQueue) > 0){
+        /*if(count($this->recoveryQueue) > 0){
             $timeLimit = microtime(true) - 1;
             foreach($this->recoveryQueue as $key => $packet){
                 if($packet->sendTime < $timeLimit){
                     $this->sendPacket($packet);
-                    $packet->sendTime = $timeLimit + 1;
+                    $packet->sendTime = $timeLimit + 7;
                 }
             }
-        }
+        }*/
 
         foreach($this->receivedWindow as $seq => $bool){
             if($seq < $this->windowStart){
