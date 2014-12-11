@@ -195,6 +195,7 @@ class Session{
 	        }else{
 		        $packet->packets[] = $pk->toBinary();
 	        }
+
             $this->sendPacket($packet);
             $packet->sendTime = microtime(true);
             $this->recoveryQueue[$packet->seqNumber] = $packet;
@@ -358,17 +359,20 @@ class Session{
 
 				unset($this->NACKQueue[$packet->seqNumber]);
 				$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
+				$this->receivedWindow[$packet->seqNumber] = $packet->seqNumber;
+
+				if($diff !== 1){
+					for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){
+						if(!isset($this->receivedWindow[$i])){
+							$this->NACKQueue[$i] = $i;
+						}
+					}
+				}
 
 				if($diff >= 1){
 					$this->lastSeqNumber = $packet->seqNumber;
 					$this->windowStart += $diff;
 					$this->windowEnd += $diff;
-				}else{
-					for($i = $this->lastSeqNumber + 1; $i < $size; ++$i){
-						if(!isset($this->receivedWindow[$i])){
-							$this->NACKQueue[$i] = $i;
-						}
-					}
 				}
 
 				foreach($packet->packets as $pk){
