@@ -305,7 +305,7 @@ class SessionManager{
     }
 
 	private function registerPacket($id, $class){
-		$this->packetPool[$id] = $class;
+		$this->packetPool[$id] = new $class;
 	}
 
 	/**
@@ -315,8 +315,7 @@ class SessionManager{
 	 */
 	public function getPacketFromPool($id){
 		if(isset($this->packetPool[$id])){
-			$packet = $this->packetPool[$id];
-			return new $packet;
+			return clone $this->packetPool[$id];
 		}
 
 		return null;
