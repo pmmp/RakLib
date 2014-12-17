@@ -93,26 +93,15 @@ class SessionManager{
 
     private function tickProcessor(){
         $this->lastMeasure = microtime(true);
-        $serverSocket = $this->socket->getSocket();
 
         while(!$this->shutdown){
-            $sockets = [$serverSocket];
-            $write = null;
-            $except = null;
-
-            if(socket_select($sockets, $write, $except, 0, 20000) > 0){
-                if(count($sockets) > 0){
-	                while($this->receivePacket());
-                }
-            }
+            while($this->receivePacket());
 	        while($this->receiveStream());
-
         }
     }
 
 
     private function receivePacket(){
-        $buffer = $source = $port = null;
         if(($len = $this->socket->readPacket($buffer, $source, $port)) > 0){
             $this->receiveBytes += $len;
             $pid = ord($buffer{0});
@@ -126,8 +115,6 @@ class SessionManager{
             }else{
 	            return false;
             }
-
-
         }
 
         return false;
