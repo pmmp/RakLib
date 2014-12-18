@@ -95,8 +95,10 @@ class SessionManager{
         $this->lastMeasure = microtime(true);
 
         while(!$this->shutdown){
+            $start = microtime(true);
             while($this->receivePacket());
 	        while($this->receiveStream());
+            usleep(max(1, 20000 - (microtime(true) - $start) * 1000000));
         }
     }
 
