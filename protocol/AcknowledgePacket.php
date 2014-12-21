@@ -76,18 +76,19 @@ abstract class AcknowledgePacket extends Packet{
         parent::decode();
         $count = $this->getShort();
         $this->packets = [];
-        for($i = 0; $i < $count and !$this->feof(); ++$i){
+        $cnt = 0;
+        for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){
             if($this->getByte() === 0){
                 $start = $this->getLTriad();
                 $end = $this->getLTriad();
-                if(($end - $start) > 4096){
-                    $end = $start + 4096;
+                if(($end - $start) > 512){
+                    $end = $start + 512;
                 }
                 for($c = $start; $c <= $end; ++$c){
-                    $this->packets[] = $c;
+                    $this->packets[$cnt++] = $c;
                 }
             }else{
-                $this->packets[] = $this->getLTriad();
+                $this->packets[$cnt++] = $this->getLTriad();
             }
         }
     }
