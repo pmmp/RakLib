@@ -253,7 +253,7 @@ class Session{
     }
 
 	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){
-		if($packet === null){
+		if($packet->messageIndex === null){
 			$this->handleEncapsulatedPacketRoute($packet);
 		}else{
 			if($packet->messageIndex < $this->reliableWindowStart or $packet->messageIndex > $this->reliableWindowEnd){
