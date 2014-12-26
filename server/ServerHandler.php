@@ -55,6 +55,11 @@ class ServerHandler{
         $this->server->pushMainToThreadPacket($buffer);
     }
 
+    public function blockAddress($address, $timeout){
+        $buffer = chr(RakLib::PACKET_BLOCK_ADDRESS) . chr(strlen($address)) . $address . Binary::writeInt($timeout);
+        $this->server->pushMainToThreadPacket($buffer);
+    }
+
     public function shutdown(){
 	    $this->server->shutdown();
         $buffer = chr(RakLib::PACKET_SHUTDOWN);

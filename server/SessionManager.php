@@ -62,10 +62,15 @@ class SessionManager{
 
     protected $name = "";
 
+    protected $packetLimit = 1000;
+
     protected $shutdown = false;
 
     protected $ticks = 0;
     protected $lastMeasure;
+
+    protected $block = [];
+    protected $ipSec = [];
 
     public $portChecking = false;
 
@@ -96,7 +101,8 @@ class SessionManager{
 
         while(!$this->shutdown){
             $start = microtime(true);
-            while($this->receivePacket());
+            $max = 50000;
+            while(--$max and $this->receivePacket());
 	        while($this->receiveStream());
             usleep(max(1, 20000 - (microtime(true) - $start) * 1000000));
         }
@@ -106,6 +112,15 @@ class SessionManager{
     private function receivePacket(){
         if(($len = $this->socket->readPacket($buffer, $source, $port)) > 0){
             $this->receiveBytes += $len;
+            if(isset($this->block[$source])){
+                return true;
+            }
+            if(isset($this->ipSec[$source])){
+                $this->ipSec[$source]++;
+            }else{
+                $this->ipSec[$source] = 1;
+            }
+
             $pid = ord($buffer{0});
             if(($packet = $this->getPacketFromPool($pid)) !== null){
                 $packet->buffer = $buffer;
@@ -207,6 +222,28 @@ class SessionManager{
                     $this->sendBytes = 0;
                     $this->receiveBytes = 0;
                 }
+
+                arsort($this->ipSec);
+                foreach($this->ipSec as $address => $count){
+                    if($count >= $this->packetLimit){
+                        $this->blockAddress($address);
+                    }else{
+                        break;
+                    }
+                }
+                $this->ipSec = [];
+
+                if(count($this->block) > 0){
+                    asort($this->block);
+                    $now = microtime(true);
+                    foreach($this->block as $address => $timeout){
+                        if($timeout <= $now){
+                            unset($this->block[$address]);
+                        }else{
+                            break;
+                        }
+                    }
+                }
             }elseif($id === RakLib::PACKET_CLOSE_SESSION){
                 $len = ord($packet{$offset++});
                 $identifier = substr($packet, $offset, $len);
@@ -233,7 +270,16 @@ class SessionManager{
                     case "portChecking":
                         $this->portChecking = (bool) $value;
                         break;
+                    case "packetLimit":
+                        $this->packetLimit = (int) $value;
+                        break;
                 }
+            }elseif($id === RakLib::PACKET_BLOCK_ADDRESS){
+                $len = ord($packet{$offset++});
+                $address = substr($packet, $offset, $len);
+                $offset += $len;
+                $timeout = Binary::readInt(substr($packet, $offset, 4));
+                $this->blockAddress($address, $timeout);
             }elseif($id === RakLib::PACKET_SHUTDOWN){
                 foreach($this->sessions as $session){
                     $this->removeSession($session);
@@ -251,6 +297,16 @@ class SessionManager{
         }
 
         return false;
+    }
+
+    public function blockAddress($address, $timeout = 300){
+        $final = microtime(true) + $timeout;
+        if(!isset($this->block[$address])){
+            $this->getLogger()->notice("[RakLib Thread #". \Thread::getCurrentThreadId() ."] Blocked $address for $timeout seconds");
+            $this->block[$address] = $final;
+        }elseif($this->block[$address] < $final){
+            $this->block[$address] = $final;
+        }
     }
 
     /**
