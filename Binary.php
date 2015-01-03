@@ -15,7 +15,9 @@
 
 namespace raklib;
 
-@define("ENDIANNESS", (pack("d", 1) === "\77\360\0\0\0\0\0\0" ? Binary::BIG_ENDIAN : Binary::LITTLE_ENDIAN));
+if(!defined("ENDIANNESS")){
+    define("ENDIANNESS", (pack("d", 1) === "\77\360\0\0\0\0\0\0" ? Binary::BIG_ENDIAN : Binary::LITTLE_ENDIAN));
+}
 
 class Binary{
     const BIG_ENDIAN = 0x00;
