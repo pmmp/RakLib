@@ -124,14 +124,14 @@ class Session{
         $this->isActive = false;
 
         if(count($this->ACKQueue) > 0){
-            $pk = $this->sessionManager->getPacketFromPool(ACK::$ID);
+            $pk = new ACK();
             $pk->packets = $this->ACKQueue;
             $this->sendPacket($pk);
             $this->ACKQueue = [];
         }
 
         if(count($this->NACKQueue) > 0){
-            $pk = $this->sessionManager->getPacketFromPool(NACK::$ID);
+            $pk = new NACK();
             $pk->packets = $this->NACKQueue;
             $this->sendPacket($pk);
             $this->NACKQueue = [];
@@ -157,10 +157,6 @@ class Session{
 
     public function disconnect($reason = "unknown"){
         $this->sessionManager->removeSession($this, $reason);
-    }
-
-    public function needUpdate(){
-        return count($this->ACKQueue) > 0 or count($this->NACKQueue) > 0 or count($this->sendQueue->packets) > 0 or !$this->isActive;
     }
 
     protected function sendPacket(Packet $packet){
@@ -410,14 +406,14 @@ class Session{
         }elseif($packet::$ID > 0x00 and $packet::$ID < 0x80){ //Not Data packet :)
             $packet->decode();
             if($packet instanceof UNCONNECTED_PING){
-                $pk = $this->sessionManager->getPacketFromPool(UNCONNECTED_PONG::$ID);
+                $pk = new UNCONNECTED_PONG();
                 $pk->serverID = $this->sessionManager->getID();
                 $pk->pingID = $packet->pingID;
                 $pk->serverName = $this->sessionManager->getName();
                 $this->sendPacket($pk);
             }elseif($packet instanceof OPEN_CONNECTION_REQUEST_1){
                 $packet->protocol; //TODO: check protocol number and refuse connections
-                $pk = $this->sessionManager->getPacketFromPool(OPEN_CONNECTION_REPLY_1::$ID);
+                $pk = new OPEN_CONNECTION_REPLY_1();
                 $pk->mtuSize = $packet->mtuSize;
                 $pk->serverID = $this->sessionManager->getID();
                 $this->sendPacket($pk);
@@ -426,7 +422,7 @@ class Session{
                 $this->id = $packet->clientID;
                 if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
                     $this->mtuSize = min(abs($packet->mtuSize), 1464); //Max size, do not allow creating large buffers to fill server memory
-                    $pk = $this->sessionManager->getPacketFromPool(OPEN_CONNECTION_REPLY_2::$ID);
+                    $pk = new OPEN_CONNECTION_REPLY_2();
                     $pk->mtuSize = $this->mtuSize;
                     $pk->serverID = $this->sessionManager->getID();
                     $pk->clientPort = $this->port;
@@ -435,5 +431,10 @@ class Session{
                 }
             }
         }
+    }
+
+    public function close(){
+        $this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary("\x00\x00\x08\x15"), RakLib::PRIORITY_IMMEDIATE); //CLIENT_DISCONNECT packet 0x15
+        $this->sessionManager = null;
     }
 }

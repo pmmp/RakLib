@@ -115,14 +115,14 @@ class SessionManager{
             if(isset($this->block[$source])){
                 return true;
             }
+
             if(isset($this->ipSec[$source])){
                 $this->ipSec[$source]++;
             }else{
                 $this->ipSec[$source] = 1;
             }
 
-            $pid = ord($buffer{0});
-            if(($packet = $this->getPacketFromPool($pid)) !== null){
+            if(($packet = $this->getPacketFromPool(ord($buffer{0}))) !== null){
                 $packet->buffer = $buffer;
                 $this->getSession($source, $port)->handlePacket($packet);
 	            return true;
@@ -205,12 +205,17 @@ class SessionManager{
             }elseif($id === RakLib::PACKET_TICK){
 	            $time = microtime(true);
                 foreach($this->sessions as $session){
-                    if($session->needUpdate()){
-                        $session->update($time);
-                    }
+                    $session->update($time);
                 }
 
-                ++$this->ticks;
+                foreach($this->ipSec as $address => $count){
+                    if($count >= $this->packetLimit){
+                        $this->blockAddress($address);
+                    }
+                }
+                $this->ipSec = [];
+
+
 
                 if(($this->ticks & 0b1111) === 0){
                     $diff = max(0.005, $time - $this->lastMeasure);
@@ -221,29 +226,23 @@ class SessionManager{
                     $this->lastMeasure = $time;
                     $this->sendBytes = 0;
                     $this->receiveBytes = 0;
-                }
 
-                arsort($this->ipSec);
-                foreach($this->ipSec as $address => $count){
-                    if($count >= $this->packetLimit){
-                        $this->blockAddress($address);
-                    }else{
-                        break;
-                    }
-                }
-                $this->ipSec = [];
-
-                if(count($this->block) > 0){
-                    asort($this->block);
-                    $now = microtime(true);
-                    foreach($this->block as $address => $timeout){
-                        if($timeout <= $now){
-                            unset($this->block[$address]);
-                        }else{
-                            break;
+                    if(count($this->block) > 0){
+                        asort($this->block);
+                        $now = microtime(true);
+                        foreach($this->block as $address => $timeout){
+                            if($timeout <= $now){
+                                unset($this->block[$address]);
+                            }else{
+                                break;
+                            }
                         }
                     }
+
+                    gc_collect_cycles();
                 }
+
+                ++$this->ticks;
             }elseif($id === RakLib::PACKET_CLOSE_SESSION){
                 $len = ord($packet{$offset++});
                 $identifier = substr($packet, $offset, $len);
@@ -331,7 +330,7 @@ class SessionManager{
     public function removeSession(Session $session, $reason = "unknown"){
         $id = $session->getAddress() . ":" . $session->getPort();
         if(isset($this->sessions[$id])){
-            $this->sessions[$id]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary("\x00\x00\x08\x15"), RakLib::PRIORITY_IMMEDIATE); //CLIENT_DISCONNECT packet 0x15
+            $this->sessions[$id]->close();
             unset($this->sessions[$id]);
             $this->streamClose($id, $reason);
         }
