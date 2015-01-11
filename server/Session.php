@@ -63,6 +63,9 @@ class Session{
     protected $lastUpdate;
     protected $startTime;
 
+    /** @var DataPacket[] */
+    protected $packetToSend = [];
+
     protected $isActive;
 
     /** @var int[] */
@@ -137,10 +140,24 @@ class Session{
             $this->NACKQueue = [];
         }
 
-        foreach($this->needACK as $identifierACK => $indexes){
-            if(count($indexes) === 0){
-                unset($this->needACK[$identifierACK]);
-                $this->sessionManager->notifyACK($this, $identifierACK);
+        if(count($this->packetToSend) > 0){
+            foreach($this->packetToSend as $k => $pk){
+                $pk->seqNumber = $this->sendSeqNumber++;
+                $pk->sendTime = microtime(true);
+                $pk->encode();
+                $this->recoveryQueue[$pk->seqNumber] = $pk;
+                unset($this->packetToSend[$k]);
+                $this->sendPacket($pk);
+                break;
+            }
+        }
+
+        if(count($this->needACK) > 0){
+            foreach($this->needACK as $identifierACK => $indexes){
+                if(count($indexes) === 0){
+                    unset($this->needACK[$identifierACK]);
+                    $this->sessionManager->notifyACK($this, $identifierACK);
+                }
             }
         }
 
@@ -391,13 +408,8 @@ class Session{
                     $packet->decode();
                     foreach($packet->packets as $seq){
                         if(isset($this->recoveryQueue[$seq])){
-							$pk = $this->recoveryQueue[$seq];
-							$pk->seqNumber = $this->sendSeqNumber++;
-							$pk->sendTime = microtime(true);
-							$pk->encode();
-							$this->recoveryQueue[$pk->seqNumber] = $pk;
+                            $this->packetToSend[] = $this->recoveryQueue[$seq];
 							unset($this->recoveryQueue[$seq]);
-                            $this->sendPacket($pk);
                         }
                     }
                 }
