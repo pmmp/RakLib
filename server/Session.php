@@ -301,6 +301,10 @@ class Session{
 	}
 
     protected function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet){
+        if($this->sessionManager === null){
+            return;
+        }
+
 		$id = ord($packet->buffer{0});
 		if($id < 0x80){ //internal data packet
 			if($this->state === self::STATE_CONNECTING_2){
