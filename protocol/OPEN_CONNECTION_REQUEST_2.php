@@ -30,8 +30,7 @@ class OPEN_CONNECTION_REQUEST_2 extends Packet{
     public function encode(){
         parent::encode();
         $this->put(RakLib::MAGIC);
-        $this->putByte("4");
-        $this->put("3f57febe");
+        $this->put("\x04\xf5\xff\xfc\x97");
         $this->putShort($this->serverPort);
         $this->putShort($this->mtuSize);
         $this->putLong($this->clientID);

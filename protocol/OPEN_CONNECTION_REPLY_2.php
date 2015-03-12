@@ -31,6 +31,7 @@ class OPEN_CONNECTION_REPLY_2 extends Packet{
         parent::encode();
         $this->put(RakLib::MAGIC);
         $this->putLong($this->serverID);
+		$this->put("\x04\xf5\xff\xfc\x97");
         $this->putShort($this->clientPort);
         $this->putShort($this->mtuSize);
         $this->putByte(0); //server security
@@ -40,6 +41,7 @@ class OPEN_CONNECTION_REPLY_2 extends Packet{
         parent::decode();
         $this->offset += 16; //Magic
         $this->serverID = $this->getLong();
+		$this->get(5); //Client security
         $this->clientPort = $this->getShort();
         $this->mtuSize = $this->getShort();
         //server security
