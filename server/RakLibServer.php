@@ -44,7 +44,7 @@ class RakLibServer extends \Thread{
 	 *
 	 * @throws \Exception
 	 */
-    public function __construct(\Threaded $externalThreaded, \Threaded $internalThreaded, \ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
+    public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
         $this->port = (int) $port;
         if($port < 1 or $port > 65536){
             throw new \Exception("Invalid port range");
@@ -59,8 +59,8 @@ class RakLibServer extends \Thread{
         $this->loadPaths = array_reverse($loadPaths);
         $this->shutdown = false;
 
-        $this->externalQueue = $externalThreaded;
-        $this->internalQueue = $internalThreaded;
+        $this->externalQueue = \ThreadedFactory::create();
+        $this->internalQueue = \ThreadedFactory::create();
 
 	    if(\Phar::running(true) !== ""){
 		    $this->mainPath = \Phar::running(true);
@@ -224,7 +224,7 @@ class RakLibServer extends \Thread{
                 require($path);
             }
         }
-        $this->loader->register();
+        $this->loader->register(true);
 
 	    gc_enable();
 	    error_reporting(-1);
