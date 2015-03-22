@@ -90,9 +90,7 @@ class RakLibServer extends \Thread{
     }
 
     public function shutdown(){
-        $this->lock();
         $this->shutdown = true;
-        $this->unlock();
     }
 
     public function getPort(){
