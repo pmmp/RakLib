@@ -45,51 +45,54 @@ class Session{
 
     public static $WINDOW_SIZE = 1024;
 
-    protected $messageIndex = 0;
+    private $messageIndex = 0;
 
     /** @var SessionManager */
-    protected $sessionManager;
-    protected $address;
-    protected $port;
-    protected $state = self::STATE_UNCONNECTED;
-	protected $preJoinQueue = [];
-    protected $mtuSize = 548; //Min size
-    protected $id = 0;
-    protected $splitID = 0;
+    private $sessionManager;
+    private $address;
+    private $port;
+    private $state = self::STATE_UNCONNECTED;
+	private $preJoinQueue = [];
+    private $mtuSize = 548; //Min size
+    private $id = 0;
+    private $splitID = 0;
 
-	protected $sendSeqNumber = 0;
-    protected $lastSeqNumber = -1;
+	private $sendSeqNumber = 0;
+    private $lastSeqNumber = -1;
 
-    protected $lastUpdate;
-    protected $startTime;
-
-    /** @var DataPacket[] */
-    protected $packetToSend = [];
-
-    protected $isActive;
-
-    /** @var int[] */
-    protected $ACKQueue = [];
-    /** @var int[] */
-    protected $NACKQueue = [];
+    private $lastUpdate;
+    private $startTime;
 
     /** @var DataPacket[] */
-    protected $recoveryQueue = [];
+    private $packetToSend = [];
+
+    private $isActive;
+
+    /** @var int[] */
+    private $ACKQueue = [];
+    /** @var int[] */
+    private $NACKQueue = [];
+
+    /** @var DataPacket[] */
+    private $recoveryQueue = [];
+
+	/** @var DataPacket[][] */
+	private $splitPackets = [];
 
     /** @var int[][] */
-    protected $needACK = [];
+    private $needACK = [];
 
     /** @var DataPacket */
-    protected $sendQueue;
+    private $sendQueue;
 
-    protected $windowStart;
-    protected $receivedWindow = [];
-    protected $windowEnd;
+    private $windowStart;
+    private $receivedWindow = [];
+    private $windowEnd;
 
-	protected $reliableWindowStart;
-	protected $reliableWindowEnd;
-	protected $reliableWindow = [];
-	protected $lastReliableIndex = -1;
+	private $reliableWindowStart;
+	private $reliableWindowEnd;
+	private $reliableWindow = [];
+	private $lastReliableIndex = -1;
 
     public function __construct(SessionManager $sessionManager, $address, $port){
         $this->sessionManager = $sessionManager;
@@ -176,7 +179,7 @@ class Session{
         $this->sessionManager->removeSession($this, $reason);
     }
 
-    protected function sendPacket(Packet $packet){
+    private function sendPacket(Packet $packet){
         $this->sessionManager->sendPacket($packet, $this->address, $this->port);
     }
 
@@ -194,7 +197,7 @@ class Session{
      * @param EncapsulatedPacket $pk
      * @param int                $flags
      */
-    protected function addToQueue(EncapsulatedPacket $pk, $flags = RakLib::PRIORITY_NORMAL){
+    private function addToQueue(EncapsulatedPacket $pk, $flags = RakLib::PRIORITY_NORMAL){
         $priority = $flags & 0b0000111;
         if($pk->needACK and $pk->messageIndex !== null){
             $this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
@@ -264,8 +267,33 @@ class Session{
             $this->addToQueue($packet, $flags);
         }
     }
+	
+	private function handleSplit(EncapsulatedPacket $packet){
+		if($packet->splitCount >= 8){
+			return;
+		}
 
-	protected function handleEncapsulatedPacket(EncapsulatedPacket $packet){
+		if(!isset($this->splitPackets[$packet->splitID])){
+			$this->splitPackets[$packet->splitID] = [$packet->splitIndex => $packet];
+		}else{
+			$this->splitPackets[$packet->splitID][$packet->splitIndex] = $packet;
+		}
+
+		if(count($this->splitPackets[$packet->splitID]) === $packet->splitCount){
+			$pk = new EncapsulatedPacket();
+			$pk->buffer = "";
+			for($i = 0; $i < $packet->splitCount; ++$i){
+				$pk->buffer .= $this->splitPackets[$packet->splitID][$i]->buffer;
+			}
+
+			$pk->length = strlen($pk->buffer);
+			unset($this->splitPackets[$packet->splitID]);
+
+			$this->handleEncapsulatedPacketRoute($pk);
+		}
+	}
+
+	private function handleEncapsulatedPacket(EncapsulatedPacket $packet){
 		if($packet->messageIndex === null){
 			$this->handleEncapsulatedPacketRoute($packet);
 		}else{
@@ -300,10 +328,17 @@ class Session{
 
 	}
 
-    protected function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet){
+    private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet){
         if($this->sessionManager === null){
             return;
         }
+
+		if($packet->hasSplit){
+			if($this->state === self::STATE_CONNECTED){
+				$this->handleSplit($packet);
+			}
+			return;
+		}
 
 		$id = ord($packet->buffer{0});
 		if($id < 0x80){ //internal data packet
@@ -354,7 +389,7 @@ class Session{
 			}//TODO: add PING/PONG (0x00/0x03) automatic latency measure
 		}elseif($this->state === self::STATE_CONNECTED){
 			$this->sessionManager->streamEncapsulated($this, $packet);
-			//TODO: split packet handling
+
 			//TODO: stream channels
 		}else{
 			$this->preJoinQueue[] = $packet;
