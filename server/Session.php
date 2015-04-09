@@ -269,9 +269,10 @@ class Session{
     }
 	
 	private function handleSplit(EncapsulatedPacket $packet){
-		if($packet->splitCount >= 8){
+		if($packet->splitCount >= 128){
 			return;
 		}
+
 
 		if(!isset($this->splitPackets[$packet->splitID])){
 			$this->splitPackets[$packet->splitID] = [$packet->splitIndex => $packet];
