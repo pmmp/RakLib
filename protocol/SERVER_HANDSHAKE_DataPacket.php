@@ -26,41 +26,38 @@ namespace raklib\protocol;
 class SERVER_HANDSHAKE_DataPacket extends Packet{
     public static $ID = 0x10;
 
+	public $address;
     public $port;
-    public $session;
-    public $session2;
+    public $systemAddresses = [
+		["127.0.0.1", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4],
+		["0.0.0.0", 0, 4]
+    ];
+    
+    public $sendPing;
+    public $sendPong;
 
     public function encode(){
         parent::encode();
-        $this->put("\x04\x3f\x57\xfe"); //cookie
-        $this->put("\xcd"); //security flags
-        $this->putShort($this->port);
-        $this->putDataArray([
-            "\xf5\xff\xff\xf5",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-            "\xff\xff\xff\xff",
-        ]);
-        $this->put("\x00\x00");
-        $this->putLong($this->session);
-        $this->putLong($this->session2);
+        $this->putAddress($this->address, $this->port, 4);
+        $this->putShort(0);
+        for($i = 0; $i < 10; ++$i){
+			$this->putAddress($this->systemAddresses[$i][0], $this->systemAddresses[$i][1], $this->systemAddresses[$i][2]);
+		}
+		
+        $this->putLong($this->sendPing);
+        $this->putLong($this->sendPong);
     }
 
     public function decode(){
         parent::decode();
         //TODO, not needed yet
-    }
-
-    private function putDataArray(array $data = []){
-        foreach($data as $v){
-            $this->putTriad(strlen($v));
-            $this->put($v);
-        }
     }
 }

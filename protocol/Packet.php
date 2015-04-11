@@ -73,6 +73,16 @@ abstract class Packet{
         return $this->get($this->getShort());
     }
 
+    protected function getAddress(&$addr, &$port, &$version = null){
+		$version = $this->getByte();
+		if($version === 4){
+			$addr = ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff);
+			$port = $this->getShort();
+		}else{
+			//TODO: IPv6
+		}
+	}
+
     protected function feof(){
         return !isset($this->buffer{$this->offset});
     }
@@ -109,6 +119,18 @@ abstract class Packet{
         $this->putShort(strlen($v));
         $this->put($v);
     }
+    
+    protected function putAddress($addr, $port, $version = 4){
+		$this->putByte($version);
+		if($version === 4){
+			foreach(explode(".", $addr) as $b){
+				$this->putByte((~((int) $b)) & 0xff);
+			}
+			$this->putShort($port);
+		}else{
+			//IPv6
+		}
+	}
 
     public function encode(){
         $this->buffer = chr(static::$ID);

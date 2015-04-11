@@ -26,37 +26,27 @@ namespace raklib\protocol;
 class CLIENT_HANDSHAKE_DataPacket extends Packet{
     public static $ID = 0x13;
 
-    public $cookie;
-    public $security;
+    public $address;
     public $port;
-    public $dataArray0;
-    public $dataArray;
-    public $timestamp;
-    public $session2;
-    public $session;
+    
+    public $systemAddresses = [];
+    
+    public $sendPing;
+    public $sendPong;
 
     public function encode(){
-        parent::encode();
+        
     }
 
     public function decode(){
         parent::decode();
-        $this->cookie = $this->get(4);
-        $this->security = $this->get(1);
-        $this->port = $this->getShort();
-        $this->dataArray0 = $this->get($this->getByte());
-        $this->dataArray = $this->getDataArray(9);
-        $this->timestamp = $this->get(2);
-        $this->session2 = $this->getLong();
-        $this->session = $this->getLong();
-    }
-
-    private function getDataArray($len = 10){
-        $data = [];
-        for($i = 1; $i <= $len and !$this->feof(); ++$i){
-            $data[] = $this->get($this->getTriad());
-        }
-
-        return $data;
+        $this->getAddress($this->address, $this->port);
+         for($i = 0; $i < 10; ++$i){
+			$this->getAddress($addr, $port, $version);
+			$this->systemAddresses[$i] = [$addr, $port, $version];
+		}
+		
+        $this->sendPing = $this->getLong();
+        $this->sendPong = $this->getLong();
     }
 }

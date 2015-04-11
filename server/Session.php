@@ -349,9 +349,10 @@ class Session{
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
 					$pk = new SERVER_HANDSHAKE_DataPacket;
+					$pk->address = $this->address;
 					$pk->port = $this->port;
-					$pk->session = $dataPacket->session;
-					$pk->session2 = Binary::readLong("\x00\x00\x00\x00\x04\x44\x0b\xa9");
+					$pk->sendPing = $dataPacket->sendPing;
+					$pk->sendPong = bcadd($pk->sendPing, "1000");
 					$pk->encode();
 
 					$sendPacket = new EncapsulatedPacket();
@@ -477,6 +478,7 @@ class Session{
                     $pk = new OPEN_CONNECTION_REPLY_2();
                     $pk->mtuSize = $this->mtuSize;
                     $pk->serverID = $this->sessionManager->getID();
+					$pk->clientAddress = $this->address;
                     $pk->clientPort = $this->port;
                     $this->sendPacket($pk);
                     $this->state = self::STATE_CONNECTING_2;

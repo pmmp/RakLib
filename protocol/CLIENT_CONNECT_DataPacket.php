@@ -27,20 +27,20 @@ class CLIENT_CONNECT_DataPacket extends Packet{
     public static $ID = 0x09;
 
     public $clientID;
-    public $session;
-    public $unknown;
+    public $sendPing;
+    public $useSecurity = false;
 
     public function encode(){
         parent::encode();
         $this->putLong($this->clientID);
-        $this->putLong($this->session);
-        $this->put("\x00");
+        $this->putLong($this->sendPing);
+        $this->putByte($this->useSecurity ? 1 : 0);
     }
 
     public function decode(){
         parent::decode();
         $this->clientID = $this->getLong();
-        $this->session = $this->getLong();
-        $this->unknown = $this->get(1);
+        $this->sendPing = $this->getLong();
+        $this->useSecurity = $this->getByte() > 0;
     }
 }
