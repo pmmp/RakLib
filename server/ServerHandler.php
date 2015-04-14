@@ -64,6 +64,8 @@ class ServerHandler{
 	    $this->server->shutdown();
         $buffer = chr(RakLib::PACKET_SHUTDOWN);
         $this->server->pushMainToThreadPacket($buffer);
+		usleep(50000); //Sleep for 1 tick
+		$this->server->kill();
     }
 
     public function emergencyShutdown(){

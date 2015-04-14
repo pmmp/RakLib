@@ -46,6 +46,7 @@ class Session{
     public static $WINDOW_SIZE = 1024;
 
     private $messageIndex = 0;
+	private $channelIndex = [];
 
     /** @var SessionManager */
     private $sessionManager;
@@ -107,6 +108,10 @@ class Session{
 
 		$this->reliableWindowStart = 0;
 		$this->reliableWindowEnd = self::$WINDOW_SIZE;
+
+		for($i = 0; $i < 32; ++$i){
+			$this->channelIndex[$i] = 0;
+		}
     }
 
     public function getAddress(){
@@ -241,6 +246,20 @@ class Session{
 	        $this->needACK[$packet->identifierACK] = [];
         }
 
+		if(
+			$packet->reliability === 2 or
+			$packet->reliability === 3 or
+			$packet->reliability === 4 or
+			$packet->reliability === 6 or
+			$packet->reliability === 7
+		){
+			$packet->messageIndex = $this->messageIndex++;
+
+			if($packet->reliability === 3){
+				$packet->orderIndex = $this->channelIndex[$packet->orderChannel]++;
+			}
+		}
+
         if($packet->getTotalLength() + 4 > $this->mtuSize){
             $buffers = str_split($packet->buffer, $this->mtuSize - 34);
             $splitID = ++$this->splitID % 65536;
@@ -249,21 +268,21 @@ class Session{
 	            $pk->splitID = $splitID;
 	            $pk->hasSplit = true;
 	            $pk->splitCount = count($buffers);
-	            $pk->reliability = 2;
+	            $pk->reliability = $packet->reliability;
                 $pk->splitIndex = $count;
                 $pk->buffer = $buffer;
-                $pk->messageIndex = $this->messageIndex++;
+				if($count > 0){
+					$pk->messageIndex = $this->messageIndex++;
+				}else{
+					$pk->messageIndex = $packet->messageIndex;
+				}
+				if($pk->reliability === 3){
+					$pk->orderChannel = $packet->orderChannel;
+					$pk->orderIndex = $packet->orderIndex;
+				}
                 $this->addToQueue($pk, $flags | RakLib::PRIORITY_IMMEDIATE);
             }
         }else{
-            if(
-                $packet->reliability === 2 or
-                $packet->reliability === 4 or
-                $packet->reliability === 6 or
-                $packet->reliability === 7
-            ){
-                $packet->messageIndex = $this->messageIndex++;
-            }
             $this->addToQueue($packet, $flags);
         }
     }
