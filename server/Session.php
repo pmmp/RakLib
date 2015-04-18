@@ -202,9 +202,6 @@ class Session{
     }
 
     private function sendPacket(Packet $packet){
-		if(mt_rand(0, 100) < 40){
-			return;
-		}
         $this->sessionManager->sendPacket($packet, $this->address, $this->port);
     }
 
