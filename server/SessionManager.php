@@ -238,8 +238,6 @@ class SessionManager{
                             }
                         }
                     }
-
-                    gc_collect_cycles();
                 }
 
                 ++$this->ticks;

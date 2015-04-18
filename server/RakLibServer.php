@@ -35,8 +35,6 @@ class RakLibServer extends \Thread{
 	protected $mainPath;
 
 	/**
-	 * @param \Threaded       $externalThreaded
-	 * @param \Threaded       $internalThreaded
 	 * @param \ThreadedLogger $logger
 	 * @param \ClassLoader    $loader
 	 * @param int             $port

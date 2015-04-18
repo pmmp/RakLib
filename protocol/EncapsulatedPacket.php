@@ -49,7 +49,7 @@ class EncapsulatedPacket{
      *
      * @return EncapsulatedPacket
      */
-    public static function fromBinary($binary, $internal = false, &$offset = null){
+    public static function fromBinary(&$binary, $internal = false, &$offset = null){
 
 	    $packet = new EncapsulatedPacket();
 
