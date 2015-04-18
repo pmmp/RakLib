@@ -43,7 +43,7 @@ class Session{
     const STATE_CONNECTING_2 = 2;
     const STATE_CONNECTED = 3;
 
-    public static $WINDOW_SIZE = 1024;
+    public static $WINDOW_SIZE = 2048;
 
     private $messageIndex = 0;
 	private $channelIndex = [];
@@ -149,15 +149,22 @@ class Session{
         }
 
         if(count($this->packetToSend) > 0){
+			$limit = 16;
             foreach($this->packetToSend as $k => $pk){
-                $pk->seqNumber = $this->sendSeqNumber++;
-                $pk->sendTime = microtime(true);
+                $pk->sendTime = $time;
                 $pk->encode();
                 $this->recoveryQueue[$pk->seqNumber] = $pk;
                 unset($this->packetToSend[$k]);
                 $this->sendPacket($pk);
-                break;
+
+				if(--$limit <= 0){
+					break;
+				}
             }
+
+			if(count($this->packetToSend) > self::$WINDOW_SIZE){
+				$this->packetToSend = [];
+			}
         }
 
         if(count($this->needACK) > 0){
@@ -168,6 +175,16 @@ class Session{
                 }
             }
         }
+
+
+		foreach($this->recoveryQueue as $seq => $pk){
+			if($pk->sendTime < (time() - 8)){
+				$this->packetToSend[] = $pk;
+				unset($this->recoveryQueue[$seq]);
+			}else{
+				break;
+			}
+		}
 
 		foreach($this->receivedWindow as $seq => $bool){
 			if($seq < $this->windowStart){
@@ -185,6 +202,9 @@ class Session{
     }
 
     private function sendPacket(Packet $packet){
+		if(mt_rand(0, 100) < 40){
+			return;
+		}
         $this->sessionManager->sendPacket($packet, $this->address, $this->port);
     }
 
@@ -468,7 +488,9 @@ class Session{
                     $packet->decode();
                     foreach($packet->packets as $seq){
                         if(isset($this->recoveryQueue[$seq])){
-                            $this->packetToSend[] = $this->recoveryQueue[$seq];
+							$pk = $this->recoveryQueue[$seq];
+							$pk->seqNumber = $this->sendSeqNumber++;
+                            $this->packetToSend[] = $pk;
 							unset($this->recoveryQueue[$seq]);
                         }
                     }
