@@ -66,7 +66,7 @@ class UDPServerSocket{
      *
      * @return int
      */
-    public function writePacket(&$buffer, $dest, $port){
+    public function writePacket($buffer, $dest, $port){
         return socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
     }
 
