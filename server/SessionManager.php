@@ -101,12 +101,57 @@ class SessionManager{
 
         while(!$this->shutdown){
             $start = microtime(true);
-            $max = 50000;
+            $max = 5000;
             while(--$max and $this->receivePacket());
 	        while($this->receiveStream());
-            usleep(max(1, 20000 - (microtime(true) - $start) * 1000000));
+			$time = microtime(true) - $start;
+			if($time < 0.05){
+				time_sleep_until(microtime(true) + 0.05 - $time);
+			}
+			$this->tick();
         }
     }
+
+	private function tick(){
+		$time = microtime(true);
+		foreach($this->sessions as $session){
+			$session->update($time);
+		}
+
+		foreach($this->ipSec as $address => $count){
+			if($count >= $this->packetLimit){
+				$this->blockAddress($address);
+			}
+		}
+		$this->ipSec = [];
+
+
+
+		if(($this->ticks & 0b1111) === 0){
+			$diff = max(0.005, $time - $this->lastMeasure);
+			$this->streamOption("bandwidth", serialize([
+				"up" => $this->sendBytes / $diff,
+				"down" => $this->receiveBytes / $diff
+			]));
+			$this->lastMeasure = $time;
+			$this->sendBytes = 0;
+			$this->receiveBytes = 0;
+
+			if(count($this->block) > 0){
+				asort($this->block);
+				$now = microtime(true);
+				foreach($this->block as $address => $timeout){
+					if($timeout <= $now){
+						unset($this->block[$address]);
+					}else{
+						break;
+					}
+				}
+			}
+		}
+
+		++$this->ticks;
+	}
 
 
     private function receivePacket(){
@@ -202,45 +247,6 @@ class SessionManager{
                 $offset += 2;
                 $payload = substr($packet, $offset);
                 $this->socket->writePacket($payload, $address, $port);
-            }elseif($id === RakLib::PACKET_TICK){
-	            $time = microtime(true);
-                foreach($this->sessions as $session){
-                    $session->update($time);
-                }
-
-                foreach($this->ipSec as $address => $count){
-                    if($count >= $this->packetLimit){
-                        $this->blockAddress($address);
-                    }
-                }
-                $this->ipSec = [];
-
-
-
-                if(($this->ticks & 0b1111) === 0){
-                    $diff = max(0.005, $time - $this->lastMeasure);
-                    $this->streamOption("bandwidth", serialize([
-                        "up" => $this->sendBytes / $diff,
-                        "down" => $this->receiveBytes / $diff
-                    ]));
-                    $this->lastMeasure = $time;
-                    $this->sendBytes = 0;
-                    $this->receiveBytes = 0;
-
-                    if(count($this->block) > 0){
-                        asort($this->block);
-                        $now = microtime(true);
-                        foreach($this->block as $address => $timeout){
-                            if($timeout <= $now){
-                                unset($this->block[$address]);
-                            }else{
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                ++$this->ticks;
             }elseif($id === RakLib::PACKET_CLOSE_SESSION){
                 $len = ord($packet{$offset++});
                 $identifier = substr($packet, $offset, $len);

@@ -133,17 +133,12 @@ abstract class RakLib{
     const PACKET_RAW = 0x08;
 
     /*
-     * No payload
-     */
-    const PACKET_TICK = 0x09;
-
-    /*
      * RAW payload:
      * byte (address length)
      * byte[] (address)
      * int (timeout)
      */
-    const PACKET_BLOCK_ADDRESS = 0x0a;
+    const PACKET_BLOCK_ADDRESS = 0x09;
 
     /*
      * No payload

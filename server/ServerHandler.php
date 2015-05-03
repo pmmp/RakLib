@@ -36,10 +36,6 @@ class ServerHandler{
         $this->server->pushMainToThreadPacket($buffer);
     }
 
-    public function sendTick(){
-        $this->server->pushMainToThreadPacket(chr(RakLib::PACKET_TICK));
-    }
-
     public function sendRaw($address, $port, $payload){
         $buffer = chr(RakLib::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
         $this->server->pushMainToThreadPacket($buffer);

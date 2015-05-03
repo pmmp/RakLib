@@ -103,8 +103,8 @@ class Session{
         $this->lastUpdate = microtime(true);
         $this->startTime = microtime(true);
         $this->isActive = false;
-        $this->windowStart = -self::$WINDOW_SIZE / 2;
-        $this->windowEnd = self::$WINDOW_SIZE / 2;
+        $this->windowStart = -1;
+        $this->windowEnd = self::$WINDOW_SIZE;
 
 		$this->reliableWindowStart = 0;
 		$this->reliableWindowEnd = self::$WINDOW_SIZE;
