@@ -82,32 +82,18 @@ class EncapsulatedPacket{
          * 7: RELIABLE_ORDERED_WITH_ACK_RECEIPT
          */
 
-        if(
-            $reliability === 2 or
-            $reliability === 3 or
-            $reliability === 4 or
-            $reliability === 6 or
-            $reliability === 7
-        ){
-            $packet->messageIndex = Binary::readLTriad(substr($binary, $offset, 3));
-            $offset += 3;
-        }else{
-	        $packet->messageIndex = null;
-        }
+		if($reliability > 0){
+			if($reliability >= 2 and $reliability !== 5){
+				$packet->messageIndex = Binary::readLTriad(substr($binary, $offset, 3));
+				$offset += 3;
+			}
 
-        if(
-            $reliability === 1 or
-            $reliability === 3 or
-            $reliability === 4 or
-            $reliability === 7
-        ){
-            $packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
-            $offset += 3;
-            $packet->orderChannel = ord($binary{$offset++});
-        }else{
-	        $packet->orderIndex = null;
-	        $packet->orderChannel = null;
-        }
+			if($reliability <= 4 and $reliability !== 2){
+				$packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
+				$offset += 3;
+				$packet->orderChannel = ord($binary{$offset++});
+			}
+		}
 
         if($hasSplit){
             $packet->splitCount = Binary::readInt(substr($binary, $offset, 4));
@@ -116,10 +102,6 @@ class EncapsulatedPacket{
             $offset += 2;
             $packet->splitIndex = Binary::readInt(substr($binary, $offset, 4));
             $offset += 4;
-        }else{
-	        $packet->splitCount = null;
-	        $packet->splitID = null;
-	        $packet->splitIndex = null;
         }
 
         $packet->buffer = substr($binary, $offset, $length);
@@ -145,23 +127,15 @@ class EncapsulatedPacket{
         }else{
             $binary .= Binary::writeShort(strlen($this->buffer) << 3);
         }
-        if(
-            $this->reliability === 2 or
-            $this->reliability === 3 or
-            $this->reliability === 4 or
-            $this->reliability === 6 or
-            $this->reliability === 7
-        ){
-            $binary .= Binary::writeLTriad($this->messageIndex);
-        }
 
-        if(
-            $this->reliability === 1 or
-            $this->reliability === 3 or
-            $this->reliability === 4 or
-            $this->reliability === 7
-        ){
-            $binary .= Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel);
+        if($this->reliability > 0){
+			if($this->reliability >= 2 and $this->reliability !== 5){
+				$binary .= Binary::writeLTriad($this->messageIndex);
+			}
+
+			if($this->reliability <= 4 and $this->reliability !== 2){
+				$binary .= Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel);
+			}
         }
 
         if($this->hasSplit){
