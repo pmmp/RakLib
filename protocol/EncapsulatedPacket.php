@@ -111,7 +111,7 @@ class EncapsulatedPacket{
     }
 
     public function getTotalLength(){
-        return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 9 : 0);
+        return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 10 : 0);
     }
 
     /**
@@ -120,29 +120,16 @@ class EncapsulatedPacket{
      * @return string
      */
     public function toBinary($internal = false){
-        $binary = chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0));
-        if($internal){
-            $binary .= Binary::writeInt(strlen($this->buffer));
-            $binary .= Binary::writeInt($this->identifierACK);
-        }else{
-            $binary .= Binary::writeShort(strlen($this->buffer) << 3);
-        }
-
-        if($this->reliability > 0){
-			if($this->reliability >= 2 and $this->reliability !== 5){
-				$binary .= Binary::writeLTriad($this->messageIndex);
-			}
-
-			if($this->reliability <= 4 and $this->reliability !== 2){
-				$binary .= Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel);
-			}
-        }
-
-        if($this->hasSplit){
-            $binary .= Binary::writeInt($this->splitCount) . Binary::writeShort($this->splitID) . Binary::writeInt($this->splitIndex);
-        }
-
-        return $binary . $this->buffer;
+        return
+			chr(($this->reliability << 5) | ($this->hasSplit ? 0b00010000 : 0)) .
+			($internal ? Binary::writeInt(strlen($this->buffer)) . Binary::writeInt($this->identifierACK) : Binary::writeShort(strlen($this->buffer) << 3)) .
+			($this->reliability > 0 ?
+				(($this->reliability >= 2 and $this->reliability !== 5) ? Binary::writeLTriad($this->messageIndex) : "") .
+				(($this->reliability <= 4 and $this->reliability !== 2) ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "")
+				: ""
+			) .
+			($this->hasSplit ? Binary::writeInt($this->splitCount) . Binary::writeShort($this->splitID) . Binary::writeInt($this->splitIndex) : "")
+			. $this->buffer;
     }
 
     public function __toString(){
