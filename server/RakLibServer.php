@@ -66,7 +66,7 @@ class RakLibServer extends \Thread{
 		    $this->mainPath = \getcwd() . DIRECTORY_SEPARATOR;
 	    }
 
-        $this->start();
+        $this->start(PTHREADS_INHERIT_NONE);
     }
 
     protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
