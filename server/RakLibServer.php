@@ -23,7 +23,7 @@ class RakLibServer extends \Thread{
     protected $logger;
     protected $loader;
 
-    public $loadPaths = [];
+    public $loadPaths;
 
     protected $shutdown;
 
@@ -57,8 +57,8 @@ class RakLibServer extends \Thread{
         $this->loadPaths = array_reverse($loadPaths);
         $this->shutdown = false;
 
-        $this->externalQueue = \ThreadedFactory::create();
-        $this->internalQueue = \ThreadedFactory::create();
+        $this->externalQueue = new \Threaded;
+        $this->internalQueue = new \Threaded;
 
 	    if(\Phar::running(true) !== ""){
 		    $this->mainPath = \Phar::running(true);
