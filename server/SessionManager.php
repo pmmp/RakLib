@@ -168,7 +168,6 @@ class SessionManager{
 			}
 
 			$pid = ord($buffer{0});
-			
 			if($pid == UNCONNECTED_PONG::$ID){
 				return false;
 			}
@@ -188,12 +187,12 @@ class SessionManager{
 				$pk->pingID = $packet->pingID;
 				$pk->serverName = $this->getName();
 				$this->sendPacket($pk, $source, $port);
-			}elseif($buffer !== ""){
+			}else{
 				$this->streamRaw($source, $port, $buffer);
 				return true;
-			}else{
-				return false;
 			}
+		}elseif($buffer !== null){ //empty packet
+			return true;
 		}
 
 		return false;
