@@ -532,8 +532,8 @@ class Session{
 	}
 
 	public function close(){
-		$data = "\x00\x00\x08\x15";
-		$this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($data), RakLib::PRIORITY_IMMEDIATE); //CLIENT_DISCONNECT packet 0x15
+		$data = "\x60\x00\x08\x00\x00\x00\x00\x00\x00\x00\x15";
+		$this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($data)); //CLIENT_DISCONNECT packet 0x15
 		$this->sessionManager = null;
 	}
 }
