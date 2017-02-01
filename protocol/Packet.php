@@ -37,12 +37,7 @@ abstract class Packet{
 			return substr($this->buffer, $this->offset);
 		}
 
-		$buffer = "";
-		for(; $len > 0; --$len, ++$this->offset){
-			$buffer .= $this->buffer{$this->offset};
-		}
-
-		return $buffer;
+		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
 	}
 
 	protected function getLong($signed = true){
