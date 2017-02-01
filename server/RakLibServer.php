@@ -213,25 +213,29 @@ class RakLibServer extends \Thread{
 	}
 
 	public function run(){
-		//Load removed dependencies, can't use require_once()
-		foreach($this->loadPaths as $name => $path){
-			if(!class_exists($name, false) and !interface_exists($name, false)){
-				require($path);
+		try{
+			//Load removed dependencies, can't use require_once()
+			foreach($this->loadPaths as $name => $path){
+				if(!class_exists($name, false) and !interface_exists($name, false)){
+					require($path);
+				}
 			}
+			$this->loader->register(true);
+
+			gc_enable();
+			error_reporting(-1);
+			ini_set("display_errors", 1);
+			ini_set("display_startup_errors", 1);
+
+			set_error_handler([$this, "errorHandler"], E_ALL);
+			register_shutdown_function([$this, "shutdownHandler"]);
+
+
+			$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
+			new SessionManager($this, $socket);
+		}catch(\Throwable $e){
+			$this->logger->logException($e);
 		}
-		$this->loader->register(true);
-
-		gc_enable();
-		error_reporting(-1);
-		ini_set("display_errors", 1);
-		ini_set("display_startup_errors", 1);
-
-		set_error_handler([$this, "errorHandler"], E_ALL);
-		register_shutdown_function([$this, "shutdownHandler"]);
-
-
-		$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-		new SessionManager($this, $socket);
 	}
 
 }
