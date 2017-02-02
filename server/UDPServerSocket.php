@@ -33,8 +33,8 @@ class UDPServerSocket{
 			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
-			$logger->critical("**** FAILED TO BIND TO " . $interface . ":" . $port . "!", true, true, 0);
-			$logger->critical("Perhaps a server is already running on that port?", true, true, 0);
+			$logger->critical("**** FAILED TO BIND TO " . $interface . ":" . $port . "!");
+			$logger->critical("Perhaps a server is already running on that port?");
 			exit(1);
 		}
 		socket_set_nonblock($this->socket);
