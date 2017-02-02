@@ -166,7 +166,7 @@ class RakLibServer extends \Thread{
 		if(($pos = strpos($errstr, "\n")) !== false){
 			$errstr = substr($errstr, 0, $pos);
 		}
-		$oldFile = $errfile;
+
 		$errfile = $this->cleanPath($errfile);
 
 		$this->getLogger()->debug("An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
