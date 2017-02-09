@@ -74,8 +74,15 @@ abstract class Packet{
 		if($version === 4){
 			$addr = ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff);
 			$port = $this->getShort(false);
+		}elseif($version === 6){
+			//http://man7.org/linux/man-pages/man7/ipv6.7.html
+			Binary::readLShort($this->get(2)); //Family, AF_INET6
+			$port = $this->getShort(false);
+			$this->getInt(); //flow info
+			$addr = inet_ntop($this->get(16));
+			$this->getInt(); //scope ID
 		}else{
-			//TODO: IPv6
+			throw new \UnexpectedValueException("Unknown IP address version $version");
 		}
 	}
 
@@ -123,8 +130,14 @@ abstract class Packet{
 				$this->putByte((~((int) $b)) & 0xff);
 			}
 			$this->putShort($port);
+		}elseif($version === 6){
+			$this->put(Binary::writeLShort(AF_INET6));
+			$this->putShort($port);
+			$this->putInt(0);
+			$this->put(inet_pton($addr));
+			$this->putInt(0);
 		}else{
-			//IPv6
+			throw new \InvalidArgumentException("IP version $version is not supported");
 		}
 	}
 
