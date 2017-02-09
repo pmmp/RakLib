@@ -222,7 +222,7 @@ class Session{
 	 * @param int                $flags
 	 */
 	private function addToQueue(EncapsulatedPacket $pk, $flags = RakLib::PRIORITY_NORMAL){
-		$priority = $flags & 0b0000111;
+		$priority = $flags & 0b00000111;
 		if($pk->needACK and $pk->messageIndex !== null){
 			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
 		}
