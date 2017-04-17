@@ -41,8 +41,8 @@ abstract class Packet{
 		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
 	}
 
-	protected function getLong($signed = true){
-		return Binary::readLong($this->get(8), $signed);
+	protected function getLong(){
+		return Binary::readLong($this->get(8));
 	}
 
 	protected function getInt(){

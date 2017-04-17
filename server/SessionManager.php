@@ -72,6 +72,8 @@ class SessionManager{
 	protected $block = [];
 	protected $ipSec = [];
 
+	protected $serverId;
+
 	public $portChecking = true;
 
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){

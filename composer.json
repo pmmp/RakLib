@@ -1,0 +1,12 @@
+{
+    "name": "pmmp/rak-lib",
+    "description": "RakNet server implementation written in PHP",
+    "type": "library",
+    "license": "GPL-3.0",
+    "require": {
+      "ext-pthreads": "3.1.6"
+    },
+    "autoload": {
+        "classmap": ["protocol/", "server/", "RakLib.php", "Binary.php"]
+    }
+}
