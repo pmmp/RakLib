@@ -155,46 +155,52 @@ class SessionManager{
 
 
 	private function receivePacket(){
-		$len = $this->socket->readPacket($buffer, $source, $port);
-		if($buffer !== null){
-			$this->receiveBytes += $len;
-			if(isset($this->block[$source])){
-				return true;
-			}
-
-			if(isset($this->ipSec[$source])){
-				$this->ipSec[$source]++;
-			}else{
-				$this->ipSec[$source] = 1;
-			}
-
-			if($len > 0){
-				$pid = ord($buffer{0});
-
-				if($pid === UNCONNECTED_PING::$ID){
-					//No need to create a session for just pings
-					$packet = new UNCONNECTED_PING;
-					$packet->buffer = $buffer;
-					$packet->decode();
-
-					$pk = new UNCONNECTED_PONG();
-					$pk->serverID = $this->getID();
-					$pk->pingID = $packet->pingID;
-					$pk->serverName = $this->getName();
-					$this->sendPacket($pk, $source, $port);
-				}elseif($pid === UNCONNECTED_PONG::$ID){
-					//ignored
-				}elseif(($packet = $this->getPacketFromPool($pid)) !== null){
-					$packet->buffer = $buffer;
-					$this->getSession($source, $port)->handlePacket($packet);
-				}else{
-					$this->streamRaw($source, $port, $buffer);
+		$packets = $this->socket->readPackets();
+		$isExecuted = false;
+		foreach($packets as $packet){
+			$source = $packet[0];
+			$port = $packet[1];
+			$len = $packet[2];
+			$buffer = $packet[3];
+			if($buffer !== null){
+				$this->receiveBytes += $len;
+				if(isset($this->block[$source])){
+					return true;
 				}
-			}
-			return true;
-		}
 
-		return false;
+				if(isset($this->ipSec[$source])){
+					$this->ipSec[$source]++;
+				}else{
+					$this->ipSec[$source] = 1;
+				}
+
+				if($len > 0){
+					$pid = ord($buffer{0});
+
+					if($pid === UNCONNECTED_PING::$ID){
+						//No need to create a session for just pings
+						$packet = new UNCONNECTED_PING;
+						$packet->buffer = $buffer;
+						$packet->decode();
+
+						$pk = new UNCONNECTED_PONG();
+						$pk->serverID = $this->getID();
+						$pk->pingID = $packet->pingID;
+						$pk->serverName = $this->getName();
+						$this->sendPacket($pk, $source, $port);
+					}elseif($pid === UNCONNECTED_PONG::$ID){
+						//ignored
+					}elseif(($packet = $this->getPacketFromPool($pid)) !== null){
+						$packet->buffer = $buffer;
+						$this->getSession($source, $port)->handlePacket($packet);
+					}else{
+						$this->streamRaw($source, $port, $buffer);
+					}
+				}
+				$isExecuted = true;
+			}
+		}
+		return $isExecuted;
 	}
 
 	public function sendPacket(Packet $packet, $dest, $port){
