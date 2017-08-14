@@ -1,9 +1,10 @@
-# RakLib
+RakLib
+======
+
+> This project is not affiliated with Jenkins Software LLC nor RakNet
 
 UDP network library that follows the RakNet protocol for PHP
 
-
-_This project is not affiliated with Jenkins Software LLC nor RakNet._
 
 ```
 This program is free software: you can redistribute it and/or modify
@@ -18,10 +19,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+```
 
 ## Exceptions
 The usage of this library with PocketMine-MP will allow the creation
 of derivated non open-source works, without direct usage of RakLib.
 Only PocketMine-MP and their plugins will be able to use the library
 without license restrictions.
-```
