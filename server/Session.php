@@ -305,7 +305,7 @@ class Session{
 			$this->addToQueue($packet, $flags);
 		}
 	}
-	
+
 	private function handleSplit(EncapsulatedPacket $packet){
 		if($packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitIndex >= self::MAX_SPLIT_SIZE or $packet->splitIndex < 0){
 			return;
@@ -387,6 +387,7 @@ class Session{
 			if($this->state === self::STATE_CONNECTED){
 				$this->handleSplit($packet);
 			}
+
 			return;
 		}
 

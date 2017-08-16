@@ -72,7 +72,7 @@ abstract class Packet{
 	protected function getAddress(&$addr, &$port, &$version = null){
 		$version = $this->getByte();
 		if($version === 4){
-			$addr = ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff) .".". ((~$this->getByte()) & 0xff);
+			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
 			$port = $this->getShort(false);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
@@ -122,7 +122,7 @@ abstract class Packet{
 		$this->putShort(strlen($v));
 		$this->put($v);
 	}
-	
+
 	protected function putAddress($addr, $port, $version = 4){
 		$this->putByte($version);
 		if($version === 4){
@@ -153,6 +153,7 @@ abstract class Packet{
 		$this->buffer = null;
 		$this->offset = 0;
 		$this->sendTime = null;
+
 		return $this;
 	}
 }

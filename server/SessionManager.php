@@ -128,7 +128,6 @@ class SessionManager{
 		$this->ipSec = [];
 
 
-
 		if(($this->ticks & 0b1111) === 0){
 			$diff = max(0.005, $time - $this->lastMeasure);
 			$this->streamOption("bandwidth", serialize([
@@ -193,6 +192,7 @@ class SessionManager{
 					$this->streamRaw($source, $port, $buffer);
 				}
 			}
+
 			return true;
 		}
 
@@ -357,7 +357,7 @@ class SessionManager{
 
 	/**
 	 * @param string $ip
-	 * @param int	$port
+	 * @param int    $port
 	 *
 	 * @return Session
 	 */

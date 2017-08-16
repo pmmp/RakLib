@@ -40,7 +40,7 @@ class SERVER_HANDSHAKE_DataPacket extends Packet{
 		["0.0.0.0", 0, 4],
 		["0.0.0.0", 0, 4]
 	];
-	
+
 	public $sendPing;
 	public $sendPong;
 
@@ -51,7 +51,7 @@ class SERVER_HANDSHAKE_DataPacket extends Packet{
 		for($i = 0; $i < 10; ++$i){
 			$this->putAddress($this->systemAddresses[$i][0], $this->systemAddresses[$i][1], $this->systemAddresses[$i][2]);
 		}
-		
+
 		$this->putLong($this->sendPing);
 		$this->putLong($this->sendPong);
 	}
