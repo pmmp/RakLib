@@ -74,6 +74,8 @@ class SessionManager{
 
 	public $portChecking = true;
 
+	protected $serverId;
+
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
@@ -401,7 +403,7 @@ class SessionManager{
 	/**
 	 * @param $id
 	 *
-	 * @return Packet
+	 * @return Packet|null
 	 */
 	public function getPacketFromPool($id){
 		if(isset($this->packetPool[$id])){
