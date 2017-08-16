@@ -63,7 +63,7 @@ class RakLibServer extends \Thread{
 		if(\Phar::running(true) !== ""){
 			$this->mainPath = \Phar::running(true);
 		}else{
-			$this->mainPath = \getcwd() . DIRECTORY_SEPARATOR;
+			$this->mainPath = \realpath(\getcwd()) . DIRECTORY_SEPARATOR;
 		}
 		$this->start();
 	}
@@ -208,7 +208,7 @@ class RakLibServer extends \Thread{
 	}
 
 	public function cleanPath($path){
-		return rtrim(str_replace(["\\", ".php", "phar://", rtrim(str_replace(["\\", "phar://"], ["/", ""], $this->mainPath), "/")], ["/", "", "", ""], $path), "/");
+		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
 	}
 
 	public function run(){
