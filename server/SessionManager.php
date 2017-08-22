@@ -82,8 +82,6 @@ class SessionManager{
 		$this->registerPackets();
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
-
-		$this->run();
 	}
 
 	public function getPort(){
