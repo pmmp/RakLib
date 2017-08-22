@@ -52,6 +52,9 @@ class RakLibServer extends \Thread{
 		}
 
 		$this->interface = $interface;
+
+		$this->serverId = mt_rand(0, PHP_INT_MAX);
+
 		$this->logger = $logger;
 		$this->loader = $loader;
 		$loadPaths = [];
@@ -242,9 +245,7 @@ class RakLibServer extends \Thread{
 
 
 			$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-			$manager = new SessionManager($this, $socket);
-			$this->serverId = $manager->getID();
-			$manager->run();
+			new SessionManager($this, $socket);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 		}

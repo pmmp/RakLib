@@ -74,14 +74,12 @@ class SessionManager{
 
 	public $portChecking = true;
 
-	protected $serverId;
-
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
 		$this->registerPackets();
 
-		$this->serverId = mt_rand(0, PHP_INT_MAX);
+		$this->run();
 	}
 
 	public function getPort(){
@@ -391,7 +389,7 @@ class SessionManager{
 	}
 
 	public function getID(){
-		return $this->serverId;
+		return $this->server->getServerId();
 	}
 
 	private function registerPacket($id, $class){
