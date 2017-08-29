@@ -66,6 +66,7 @@ class OfflineMessageHandler{
 				}else{
 					$this->sessionManager->getLogger()->debug("Not creating session for $source $port due to mismatched port, expected " . $this->sessionManager->getPort() . ", got " . $packet->serverPort);
 				}
+
 				return true;
 		}
 

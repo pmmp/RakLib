@@ -28,14 +28,14 @@ class OPEN_CONNECTION_REQUEST_1 extends OfflineMessage{
 
 	public function encode(){
 		parent::encode();
-		$this->put(RakLib::MAGIC);
+		$this->writeMagic();
 		$this->putByte($this->protocol);
 		$this->put(str_repeat(chr(0x00), $this->mtuSize - 18));
 	}
 
 	public function decode(){
 		parent::decode();
-		$this->offset += 16; //Magic
+		$this->readMagic();
 		$this->protocol = $this->getByte();
 		$this->mtuSize = strlen($this->get(true)) + 18;
 	}

@@ -17,9 +17,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-
-use raklib\RakLib;
-
 class OPEN_CONNECTION_REPLY_1 extends OfflineMessage{
 	public static $ID = 0x06;
 
@@ -28,7 +25,7 @@ class OPEN_CONNECTION_REPLY_1 extends OfflineMessage{
 
 	public function encode(){
 		parent::encode();
-		$this->put(RakLib::MAGIC);
+		$this->writeMagic();
 		$this->putLong($this->serverID);
 		$this->putByte(0); //Server security
 		$this->putShort($this->mtuSize);
@@ -36,7 +33,7 @@ class OPEN_CONNECTION_REPLY_1 extends OfflineMessage{
 
 	public function decode(){
 		parent::decode();
-		$this->offset += 16; //Magic
+		$this->readMagic();
 		$this->serverID = $this->getLong();
 		$this->getByte(); //security
 		$this->mtuSize = $this->getShort();

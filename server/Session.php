@@ -24,10 +24,6 @@ use raklib\protocol\DATA_PACKET_4;
 use raklib\protocol\DataPacket;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
-use raklib\protocol\OPEN_CONNECTION_REPLY_1;
-use raklib\protocol\OPEN_CONNECTION_REPLY_2;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_1;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_2;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\PING_DataPacket;
@@ -512,6 +508,7 @@ class Session{
 		$data = "\x60\x00\x08\x00\x00\x00\x00\x00\x00\x00\x15";
 		$this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($data)); //CLIENT_DISCONNECT packet 0x15
 		$this->sendQueue();
+		$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
 		$this->sessionManager = null;
 	}
 }

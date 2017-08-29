@@ -177,10 +177,8 @@ class SessionManager{
 				try{
 					$pid = ord($buffer{0});
 
-					$pk = $this->getPacketFromPool($pid);
+					$pk = $this->getPacketFromPool($pid, $buffer);
 					if($pk !== null){
-						$pk->buffer = $buffer;
-
 						if(($session = $this->getSession($source, $port)) !== null){
 							if($pk instanceof OfflineMessage){
 								$this->server->getLogger()->debug("Ignored offline message " . get_class($pk) . " from $source $port due to session already opened");
@@ -189,8 +187,12 @@ class SessionManager{
 							}
 						}elseif($pk instanceof OfflineMessage){
 							$pk->decode();
-							if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
-								$this->server->getLogger()->debug("Unhandled offline message " . get_class($pk) . " received from $source $port");
+							if($pk->isValid()){
+								if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
+									$this->server->getLogger()->debug("Unhandled offline message " . get_class($pk) . " received from $source $port");
+								}
+							}else{
+								$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
 							}
 						}else{
 							$this->server->getLogger()->debug("Unhandled packet ". get_class($pk) . " received from $source $port");
@@ -420,14 +422,17 @@ class SessionManager{
 	}
 
 	/**
-	 * @param int $id
+	 * @param int    $id
+	 * @param string $buffer
 	 *
 	 * @return Packet|null
 	 */
-	public function getPacketFromPool($id){
+	public function getPacketFromPool(int $id, string $buffer = ""){
 		$pk = $this->packetPool[$id];
 		if($pk !== null){
-			return clone $pk;
+			$pk = clone $pk;
+			$pk->buffer = $buffer;
+			return $pk;
 		}
 
 		return null;
