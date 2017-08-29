@@ -180,13 +180,18 @@ class SessionManager{
 					$pk = $this->getPacketFromPool($pid);
 					if($pk !== null){
 						$pk->buffer = $buffer;
-						if($pk instanceof OfflineMessage){
+
+						if(($session = $this->getSession($source, $port)) !== null){
+							if($pk instanceof OfflineMessage){
+								$this->server->getLogger()->debug("Ignored offline message " . get_class($pk) . " from $source $port due to session already opened");
+							}else{
+								$session->handlePacket($pk);
+							}
+						}elseif($pk instanceof OfflineMessage){
 							$pk->decode();
 							if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
 								$this->server->getLogger()->debug("Unhandled offline message " . get_class($pk) . " received from $source $port");
 							}
-						}elseif(($session = $this->getSession($source, $port)) !== null){
-							$session->handlePacket($pk);
 						}else{
 							$this->server->getLogger()->debug("Unhandled packet ". get_class($pk) . " received from $source $port");
 						}
