@@ -20,7 +20,7 @@ namespace raklib\protocol;
 
 use raklib\RakLib;
 
-class OPEN_CONNECTION_REQUEST_2 extends Packet{
+class OPEN_CONNECTION_REQUEST_2 extends OfflineMessage{
 	public static $ID = 0x07;
 
 	public $clientID;

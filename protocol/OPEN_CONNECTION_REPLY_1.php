@@ -20,7 +20,7 @@ namespace raklib\protocol;
 
 use raklib\RakLib;
 
-class OPEN_CONNECTION_REPLY_1 extends Packet{
+class OPEN_CONNECTION_REPLY_1 extends OfflineMessage{
 	public static $ID = 0x06;
 
 	public $serverID;
