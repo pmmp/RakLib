@@ -42,10 +42,11 @@ class RakLibServer extends \Thread{
 	 * @param \ClassLoader    $loader
 	 * @param int             $port
 	 * @param string          $interface
+	 * @param bool            $autoStart
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0"){
+	public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0", bool $autoStart = true){
 		$this->port = (int) $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
@@ -71,7 +72,10 @@ class RakLibServer extends \Thread{
 		}else{
 			$this->mainPath = \realpath(\getcwd()) . DIRECTORY_SEPARATOR;
 		}
-		$this->start();
+
+		if($autoStart){
+			$this->start();
+		}
 	}
 
 	protected function addDependency(array &$loadPaths, \ReflectionClass $dep){
