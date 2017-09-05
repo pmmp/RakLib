@@ -47,7 +47,8 @@ use raklib\protocol\UNCONNECTED_PONG;
 use raklib\RakLib;
 
 class SessionManager{
-	protected $packetPool = [];
+	/** @var \SplFixedArray<Packet|null> */
+	protected $packetPool;
 
 	/** @var RakLibServer */
 	protected $server;
@@ -397,24 +398,31 @@ class SessionManager{
 		return $this->server->getServerId();
 	}
 
+	/**
+	 * @param int    $id
+	 * @param string $class
+	 */
 	private function registerPacket($id, $class){
 		$this->packetPool[$id] = new $class;
 	}
 
 	/**
-	 * @param $id
+	 * @param int $id
 	 *
 	 * @return Packet|null
 	 */
 	public function getPacketFromPool($id){
-		if(isset($this->packetPool[$id])){
-			return clone $this->packetPool[$id];
+		$pk = $this->packetPool[$id];
+		if($pk !== null){
+			return clone $pk;
 		}
 
 		return null;
 	}
 
 	private function registerPackets(){
+		$this->packetPool = new \SplFixedArray(256);
+
 		//$this->registerPacket(UNCONNECTED_PING::$ID, UNCONNECTED_PING::class);
 		$this->registerPacket(UNCONNECTED_PING_OPEN_CONNECTIONS::$ID, UNCONNECTED_PING_OPEN_CONNECTIONS::class);
 		$this->registerPacket(OPEN_CONNECTION_REQUEST_1::$ID, OPEN_CONNECTION_REQUEST_1::class);
