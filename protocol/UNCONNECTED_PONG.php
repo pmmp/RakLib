@@ -17,10 +17,7 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-
-use raklib\RakLib;
-
-class UNCONNECTED_PONG extends Packet{
+class UNCONNECTED_PONG extends OfflineMessage{
 	public static $ID = 0x1c;
 
 	public $pingID;
@@ -31,7 +28,7 @@ class UNCONNECTED_PONG extends Packet{
 		parent::encode();
 		$this->putLong($this->pingID);
 		$this->putLong($this->serverID);
-		$this->put(RakLib::MAGIC);
+		$this->writeMagic();
 		$this->putString($this->serverName);
 	}
 
@@ -39,7 +36,7 @@ class UNCONNECTED_PONG extends Packet{
 		parent::decode();
 		$this->pingID = $this->getLong();
 		$this->serverID = $this->getLong();
-		$this->offset += 16; //magic
+		$this->readMagic();
 		$this->serverName = $this->getString();
 	}
 }

@@ -24,10 +24,6 @@ use raklib\protocol\DATA_PACKET_4;
 use raklib\protocol\DataPacket;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
-use raklib\protocol\OPEN_CONNECTION_REPLY_1;
-use raklib\protocol\OPEN_CONNECTION_REPLY_2;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_1;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_2;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\PING_DataPacket;
@@ -36,10 +32,8 @@ use raklib\protocol\SERVER_HANDSHAKE_DataPacket;
 use raklib\RakLib;
 
 class Session{
-	const STATE_UNCONNECTED = 0;
-	const STATE_CONNECTING_1 = 1;
-	const STATE_CONNECTING_2 = 2;
-	const STATE_CONNECTED = 3;
+	const STATE_CONNECTING = 0;
+	const STATE_CONNECTED = 1;
 
 	const MAX_SPLIT_SIZE = 128;
 	const MAX_SPLIT_COUNT = 4;
@@ -53,8 +47,8 @@ class Session{
 	private $sessionManager;
 	private $address;
 	private $port;
-	private $state = self::STATE_UNCONNECTED;
-	private $mtuSize = 548; //Min size
+	private $state = self::STATE_CONNECTING;
+	private $mtuSize;
 	private $id = 0;
 	private $splitID = 0;
 
@@ -97,10 +91,11 @@ class Session{
 	private $reliableWindow = [];
 	private $lastReliableIndex = -1;
 
-	public function __construct(SessionManager $sessionManager, $address, $port){
+	public function __construct(SessionManager $sessionManager, $address, $port, $clientId, int $mtuSize){
 		$this->sessionManager = $sessionManager;
 		$this->address = $address;
 		$this->port = $port;
+		$this->id = $clientId;
 		$this->sendQueue = new DATA_PACKET_4();
 		$this->lastUpdate = microtime(true);
 		$this->startTime = microtime(true);
@@ -114,6 +109,8 @@ class Session{
 		for($i = 0; $i < 32; ++$i){
 			$this->channelIndex[$i] = 0;
 		}
+
+		$this->mtuSize = $mtuSize;
 	}
 
 	public function getAddress(){
@@ -394,7 +391,7 @@ class Session{
 
 		$id = ord($packet->buffer{0});
 		if($id < 0x80){ //internal data packet
-			if($this->state === self::STATE_CONNECTING_2){
+			if($this->state === self::STATE_CONNECTING){
 				if($id === CLIENT_CONNECT_DataPacket::$ID){
 					$dataPacket = new CLIENT_CONNECT_DataPacket;
 					$dataPacket->buffer = $packet->buffer;
@@ -449,83 +446,59 @@ class Session{
 	public function handlePacket(Packet $packet){
 		$this->isActive = true;
 		$this->lastUpdate = microtime(true);
-		if($this->state === self::STATE_CONNECTED or $this->state === self::STATE_CONNECTING_2){
-			if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
-				$packet->decode();
 
-				if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->receivedWindow[$packet->seqNumber])){
-					return;
-				}
+		if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
+			$packet->decode();
 
-				$diff = $packet->seqNumber - $this->lastSeqNumber;
+			if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->receivedWindow[$packet->seqNumber])){
+				return;
+			}
 
-				unset($this->NACKQueue[$packet->seqNumber]);
-				$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
-				$this->receivedWindow[$packet->seqNumber] = $packet->seqNumber;
+			$diff = $packet->seqNumber - $this->lastSeqNumber;
 
-				if($diff !== 1){
-					for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){
-						if(!isset($this->receivedWindow[$i])){
-							$this->NACKQueue[$i] = $i;
-						}
-					}
-				}
+			unset($this->NACKQueue[$packet->seqNumber]);
+			$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
+			$this->receivedWindow[$packet->seqNumber] = $packet->seqNumber;
 
-				if($diff >= 1){
-					$this->lastSeqNumber = $packet->seqNumber;
-					$this->windowStart += $diff;
-					$this->windowEnd += $diff;
-				}
-
-				foreach($packet->packets as $pk){
-					$this->handleEncapsulatedPacket($pk);
-				}
-			}else{
-				if($packet instanceof ACK){
-					$packet->decode();
-					foreach($packet->packets as $seq){
-						if(isset($this->recoveryQueue[$seq])){
-							foreach($this->recoveryQueue[$seq]->packets as $pk){
-								if($pk instanceof EncapsulatedPacket and $pk->needACK and $pk->messageIndex !== null){
-									unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
-								}
-							}
-							unset($this->recoveryQueue[$seq]);
-						}
-					}
-				}elseif($packet instanceof NACK){
-					$packet->decode();
-					foreach($packet->packets as $seq){
-						if(isset($this->recoveryQueue[$seq])){
-							$pk = $this->recoveryQueue[$seq];
-							$pk->seqNumber = $this->sendSeqNumber++;
-							$this->packetToSend[] = $pk;
-							unset($this->recoveryQueue[$seq]);
-						}
+			if($diff !== 1){
+				for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){
+					if(!isset($this->receivedWindow[$i])){
+						$this->NACKQueue[$i] = $i;
 					}
 				}
 			}
 
-		}elseif($packet::$ID > 0x00 and $packet::$ID < 0x80){ //Not Data packet :)
-			$packet->decode();
-			if($packet instanceof OPEN_CONNECTION_REQUEST_1){
-				$packet->protocol; //TODO: check protocol number and refuse connections
-				$pk = new OPEN_CONNECTION_REPLY_1();
-				$pk->mtuSize = $packet->mtuSize;
-				$pk->serverID = $this->sessionManager->getID();
-				$this->sendPacket($pk);
-				$this->state = self::STATE_CONNECTING_1;
-			}elseif($this->state === self::STATE_CONNECTING_1 and $packet instanceof OPEN_CONNECTION_REQUEST_2){
-				$this->id = $packet->clientID;
-				if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
-					$this->mtuSize = min(abs($packet->mtuSize), 1464); //Max size, do not allow creating large buffers to fill server memory
-					$pk = new OPEN_CONNECTION_REPLY_2();
-					$pk->mtuSize = $this->mtuSize;
-					$pk->serverID = $this->sessionManager->getID();
-					$pk->clientAddress = $this->address;
-					$pk->clientPort = $this->port;
-					$this->sendPacket($pk);
-					$this->state = self::STATE_CONNECTING_2;
+			if($diff >= 1){
+				$this->lastSeqNumber = $packet->seqNumber;
+				$this->windowStart += $diff;
+				$this->windowEnd += $diff;
+			}
+
+			foreach($packet->packets as $pk){
+				$this->handleEncapsulatedPacket($pk);
+			}
+		}else{
+			if($packet instanceof ACK){
+				$packet->decode();
+				foreach($packet->packets as $seq){
+					if(isset($this->recoveryQueue[$seq])){
+						foreach($this->recoveryQueue[$seq]->packets as $pk){
+							if($pk instanceof EncapsulatedPacket and $pk->needACK and $pk->messageIndex !== null){
+								unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
+							}
+						}
+						unset($this->recoveryQueue[$seq]);
+					}
+				}
+			}elseif($packet instanceof NACK){
+				$packet->decode();
+				foreach($packet->packets as $seq){
+					if(isset($this->recoveryQueue[$seq])){
+						$pk = $this->recoveryQueue[$seq];
+						$pk->seqNumber = $this->sendSeqNumber++;
+						$this->packetToSend[] = $pk;
+						unset($this->recoveryQueue[$seq]);
+					}
 				}
 			}
 		}
@@ -535,6 +508,7 @@ class Session{
 		$data = "\x60\x00\x08\x00\x00\x00\x00\x00\x00\x00\x15";
 		$this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($data)); //CLIENT_DISCONNECT packet 0x15
 		$this->sendQueue();
+		$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
 		$this->sessionManager = null;
 	}
 }
