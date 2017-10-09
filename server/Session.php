@@ -223,22 +223,7 @@ class Session{
 		if($pk->needACK and $pk->messageIndex !== null){
 			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
 		}
-		if($priority === RakLib::PRIORITY_IMMEDIATE){ //Skip queues
-			$packet = new DATA_PACKET_0();
-			$packet->seqNumber = $this->sendSeqNumber++;
-			if($pk->needACK){
-				$packet->packets[] = clone $pk;
-				$pk->needACK = false;
-			}else{
-				$packet->packets[] = $pk->toBinary();
-			}
 
-			$this->sendPacket($packet);
-			$packet->sendTime = microtime(true);
-			$this->recoveryQueue[$packet->seqNumber] = $packet;
-
-			return;
-		}
 		$length = $this->sendQueue->length();
 		if($length + $pk->getTotalLength() > $this->mtuSize){
 			$this->sendQueue();
@@ -249,6 +234,11 @@ class Session{
 			$pk->needACK = false;
 		}else{
 			$this->sendQueue->packets[] = $pk->toBinary();
+		}
+
+		if($priority === RakLib::PRIORITY_IMMEDIATE){
+			// Forces pending sends to go out now, rather than waiting to the next update interval
+			$this->sendQueue();
 		}
 	}
 
