@@ -68,8 +68,6 @@ class Session{
 
 	/** @var float */
 	private $lastUpdate;
-	/** @var float */
-	private $startTime;
 	/** @var float|null */
 	private $disconnectionTime;
 
@@ -121,7 +119,6 @@ class Session{
 		$this->id = $clientId;
 		$this->sendQueue = new DATA_PACKET_4();
 		$this->lastUpdate = microtime(true);
-		$this->startTime = microtime(true);
 		$this->windowStart = -1;
 		$this->windowEnd = self::$WINDOW_SIZE;
 
