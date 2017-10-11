@@ -17,7 +17,7 @@ namespace raklib\server;
 
 use raklib\Binary;
 use raklib\protocol\ACK;
-use raklib\protocol\ADVERTISE_SYSTEM;
+use raklib\protocol\AdvertiseSystem;
 use raklib\protocol\DATA_PACKET_0;
 use raklib\protocol\DATA_PACKET_1;
 use raklib\protocol\DATA_PACKET_2;
@@ -37,14 +37,14 @@ use raklib\protocol\DATA_PACKET_F;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\OfflineMessage;
-use raklib\protocol\OPEN_CONNECTION_REPLY_1;
-use raklib\protocol\OPEN_CONNECTION_REPLY_2;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_1;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_2;
+use raklib\protocol\OpenConnectionReply1;
+use raklib\protocol\OpenConnectionReply2;
+use raklib\protocol\OpenConnectionRequest1;
+use raklib\protocol\OpenConnectionRequest2;
 use raklib\protocol\Packet;
-use raklib\protocol\UNCONNECTED_PING;
-use raklib\protocol\UNCONNECTED_PING_OPEN_CONNECTIONS;
-use raklib\protocol\UNCONNECTED_PONG;
+use raklib\protocol\UnconnectedPing;
+use raklib\protocol\UnconnectedPingOpenConnections;
+use raklib\protocol\UnconnectedPong;
 use raklib\RakLib;
 
 class SessionManager{
@@ -446,14 +446,14 @@ class SessionManager{
 	private function registerPackets(){
 		$this->packetPool = new \SplFixedArray(256);
 
-		$this->registerPacket(UNCONNECTED_PING::$ID, UNCONNECTED_PING::class);
-		$this->registerPacket(UNCONNECTED_PING_OPEN_CONNECTIONS::$ID, UNCONNECTED_PING_OPEN_CONNECTIONS::class);
-		$this->registerPacket(OPEN_CONNECTION_REQUEST_1::$ID, OPEN_CONNECTION_REQUEST_1::class);
-		$this->registerPacket(OPEN_CONNECTION_REPLY_1::$ID, OPEN_CONNECTION_REPLY_1::class);
-		$this->registerPacket(OPEN_CONNECTION_REQUEST_2::$ID, OPEN_CONNECTION_REQUEST_2::class);
-		$this->registerPacket(OPEN_CONNECTION_REPLY_2::$ID, OPEN_CONNECTION_REPLY_2::class);
-		$this->registerPacket(UNCONNECTED_PONG::$ID, UNCONNECTED_PONG::class);
-		$this->registerPacket(ADVERTISE_SYSTEM::$ID, ADVERTISE_SYSTEM::class);
+		$this->registerPacket(UnconnectedPing::$ID, UnconnectedPing::class);
+		$this->registerPacket(UnconnectedPingOpenConnections::$ID, UnconnectedPingOpenConnections::class);
+		$this->registerPacket(OpenConnectionRequest1::$ID, OpenConnectionRequest1::class);
+		$this->registerPacket(OpenConnectionReply1::$ID, OpenConnectionReply1::class);
+		$this->registerPacket(OpenConnectionRequest2::$ID, OpenConnectionRequest2::class);
+		$this->registerPacket(OpenConnectionReply2::$ID, OpenConnectionReply2::class);
+		$this->registerPacket(UnconnectedPong::$ID, UnconnectedPong::class);
+		$this->registerPacket(AdvertiseSystem::$ID, AdvertiseSystem::class);
 		$this->registerPacket(DATA_PACKET_0::$ID, DATA_PACKET_0::class);
 		$this->registerPacket(DATA_PACKET_1::$ID, DATA_PACKET_1::class);
 		$this->registerPacket(DATA_PACKET_2::$ID, DATA_PACKET_2::class);

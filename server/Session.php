@@ -16,19 +16,18 @@
 namespace raklib\server;
 
 use raklib\protocol\ACK;
-use raklib\protocol\CLIENT_CONNECT_DataPacket;
-use raklib\protocol\CLIENT_DISCONNECT_DataPacket;
-use raklib\protocol\CLIENT_HANDSHAKE_DataPacket;
-use raklib\protocol\DATA_PACKET_0;
+use raklib\protocol\ConnectedPing;
+use raklib\protocol\ConnectedPong;
+use raklib\protocol\ConnectionRequest;
+use raklib\protocol\ConnectionRequestAccepted;
 use raklib\protocol\DATA_PACKET_4;
 use raklib\protocol\DataPacket;
+use raklib\protocol\DisconnectionNotification;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
+use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
-use raklib\protocol\PING_DataPacket;
-use raklib\protocol\PONG_DataPacket;
-use raklib\protocol\SERVER_HANDSHAKE_DataPacket;
 use raklib\RakLib;
 
 class Session{
@@ -395,11 +394,11 @@ class Session{
 		$id = ord($packet->buffer{0});
 		if($id < 0x80){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
-				if($id === CLIENT_CONNECT_DataPacket::$ID){
-					$dataPacket = new CLIENT_CONNECT_DataPacket;
+				if($id === ConnectionRequest::$ID){
+					$dataPacket = new ConnectionRequest;
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
-					$pk = new SERVER_HANDSHAKE_DataPacket;
+					$pk = new ConnectionRequestAccepted;
 					$pk->address = $this->address;
 					$pk->port = $this->port;
 					$pk->sendPing = $dataPacket->sendPing;
@@ -410,8 +409,8 @@ class Session{
 					$sendPacket->reliability = PacketReliability::UNRELIABLE;
 					$sendPacket->buffer = $pk->buffer;
 					$this->addToQueue($sendPacket, RakLib::PRIORITY_IMMEDIATE);
-				}elseif($id === CLIENT_HANDSHAKE_DataPacket::$ID){
-					$dataPacket = new CLIENT_HANDSHAKE_DataPacket;
+				}elseif($id === NewIncomingConnection::$ID){
+					$dataPacket = new NewIncomingConnection;
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
 
@@ -421,15 +420,15 @@ class Session{
 						$this->sessionManager->openSession($this);
 					}
 				}
-			}elseif($id === CLIENT_DISCONNECT_DataPacket::$ID){
+			}elseif($id === DisconnectionNotification::$ID){
 				//TODO: we're supposed to send an ACK for this, but currently we're just deleting the session straight away
 				$this->disconnect("client disconnect");
-			}elseif($id === PING_DataPacket::$ID){
-				$dataPacket = new PING_DataPacket;
+			}elseif($id === ConnectedPing::$ID){
+				$dataPacket = new ConnectedPing;
 				$dataPacket->buffer = $packet->buffer;
 				$dataPacket->decode();
 
-				$pk = new PONG_DataPacket;
+				$pk = new ConnectedPong;
 				$pk->pingID = $dataPacket->pingID;
 				$pk->encode();
 
@@ -523,7 +522,7 @@ class Session{
 
 			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
 			$pk = new EncapsulatedPacket();
-			$pk->buffer = chr(CLIENT_DISCONNECT_DataPacket::$ID);
+			$pk->buffer = chr(DisconnectionNotification::$ID);
 			$pk->reliability = PacketReliability::RELIABLE_ORDERED;
 			$pk->orderChannel = 0;
 			$this->addEncapsulatedToQueue($pk, RakLib::PRIORITY_IMMEDIATE);

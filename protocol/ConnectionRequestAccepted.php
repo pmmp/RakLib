@@ -17,8 +17,8 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class SERVER_HANDSHAKE_DataPacket extends Packet{
-	public static $ID = 0x10;
+class ConnectionRequestAccepted extends Packet{
+	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
 
 	public $address;
 	public $port;

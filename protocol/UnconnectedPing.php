@@ -15,7 +15,22 @@
 
 namespace raklib\protocol;
 
-class CLIENT_DISCONNECT_DataPacket extends Packet{
-	public static $ID = 0x15;
+#include <rules/RakLibPacket.h>
 
+class UnconnectedPing extends OfflineMessage{
+	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
+
+	public $pingID;
+
+	public function encode(){
+		parent::encode();
+		$this->putLong($this->pingID);
+		$this->writeMagic();
+	}
+
+	public function decode(){
+		parent::decode();
+		$this->pingID = $this->getLong();
+		$this->readMagic();
+	}
 }

@@ -17,30 +17,24 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class CLIENT_HANDSHAKE_DataPacket extends Packet{
-	public static $ID = 0x13;
+class ConnectionRequest extends Packet{
+	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST;
 
-	public $address;
-	public $port;
-
-	public $systemAddresses = [];
-
+	public $clientID;
 	public $sendPing;
-	public $sendPong;
+	public $useSecurity = false;
 
 	public function encode(){
-
+		parent::encode();
+		$this->putLong($this->clientID);
+		$this->putLong($this->sendPing);
+		$this->putByte($this->useSecurity ? 1 : 0);
 	}
 
 	public function decode(){
 		parent::decode();
-		$this->getAddress($this->address, $this->port);
-		for($i = 0; $i < 10; ++$i){
-			$this->getAddress($addr, $port, $version);
-			$this->systemAddresses[$i] = [$addr, $port, $version];
-		}
-
+		$this->clientID = $this->getLong();
 		$this->sendPing = $this->getLong();
-		$this->sendPong = $this->getLong();
+		$this->useSecurity = $this->getByte() > 0;
 	}
 }

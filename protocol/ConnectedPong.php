@@ -17,25 +17,18 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class OPEN_CONNECTION_REPLY_1 extends OfflineMessage{
-	public static $ID = 0x06;
+class ConnectedPong extends Packet{
+	public static $ID = MessageIdentifiers::ID_CONNECTED_PONG;
 
-	public $serverID;
-	public $mtuSize;
+	public $pingID;
 
 	public function encode(){
 		parent::encode();
-		$this->writeMagic();
-		$this->putLong($this->serverID);
-		$this->putByte(0); //Server security
-		$this->putShort($this->mtuSize);
+		$this->putLong($this->pingID);
 	}
 
 	public function decode(){
 		parent::decode();
-		$this->readMagic();
-		$this->serverID = $this->getLong();
-		$this->getByte(); //security
-		$this->mtuSize = $this->getShort();
+		$this->pingID = $this->getLong();
 	}
 }

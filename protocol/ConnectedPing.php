@@ -15,6 +15,20 @@
 
 namespace raklib\protocol;
 
-class ADVERTISE_SYSTEM extends UNCONNECTED_PONG{
-	public static $ID = 0x1d;
+#include <rules/RakLibPacket.h>
+
+class ConnectedPing extends Packet{
+	public static $ID = MessageIdentifiers::ID_CONNECTED_PING;
+
+	public $pingID;
+
+	public function encode(){
+		parent::encode();
+		$this->putLong($this->pingID);
+	}
+
+	public function decode(){
+		parent::decode();
+		$this->pingID = $this->getLong();
+	}
 }

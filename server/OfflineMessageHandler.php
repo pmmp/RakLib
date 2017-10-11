@@ -18,12 +18,12 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use raklib\protocol\OfflineMessage;
-use raklib\protocol\OPEN_CONNECTION_REPLY_1;
-use raklib\protocol\OPEN_CONNECTION_REPLY_2;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_1;
-use raklib\protocol\OPEN_CONNECTION_REQUEST_2;
-use raklib\protocol\UNCONNECTED_PING;
-use raklib\protocol\UNCONNECTED_PONG;
+use raklib\protocol\OpenConnectionReply1;
+use raklib\protocol\OpenConnectionReply2;
+use raklib\protocol\OpenConnectionRequest1;
+use raklib\protocol\OpenConnectionRequest2;
+use raklib\protocol\UnconnectedPing;
+use raklib\protocol\UnconnectedPong;
 
 class OfflineMessageHandler{
 	/** @var SessionManager */
@@ -35,28 +35,28 @@ class OfflineMessageHandler{
 
 	public function handle(OfflineMessage $packet, string $source, int $port){
 		switch($packet::$ID){
-			case UNCONNECTED_PING::$ID:
-				/** @var UNCONNECTED_PING $packet */
-				$pk = new UNCONNECTED_PONG();
+			case UnconnectedPing::$ID:
+				/** @var UnconnectedPing $packet */
+				$pk = new UnconnectedPong();
 				$pk->serverID = $this->sessionManager->getID();
 				$pk->pingID = $packet->pingID;
 				$pk->serverName = $this->sessionManager->getName();
 				$this->sessionManager->sendPacket($pk, $source, $port);
 				return true;
-			case OPEN_CONNECTION_REQUEST_1::$ID:
-				/** @var OPEN_CONNECTION_REQUEST_1 $packet */
+			case OpenConnectionRequest1::$ID:
+				/** @var OpenConnectionRequest1 $packet */
 				$packet->protocol; //TODO: check protocol number and refuse connections
-				$pk = new OPEN_CONNECTION_REPLY_1();
+				$pk = new OpenConnectionReply1();
 				$pk->mtuSize = $packet->mtuSize;
 				$pk->serverID = $this->sessionManager->getID();
 				$this->sessionManager->sendPacket($pk, $source, $port);
 				return true;
-			case OPEN_CONNECTION_REQUEST_2::$ID:
-				/** @var OPEN_CONNECTION_REQUEST_2 $packet */
+			case OpenConnectionRequest2::$ID:
+				/** @var OpenConnectionRequest2 $packet */
 
 				if($packet->serverPort === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
 					$mtuSize = min(abs($packet->mtuSize), 1464); //Max size, do not allow creating large buffers to fill server memory
-					$pk = new OPEN_CONNECTION_REPLY_2();
+					$pk = new OpenConnectionReply2();
 					$pk->mtuSize = $mtuSize;
 					$pk->serverID = $this->sessionManager->getID();
 					$pk->clientAddress = $source;

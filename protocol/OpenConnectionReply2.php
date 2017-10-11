@@ -17,26 +17,29 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+class OpenConnectionReply2 extends OfflineMessage{
+	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;
 
-use raklib\RakLib;
-
-class OPEN_CONNECTION_REQUEST_1 extends OfflineMessage{
-	public static $ID = 0x05;
-
-	public $protocol = RakLib::PROTOCOL;
+	public $serverID;
+	public $clientAddress;
+	public $clientPort;
 	public $mtuSize;
 
 	public function encode(){
 		parent::encode();
 		$this->writeMagic();
-		$this->putByte($this->protocol);
-		$this->put(str_repeat(chr(0x00), $this->mtuSize - 18));
+		$this->putLong($this->serverID);
+		$this->putAddress($this->clientAddress, $this->clientPort, 4);
+		$this->putShort($this->mtuSize);
+		$this->putByte(0); //server security
 	}
 
 	public function decode(){
 		parent::decode();
 		$this->readMagic();
-		$this->protocol = $this->getByte();
-		$this->mtuSize = strlen($this->get(true)) + 18;
+		$this->serverID = $this->getLong();
+		$this->getAddress($this->clientAddress, $this->clientPort);
+		$this->mtuSize = $this->getShort();
+		$this->getByte(); //server security
 	}
 }
