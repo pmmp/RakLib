@@ -128,6 +128,18 @@ class Session{
 		return $this->id;
 	}
 
+	public function getState(){
+		return $this->state;
+	}
+
+	public function isTemporal(){
+		return $this->isTemporal;
+	}
+
+	public function isConnected() : bool{
+		return $this->state !== self::STATE_DISCONNECTING and $this->state !== self::STATE_DISCONNECTED;
+	}
+
 	public function update($time){
 		if(!$this->isActive and ($this->lastUpdate + 10) < $time){
 			$this->disconnect("timeout");
@@ -369,13 +381,6 @@ class Session{
 
 	}
 
-	public function getState(){
-		return $this->state;
-	}
-
-	public function isTemporal(){
-		return $this->isTemporal;
-	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet){
 		if($this->sessionManager === null){
@@ -506,9 +511,6 @@ class Session{
 		}
 	}
 
-	public function isConnected() : bool{
-		return $this->state !== self::STATE_DISCONNECTING and $this->state !== self::STATE_DISCONNECTED;
-	}
 
 	public function flagForDisconnection(){
 		$this->state = self::STATE_DISCONNECTING;
