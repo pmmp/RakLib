@@ -163,7 +163,6 @@ class Session{
 			$limit = 16;
 			foreach($this->packetToSend as $k => $pk){
 				$pk->sendTime = $time;
-				$pk->encode();
 				$this->recoveryQueue[$pk->seqNumber] = $pk;
 				unset($this->packetToSend[$k]);
 				$this->sendPacket($pk);
