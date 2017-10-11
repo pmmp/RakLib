@@ -20,8 +20,11 @@ namespace raklib\protocol;
 class ConnectionRequest extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST;
 
+	/** @var int */
 	public $clientID;
+	/** @var int */
 	public $sendPing;
+	/** @var bool */
 	public $useSecurity = false;
 
 	public function encode(){

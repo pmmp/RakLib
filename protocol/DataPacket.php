@@ -22,6 +22,7 @@ abstract class DataPacket extends Packet{
 	/** @var EncapsulatedPacket[] */
 	public $packets = [];
 
+	/** @var int */
 	public $seqNumber;
 
 	public function encode(){

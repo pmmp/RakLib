@@ -24,17 +24,29 @@ use raklib\Binary;
 
 class EncapsulatedPacket{
 
+	/** @var int */
 	public $reliability;
+	/** @var bool */
 	public $hasSplit = false;
+	/** @var int */
 	public $length = 0;
+	/** @var int|null */
 	public $messageIndex = null;
+	/** @var int|null */
 	public $orderIndex = null;
+	/** @var int|null */
 	public $orderChannel = null;
+	/** @var int|null */
 	public $splitCount = null;
+	/** @var int|null */
 	public $splitID = null;
+	/** @var int|null */
 	public $splitIndex = null;
-	public $buffer;
+	/** @var string */
+	public $buffer = "";
+	/** @var bool */
 	public $needACK = false;
+	/** @var int|null */
 	public $identifierACK = null;
 
 	/**

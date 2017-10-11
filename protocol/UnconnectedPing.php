@@ -20,6 +20,7 @@ namespace raklib\protocol;
 class UnconnectedPing extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
 
+	/** @var int */
 	public $pingID;
 
 	public function encode(){

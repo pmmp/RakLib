@@ -23,7 +23,9 @@ use raklib\RakLib;
 class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
 
+	/** @var int */
 	public $protocol = RakLib::PROTOCOL;
+	/** @var int */
 	public $mtuSize;
 
 	public function encode(){

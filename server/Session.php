@@ -41,32 +41,45 @@ class Session{
 
 	public static $WINDOW_SIZE = 2048;
 
+	/** @var int */
 	private $messageIndex = 0;
+	/** @var int[] */
 	private $channelIndex;
 
 	/** @var SessionManager */
 	private $sessionManager;
+	/** @var string */
 	private $address;
+	/** @var int */
 	private $port;
+	/** @var int */
 	private $state = self::STATE_CONNECTING;
+	/** @var int */
 	private $mtuSize;
-	private $id = 0;
+	/** @var int */
+	private $id;
+	/** @var int */
 	private $splitID = 0;
 
+	/** @var int */
 	private $sendSeqNumber = 0;
+	/** @var int */
 	private $lastSeqNumber = -1;
 
-	private $lastUpdate;
-	private $startTime;
 	/** @var float */
+	private $lastUpdate;
+	/** @var float */
+	private $startTime;
+	/** @var float|null */
 	private $disconnectionTime;
 
+	/** @var bool */
 	private $isTemporal = true;
 
 	/** @var DataPacket[] */
 	private $packetToSend = [];
-
-	private $isActive;
+	/** @var bool */
+	private $isActive = false;
 
 	/** @var int[] */
 	private $ACKQueue = [];
@@ -85,13 +98,20 @@ class Session{
 	/** @var DataPacket */
 	private $sendQueue;
 
+	/** @var int */
 	private $windowStart;
+	/** @var int[] */
 	private $receivedWindow = [];
+	/** @var int */
 	private $windowEnd;
 
+	/** @var int */
 	private $reliableWindowStart;
+	/** @var int */
 	private $reliableWindowEnd;
+	/** @var EncapsulatedPacket[] */
 	private $reliableWindow = [];
+	/** @var int */
 	private $lastReliableIndex = -1;
 
 	public function __construct(SessionManager $sessionManager, $address, $port, $clientId, int $mtuSize){
@@ -102,7 +122,6 @@ class Session{
 		$this->sendQueue = new DATA_PACKET_4();
 		$this->lastUpdate = microtime(true);
 		$this->startTime = microtime(true);
-		$this->isActive = false;
 		$this->windowStart = -1;
 		$this->windowEnd = self::$WINDOW_SIZE;
 

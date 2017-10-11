@@ -20,8 +20,11 @@ namespace raklib\protocol;
 class ConnectionRequestAccepted extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
 
+	/** @var string */
 	public $address;
+	/** @var int */
 	public $port;
+	/** @var array */
 	public $systemAddresses = [
 		["127.0.0.1", 0, 4],
 		["0.0.0.0", 0, 4],
@@ -35,7 +38,9 @@ class ConnectionRequestAccepted extends Packet{
 		["0.0.0.0", 0, 4]
 	];
 
+	/** @var int */
 	public $sendPing;
+	/** @var int */
 	public $sendPong;
 
 	public function encode(){

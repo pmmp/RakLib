@@ -18,6 +18,7 @@ namespace raklib\server;
 class UDPServerSocket{
 	/** @var \Logger */
 	protected $logger;
+	/** @var resource */
 	protected $socket;
 
 	public function __construct(\ThreadedLogger $logger, $port = 19132, $interface = "0.0.0.0"){

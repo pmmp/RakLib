@@ -20,6 +20,7 @@ namespace raklib\protocol;
 class ConnectedPing extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PING;
 
+	/** @var int */
 	public $pingID;
 
 	public function encode(){

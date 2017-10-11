@@ -25,8 +25,11 @@ use raklib\Binary;
 abstract class Packet{
 	public static $ID = -1;
 
+	/** @var int */
 	protected $offset = 0;
+	/** @var string|null */
 	public $buffer;
+	/** @var float|null */
 	public $sendTime;
 
 	protected function get($len){

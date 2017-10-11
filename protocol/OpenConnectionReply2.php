@@ -20,9 +20,13 @@ namespace raklib\protocol;
 class OpenConnectionReply2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;
 
+	/** @var int */
 	public $serverID;
+	/** @var string */
 	public $clientAddress;
+	/** @var int */
 	public $clientPort;
+	/** @var int */
 	public $mtuSize;
 
 	public function encode(){

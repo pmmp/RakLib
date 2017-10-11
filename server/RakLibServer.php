@@ -17,21 +17,27 @@ namespace raklib\server;
 
 
 class RakLibServer extends \Thread{
+	/** @var int */
 	protected $port;
+	/** @var string */
 	protected $interface;
 	/** @var \ThreadedLogger */
 	protected $logger;
+	/** @var \ClassLoader */
 	protected $loader;
 
+	/** @var string[] */
 	public $loadPaths;
 
-	protected $shutdown;
+	/** @var bool */
+	protected $shutdown = false;
 
 	/** @var \Threaded */
 	protected $externalQueue;
 	/** @var \Threaded */
 	protected $internalQueue;
 
+	/** @var string */
 	protected $mainPath;
 
 	/** @var int */
@@ -62,7 +68,6 @@ class RakLibServer extends \Thread{
 		$this->addDependency($loadPaths, new \ReflectionClass($logger));
 		$this->addDependency($loadPaths, new \ReflectionClass($loader));
 		$this->loadPaths = array_reverse($loadPaths);
-		$this->shutdown = false;
 
 		$this->externalQueue = new \Threaded;
 		$this->internalQueue = new \Threaded;

@@ -53,10 +53,12 @@ class SessionManager{
 
 	/** @var RakLibServer */
 	protected $server;
-
+	/** @var UDPServerSocket */
 	protected $socket;
 
+	/** @var int */
 	protected $receiveBytes = 0;
+	/** @var int */
 	protected $sendBytes = 0;
 
 	/** @var Session[] */
@@ -64,17 +66,23 @@ class SessionManager{
 
 	/** @var OfflineMessageHandler */
 	protected $offlineMessageHandler;
-
+	/** @var string */
 	protected $name = "";
 
+	/** @var int */
 	protected $packetLimit = 1000;
 
+	/** @var bool */
 	protected $shutdown = false;
 
+	/** @var int */
 	protected $ticks = 0;
+	/** @var float */
 	protected $lastMeasure;
 
+	/** @var float[] string (address) => float (unblock time) */
 	protected $block = [];
+	/** @var int[] string (address) => int (number of packets) */
 	protected $ipSec = [];
 
 	public $portChecking = false;

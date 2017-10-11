@@ -20,12 +20,17 @@ namespace raklib\protocol;
 class NewIncomingConnection extends Packet{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
+	/** @var string */
 	public $address;
+	/** @var int */
 	public $port;
 
+	/** @var array */
 	public $systemAddresses = [];
 
+	/** @var int */
 	public $sendPing;
+	/** @var int */
 	public $sendPong;
 
 	public function encode(){
