@@ -42,7 +42,7 @@ class Session{
 	public static $WINDOW_SIZE = 2048;
 
 	private $messageIndex = 0;
-	private $channelIndex = [];
+	private $channelIndex;
 
 	/** @var SessionManager */
 	private $sessionManager;
@@ -109,9 +109,7 @@ class Session{
 		$this->reliableWindowStart = 0;
 		$this->reliableWindowEnd = self::$WINDOW_SIZE;
 
-		for($i = 0; $i < 32; ++$i){
-			$this->channelIndex[$i] = 0;
-		}
+		$this->channelIndex = array_fill(0, 32, 0);
 
 		$this->mtuSize = $mtuSize;
 	}
