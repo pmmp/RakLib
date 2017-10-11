@@ -34,6 +34,8 @@ use raklib\RakLib;
 class Session{
 	const STATE_CONNECTING = 0;
 	const STATE_CONNECTED = 1;
+	const STATE_DISCONNECTING = 2;
+	const STATE_DISCONNECTED = 3;
 
 	const MAX_SPLIT_SIZE = 128;
 	const MAX_SPLIT_COUNT = 4;
@@ -57,6 +59,8 @@ class Session{
 
 	private $lastUpdate;
 	private $startTime;
+	/** @var float */
+	private $disconnectionTime;
 
 	private $isTemporal = true;
 
@@ -131,6 +135,15 @@ class Session{
 
 			return;
 		}
+
+		if($this->state === self::STATE_DISCONNECTING and (
+			(empty($this->ACKQueue) and empty($this->NACKQueue) and empty($this->packetToSend) and empty($this->recoveryQueue)) or
+			$this->disconnectionTime + 10 < $time)
+		){
+			$this->close();
+			return;
+		}
+
 		$this->isActive = false;
 
 		if(count($this->ACKQueue) > 0){
@@ -409,6 +422,7 @@ class Session{
 					}
 				}
 			}elseif($id === CLIENT_DISCONNECT_DataPacket::$ID){
+				//TODO: we're supposed to send an ACK for this, but currently we're just deleting the session straight away
 				$this->disconnect("client disconnect");
 			}elseif($id === PING_DataPacket::$ID){
 				$dataPacket = new PING_DataPacket;
@@ -494,11 +508,29 @@ class Session{
 		}
 	}
 
+	public function isConnected() : bool{
+		return $this->state !== self::STATE_DISCONNECTING and $this->state !== self::STATE_DISCONNECTED;
+	}
+
+	public function flagForDisconnection(){
+		$this->state = self::STATE_DISCONNECTING;
+		$this->disconnectionTime = microtime(true);
+	}
+
 	public function close(){
-		$data = "\x60\x00\x08\x00\x00\x00\x00\x00\x00\x00\x15";
-		$this->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($data)); //CLIENT_DISCONNECT packet 0x15
-		$this->sendQueue();
-		$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
-		$this->sessionManager = null;
+		if($this->state !== self::STATE_DISCONNECTED){
+			$this->state = self::STATE_DISCONNECTED;
+
+			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
+			$pk = new EncapsulatedPacket();
+			$pk->buffer = chr(CLIENT_DISCONNECT_DataPacket::$ID);
+			$pk->reliability = PacketReliability::RELIABLE_ORDERED;
+			$pk->orderChannel = 0;
+			$this->addEncapsulatedToQueue($pk, RakLib::PRIORITY_IMMEDIATE);
+
+			$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
+			$this->sessionManager->removeSessionInternal($this);
+			$this->sessionManager = null;
+		}
 	}
 }

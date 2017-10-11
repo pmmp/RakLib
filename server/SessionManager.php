@@ -262,10 +262,11 @@ class SessionManager{
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
-				if(isset($this->sessions[$identifier])){
+				$session = $this->sessions[$identifier] ?? null;
+				if($session !== null and $session->isConnected()){
 					$flags = ord($packet{$offset++});
 					$buffer = substr($packet, $offset);
-					$this->sessions[$identifier]->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer, true), $flags);
+					$session->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer, true), $flags);
 				}else{
 					$this->streamInvalid($identifier);
 				}
@@ -281,7 +282,7 @@ class SessionManager{
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
-					$this->removeSession($this->sessions[$identifier]);
+					$this->sessions[$identifier]->flagForDisconnection();
 				}else{
 					$this->streamInvalid($identifier);
 				}
@@ -379,9 +380,13 @@ class SessionManager{
 		$id = $session->getAddress() . ":" . $session->getPort();
 		if(isset($this->sessions[$id])){
 			$this->sessions[$id]->close();
-			unset($this->sessions[$id]);
+			$this->removeSessionInternal($session);
 			$this->streamClose($id, $reason);
 		}
+	}
+
+	public function removeSessionInternal(Session $session){
+		unset($this->sessions[$session->getAddress() . ":" . $session->getPort()]);
 	}
 
 	public function openSession(Session $session){
