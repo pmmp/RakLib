@@ -143,10 +143,11 @@ class RakLibServer extends \Thread{
 		}
 	}
 
-	public function errorHandler($errno, $errstr, $errfile, $errline, $context, $trace = null){
+	public function errorHandler($errno, $errstr, $errfile, $errline){
 		if(error_reporting() === 0){
 			return false;
 		}
+
 		$errorConversion = [
 			E_ERROR => "E_ERROR",
 			E_WARNING => "E_WARNING",
@@ -172,7 +173,7 @@ class RakLibServer extends \Thread{
 
 		$this->getLogger()->debug("An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
 
-		foreach(($trace = $this->getTrace($trace === null ? 2 : 0, $trace)) as $i => $line){
+		foreach(($trace = $this->getTrace(2)) as $i => $line){
 			$this->getLogger()->debug($line);
 		}
 
