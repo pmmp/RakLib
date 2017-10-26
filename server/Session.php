@@ -245,6 +245,17 @@ class Session{
 		$this->sendPacket($datagram);
 	}
 
+	private function queueConnectedPacket(Packet $packet, int $reliability, int $orderChannel, int $flags = RakLib::PRIORITY_NORMAL){
+		$packet->encode();
+
+		$encapsulated = new EncapsulatedPacket();
+		$encapsulated->reliability = $reliability;
+		$encapsulated->orderChannel = $orderChannel;
+		$encapsulated->buffer = $packet->buffer;
+
+		$this->addEncapsulatedToQueue($encapsulated, $flags);
+	}
+
 	private function sendPacket(Packet $packet){
 		$this->sessionManager->sendPacket($packet, $this->address, $this->port);
 	}
@@ -424,12 +435,7 @@ class Session{
 					$pk->port = $this->port;
 					$pk->sendPingTime = $dataPacket->sendPingTime;
 					$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
-					$pk->encode();
-
-					$sendPacket = new EncapsulatedPacket();
-					$sendPacket->reliability = PacketReliability::UNRELIABLE;
-					$sendPacket->buffer = $pk->buffer;
-					$this->addToQueue($sendPacket, RakLib::PRIORITY_IMMEDIATE);
+					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, RakLib::PRIORITY_IMMEDIATE);
 				}elseif($id === NewIncomingConnection::$ID){
 					$dataPacket = new NewIncomingConnection;
 					$dataPacket->buffer = $packet->buffer;
@@ -452,12 +458,7 @@ class Session{
 				$pk = new ConnectedPong;
 				$pk->sendPingTime = $dataPacket->sendPingTime;
 				$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
-				$pk->encode();
-
-				$sendPacket = new EncapsulatedPacket();
-				$sendPacket->reliability = PacketReliability::UNRELIABLE;
-				$sendPacket->buffer = $pk->buffer;
-				$this->addToQueue($sendPacket);
+				$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0);
 			}//TODO: add PING/PONG (0x00/0x03) automatic latency measure
 		}elseif($this->state === self::STATE_CONNECTED){
 			$this->sessionManager->streamEncapsulated($this, $packet);
@@ -538,11 +539,7 @@ class Session{
 			$this->state = self::STATE_DISCONNECTED;
 
 			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
-			$pk = new EncapsulatedPacket();
-			$pk->buffer = chr(DisconnectionNotification::$ID);
-			$pk->reliability = PacketReliability::RELIABLE_ORDERED;
-			$pk->orderChannel = 0;
-			$this->addEncapsulatedToQueue($pk, RakLib::PRIORITY_IMMEDIATE);
+			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
 
 			$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
 			$this->sessionManager->removeSessionInternal($this);
