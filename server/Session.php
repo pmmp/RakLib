@@ -294,18 +294,12 @@ class Session{
 			$this->needACK[$packet->identifierACK] = [];
 		}
 
-		if(
-			$packet->reliability === PacketReliability::RELIABLE or
-			$packet->reliability === PacketReliability::RELIABLE_ORDERED or
-			$packet->reliability === PacketReliability::RELIABLE_SEQUENCED or
-			$packet->reliability === PacketReliability::RELIABLE_WITH_ACK_RECEIPT or
-			$packet->reliability === PacketReliability::RELIABLE_ORDERED_WITH_ACK_RECEIPT
-		){
+		if($packet->isReliable()){
 			$packet->messageIndex = $this->messageIndex++;
+		}
 
-			if($packet->reliability === PacketReliability::RELIABLE_ORDERED){
-				$packet->orderIndex = $this->channelIndex[$packet->orderChannel]++;
-			}
+		if($packet->isSequenced()){
+			$packet->orderIndex = $this->channelIndex[$packet->orderChannel]++;
 		}
 
 		//IP header size (20 bytes) + UDP header size (8 bytes) + RakNet weird (8 bytes) + datagram header size (4 bytes) + max encapsulated packet header size (20 bytes)
@@ -328,10 +322,10 @@ class Session{
 				}else{
 					$pk->messageIndex = $packet->messageIndex;
 				}
-				if($pk->reliability === PacketReliability::RELIABLE_ORDERED){
-					$pk->orderChannel = $packet->orderChannel;
-					$pk->orderIndex = $packet->orderIndex;
-				}
+
+				$pk->orderChannel = $packet->orderChannel;
+				$pk->orderIndex = $packet->orderIndex;
+
 				$this->addToQueue($pk, $flags | RakLib::PRIORITY_IMMEDIATE);
 			}
 		}else{
