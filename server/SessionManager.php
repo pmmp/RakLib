@@ -87,15 +87,28 @@ class SessionManager{
 
 	public $portChecking = false;
 
+	/** @var int */
+	protected $startTimeMS;
+
 	public function __construct(RakLibServer $server, UDPServerSocket $socket){
 		$this->server = $server;
 		$this->socket = $socket;
+
+		$this->startTimeMS = (int) (microtime(true) * 1000);
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
 		$this->registerPackets();
 
 		$this->run();
+	}
+
+	/**
+	 * Returns the time in milliseconds since server start.
+	 * @return int
+	 */
+	public function getRakNetTimeMS() : int{
+		return ((int) (microtime(true) * 1000)) - $this->startTimeMS;
 	}
 
 	public function getPort(){

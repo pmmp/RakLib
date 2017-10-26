@@ -23,21 +23,21 @@ class ConnectionRequest extends Packet{
 	/** @var int */
 	public $clientID;
 	/** @var int */
-	public $sendPing;
+	public $sendPingTime;
 	/** @var bool */
 	public $useSecurity = false;
 
 	public function encode(){
 		parent::encode();
 		$this->putLong($this->clientID);
-		$this->putLong($this->sendPing);
+		$this->putLong($this->sendPingTime);
 		$this->putByte($this->useSecurity ? 1 : 0);
 	}
 
 	public function decode(){
 		parent::decode();
 		$this->clientID = $this->getLong();
-		$this->sendPing = $this->getLong();
+		$this->sendPingTime = $this->getLong();
 		$this->useSecurity = $this->getByte() > 0;
 	}
 }

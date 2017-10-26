@@ -39,9 +39,9 @@ class ConnectionRequestAccepted extends Packet{
 	];
 
 	/** @var int */
-	public $sendPing;
+	public $sendPingTime;
 	/** @var int */
-	public $sendPong;
+	public $sendPongTime;
 
 	public function encode(){
 		parent::encode();
@@ -51,8 +51,8 @@ class ConnectionRequestAccepted extends Packet{
 			$this->putAddress($this->systemAddresses[$i][0], $this->systemAddresses[$i][1], $this->systemAddresses[$i][2]);
 		}
 
-		$this->putLong($this->sendPing);
-		$this->putLong($this->sendPong);
+		$this->putLong($this->sendPingTime);
+		$this->putLong($this->sendPongTime);
 	}
 
 	public function decode(){

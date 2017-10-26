@@ -21,15 +21,19 @@ class ConnectedPong extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PONG;
 
 	/** @var int */
-	public $pingID;
+	public $sendPingTime;
+	/** @var int */
+	public $sendPongTime;
 
 	public function encode(){
 		parent::encode();
-		$this->putLong($this->pingID);
+		$this->putLong($this->sendPingTime);
+		$this->putLong($this->sendPongTime);
 	}
 
 	public function decode(){
 		parent::decode();
-		$this->pingID = $this->getLong();
+		$this->sendPingTime = $this->getLong();
+		$this->sendPongTime = $this->getLong();
 	}
 }

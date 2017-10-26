@@ -418,11 +418,12 @@ class Session{
 					$dataPacket = new ConnectionRequest;
 					$dataPacket->buffer = $packet->buffer;
 					$dataPacket->decode();
+
 					$pk = new ConnectionRequestAccepted;
 					$pk->address = $this->address;
 					$pk->port = $this->port;
-					$pk->sendPing = $dataPacket->sendPing;
-					$pk->sendPong = bcadd($pk->sendPing, "1000");
+					$pk->sendPingTime = $dataPacket->sendPingTime;
+					$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
 					$pk->encode();
 
 					$sendPacket = new EncapsulatedPacket();
@@ -449,7 +450,8 @@ class Session{
 				$dataPacket->decode();
 
 				$pk = new ConnectedPong;
-				$pk->pingID = $dataPacket->pingID;
+				$pk->sendPingTime = $dataPacket->sendPingTime;
+				$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
 				$pk->encode();
 
 				$sendPacket = new EncapsulatedPacket();
