@@ -24,6 +24,7 @@ use raklib\protocol\DATA_PACKET_4;
 use raklib\protocol\DataPacket;
 use raklib\protocol\DisconnectionNotification;
 use raklib\protocol\EncapsulatedPacket;
+use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\NACK;
 use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
@@ -423,7 +424,7 @@ class Session{
 		}
 
 		$id = ord($packet->buffer{0});
-		if($id < 0x80){ //internal data packet
+		if($id < MessageIdentifiers::ID_USER_PACKET_ENUM){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
 				if($id === ConnectionRequest::$ID){
 					$dataPacket = new ConnectionRequest;
