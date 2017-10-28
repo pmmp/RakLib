@@ -279,7 +279,7 @@ class Session{
 		}
 
 		$length = $this->sendQueue->length();
-		if($length + $pk->getTotalLength() > $this->mtuSize){
+		if($length + $pk->getTotalLength() > $this->mtuSize - 36){ //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36 bytes
 			$this->sendQueue();
 		}
 
