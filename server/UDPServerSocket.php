@@ -18,8 +18,6 @@ declare(strict_types=1);
 namespace raklib\server;
 
 class UDPServerSocket{
-	/** @var \Logger */
-	protected $logger;
 	/** @var resource */
 	protected $socket;
 
