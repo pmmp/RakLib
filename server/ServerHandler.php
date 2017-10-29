@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\server;
 
 use raklib\Binary;
@@ -85,7 +87,7 @@ class ServerHandler{
 	 * @return bool
 	 */
 	public function handlePacket(){
-		if(strlen($packet = $this->server->readThreadToMainPacket()) > 0){
+		if(($packet = $this->server->readThreadToMainPacket()) !== null){
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){

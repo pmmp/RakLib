@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\server;
 
 
@@ -220,8 +222,8 @@ class RakLibServer extends \Thread{
 
 			gc_enable();
 			error_reporting(-1);
-			ini_set("display_errors", 1);
-			ini_set("display_startup_errors", 1);
+			ini_set("display_errors", '1');
+			ini_set("display_startup_errors", '1');
 
 			set_error_handler([$this, "errorHandler"], E_ALL);
 			register_shutdown_function([$this, "shutdownHandler"]);

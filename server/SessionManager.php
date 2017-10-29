@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib\server;
 
 use raklib\Binary;
@@ -276,7 +278,7 @@ class SessionManager{
 	}
 
 	public function receiveStream(){
-		if(strlen($packet = $this->server->readMainToThreadPacket()) > 0){
+		if(($packet = $this->server->readMainToThreadPacket()) !== null){
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){

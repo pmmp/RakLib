@@ -13,6 +13,8 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace raklib;
 
 const MIN_PHP_VERSION = "7.2.0RC3";
