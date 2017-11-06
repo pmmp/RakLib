@@ -50,6 +50,10 @@ use raklib\protocol\UnconnectedPong;
 use raklib\RakLib;
 
 class SessionManager{
+
+	const RAKLIB_TPS = 20;
+	const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
+
 	/** @var \SplFixedArray<Packet|null> */
 	protected $packetPool;
 
@@ -134,8 +138,8 @@ class SessionManager{
 			while(--$max and $this->receivePacket()){}
 			while($this->receiveStream()){}
 			$time = microtime(true) - $start;
-			if($time < 0.05){
-				time_sleep_until(microtime(true) + 0.05 - $time);
+			if($time < self::RAKLIB_TIME_PER_TICK){
+				time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
 			}
 			$this->tick();
 		}
@@ -155,7 +159,7 @@ class SessionManager{
 		$this->ipSec = [];
 
 
-		if(($this->ticks & 0b1111) === 0){
+		if(($this->ticks % self::RAKLIB_TPS) === 0){
 			$diff = max(0.005, $time - $this->lastMeasure);
 			$this->streamOption("bandwidth", serialize([
 				"up" => $this->sendBytes / $diff,
