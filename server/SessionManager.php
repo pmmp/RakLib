@@ -281,6 +281,12 @@ class SessionManager{
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
+	public function streamPingMeasure(Session $session, int $pingMS){
+		$identifier = $session->getAddress() . ":" . $session->getPort();
+		$buffer = chr(RakLib::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
+		$this->server->pushThreadToMainPacket($buffer);
+	}
+
 	public function receiveStream(){
 		if(($packet = $this->server->readMainToThreadPacket()) !== null){
 			$id = ord($packet{0});

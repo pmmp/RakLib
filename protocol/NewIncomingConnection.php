@@ -33,9 +33,9 @@ class NewIncomingConnection extends Packet{
 	public $systemAddresses = [];
 
 	/** @var int */
-	public $sendPing;
+	public $sendPingTime;
 	/** @var int */
-	public $sendPong;
+	public $sendPongTime;
 
 	public function encode(){
 
@@ -49,7 +49,7 @@ class NewIncomingConnection extends Packet{
 			$this->systemAddresses[$i] = [$addr, $port, $version];
 		}
 
-		$this->sendPing = $this->getLong();
-		$this->sendPong = $this->getLong();
+		$this->sendPingTime = $this->getLong();
+		$this->sendPongTime = $this->getLong();
 	}
 }
