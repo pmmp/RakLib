@@ -139,7 +139,7 @@ class SessionManager{
 			while($this->receiveStream()){}
 			$time = microtime(true) - $start;
 			if($time < self::RAKLIB_TIME_PER_TICK){
-				time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
+				@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
 			}
 			$this->tick();
 		}
