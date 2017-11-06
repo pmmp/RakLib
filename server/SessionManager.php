@@ -51,7 +51,7 @@ use raklib\RakLib;
 
 class SessionManager{
 
-	const RAKLIB_TPS = 20;
+	const RAKLIB_TPS = 100;
 	const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
 	/** @var \SplFixedArray<Packet|null> */
@@ -76,7 +76,7 @@ class SessionManager{
 	protected $name = "";
 
 	/** @var int */
-	protected $packetLimit = 1000;
+	protected $packetLimit = 200;
 
 	/** @var bool */
 	protected $shutdown = false;
@@ -134,7 +134,7 @@ class SessionManager{
 
 		while(!$this->shutdown){
 			$start = microtime(true);
-			$max = 5000;
+			$max = 1000;
 			while(--$max and $this->receivePacket()){}
 			while($this->receiveStream()){}
 			$time = microtime(true) - $start;
