@@ -19,6 +19,8 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use raklib\RakLib;
+
 class NewIncomingConnection extends Packet{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
@@ -42,7 +44,7 @@ class NewIncomingConnection extends Packet{
 	public function decode(){
 		parent::decode();
 		$this->getAddress($this->address, $this->port);
-		for($i = 0; $i < 10; ++$i){
+		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
 			$this->getAddress($addr, $port, $version);
 			$this->systemAddresses[$i] = [$addr, $port, $version];
 		}

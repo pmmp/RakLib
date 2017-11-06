@@ -169,6 +169,12 @@ abstract class RakLib{
 	 */
 	const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
 
+	/**
+	 * Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate.
+	 * @var int
+	 */
+	public static $SYSTEM_ADDRESS_COUNT = 20;
+
 	public static function bootstrap(\ClassLoader $loader){
 		$loader->addPath(dirname(__FILE__) . DIRECTORY_SEPARATOR . "..");
 	}

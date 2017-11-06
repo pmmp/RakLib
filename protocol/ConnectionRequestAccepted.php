@@ -19,6 +19,8 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use raklib\RakLib;
+
 class ConnectionRequestAccepted extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
 
@@ -49,8 +51,9 @@ class ConnectionRequestAccepted extends Packet{
 		parent::encode();
 		$this->putAddress($this->address, $this->port, 4);
 		$this->putShort(0);
-		for($i = 0; $i < 10; ++$i){
-			$this->putAddress($this->systemAddresses[$i][0], $this->systemAddresses[$i][1], $this->systemAddresses[$i][2]);
+		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
+			$addr = $this->systemAddresses[$i] ?? ["0.0.0.0", 0, 4];
+			$this->putAddress($addr[0], $addr[1], $addr[2]);
 		}
 
 		$this->putLong($this->sendPingTime);
