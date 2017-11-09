@@ -228,7 +228,9 @@ class SessionManager{
 						$this->streamRaw($source, $port, $buffer);
 					}
 				}catch(\Throwable $e){
-					$this->getLogger()->logException($e);
+					$logger = $this->getLogger();
+					$logger->debug("Packet from $source $port (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+					$logger->logException($e);
 					$this->blockAddress($source, 5);
 				}
 			}
