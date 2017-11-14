@@ -1,0 +1,22 @@
+{
+	"name": "pmmp/raklib",
+	"description": "A RakNet server implementation written in PHP",
+	"type": "library",
+	"license": "GPL-3.0",
+	"require": {
+		"php": ">=7.2.0RC3",
+		"ext-bcmath": "*",
+		"ext-pthreads": ">=3.1.7dev",
+		"ext-sockets": "*",
+		"pmmp/pocketmine-spl": "^0.0.2"
+	},
+	"autoload": {
+		"classmap": ["./"]
+	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/pmmp/PocketMine-SPL"
+		}
+	]
+}

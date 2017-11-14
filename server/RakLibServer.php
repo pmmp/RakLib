@@ -27,8 +27,9 @@ class RakLibServer extends \Thread{
 	protected $interface;
 	/** @var \ThreadedLogger */
 	protected $logger;
-	/** @var \ClassLoader */
-	protected $loader;
+
+	/** @var string */
+	protected $loaderPath;
 
 	/** @var bool */
 	protected $shutdown = false;
@@ -44,16 +45,17 @@ class RakLibServer extends \Thread{
 	/** @var int */
 	protected $serverId = 0;
 
+
 	/**
 	 * @param \ThreadedLogger $logger
-	 * @param \ClassLoader    $loader
+	 * @param string          $autoloaderPath Path to Composer autoloader
 	 * @param int             $port
 	 * @param string          $interface
 	 * @param bool            $autoStart
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, \ClassLoader $loader, $port, $interface = "0.0.0.0", bool $autoStart = true){
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, $port, $interface = "0.0.0.0", bool $autoStart = true){
 		$this->port = (int) $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
@@ -64,7 +66,7 @@ class RakLibServer extends \Thread{
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
 
 		$this->logger = $logger;
-		$this->loader = $loader;
+		$this->loaderPath = $autoloaderPath;
 
 		$this->externalQueue = new \Threaded;
 		$this->internalQueue = new \Threaded;
@@ -220,7 +222,7 @@ class RakLibServer extends \Thread{
 
 	public function run(){
 		try{
-			$this->loader->register(true);
+			require $this->loaderPath;
 
 			gc_enable();
 			error_reporting(-1);
