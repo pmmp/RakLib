@@ -67,6 +67,9 @@ abstract class RakLib{
 	const FLAG_NEED_ACK = 0b00001000;
 
 	/*
+	 * These internal "packets" DO NOT exist in the RakNet protocol. They are used by the RakLib API to communicate
+	 * messages between the RakLib thread and the implementation's thread.
+	 *
 	 * Internal Packet:
 	 * int32 (length without this field)
 	 * byte (packet ID)
