@@ -22,8 +22,7 @@ use raklib\protocol\ConnectedPing;
 use raklib\protocol\ConnectedPong;
 use raklib\protocol\ConnectionRequest;
 use raklib\protocol\ConnectionRequestAccepted;
-use raklib\protocol\DATA_PACKET_4;
-use raklib\protocol\DataPacket;
+use raklib\protocol\Datagram;
 use raklib\protocol\DisconnectionNotification;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\MessageIdentifiers;
@@ -77,7 +76,7 @@ class Session{
 	/** @var bool */
 	private $isTemporal = true;
 
-	/** @var DataPacket[] */
+	/** @var Datagram[] */
 	private $packetToSend = [];
 	/** @var bool */
 	private $isActive = false;
@@ -87,16 +86,16 @@ class Session{
 	/** @var int[] */
 	private $NACKQueue = [];
 
-	/** @var DataPacket[] */
+	/** @var Datagram[] */
 	private $recoveryQueue = [];
 
-	/** @var DataPacket[][] */
+	/** @var Datagram[][] */
 	private $splitPackets = [];
 
 	/** @var int[][] */
 	private $needACK = [];
 
-	/** @var DataPacket */
+	/** @var Datagram */
 	private $sendQueue;
 
 	/** @var int */
@@ -124,7 +123,9 @@ class Session{
 		$this->address = $address;
 		$this->port = $port;
 		$this->id = $clientId;
-		$this->sendQueue = new DATA_PACKET_4();
+		$this->sendQueue = new Datagram();
+		$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
+
 		$this->lastUpdate = microtime(true);
 		$this->windowStart = -1;
 		$this->windowEnd = self::$WINDOW_SIZE;
@@ -247,7 +248,7 @@ class Session{
 		$this->sessionManager->removeSession($this, $reason);
 	}
 
-	private function sendDatagram(DataPacket $datagram){
+	private function sendDatagram(Datagram $datagram){
 		if($datagram->seqNumber !== null){
 			unset($this->recoveryQueue[$datagram->seqNumber]);
 		}
@@ -275,7 +276,8 @@ class Session{
 	public function sendQueue(){
 		if(count($this->sendQueue->packets) > 0){
 			$this->sendDatagram($this->sendQueue);
-			$this->sendQueue = new DATA_PACKET_4();
+			$this->sendQueue = new Datagram();
+			$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
 		}
 	}
 
@@ -505,7 +507,7 @@ class Session{
 		$this->isActive = true;
 		$this->lastUpdate = microtime(true);
 
-		if($packet::$ID >= 0x80 and $packet::$ID <= 0x8f and $packet instanceof DataPacket){ //Data packet
+		if($packet instanceof Datagram){ //In reality, ALL of these packets are datagrams.
 			$packet->decode();
 
 			if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->receivedWindow[$packet->seqNumber])){

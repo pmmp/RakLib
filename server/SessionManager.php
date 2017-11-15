@@ -20,22 +20,7 @@ namespace raklib\server;
 use raklib\Binary;
 use raklib\protocol\ACK;
 use raklib\protocol\AdvertiseSystem;
-use raklib\protocol\DATA_PACKET_0;
-use raklib\protocol\DATA_PACKET_1;
-use raklib\protocol\DATA_PACKET_2;
-use raklib\protocol\DATA_PACKET_3;
-use raklib\protocol\DATA_PACKET_4;
-use raklib\protocol\DATA_PACKET_5;
-use raklib\protocol\DATA_PACKET_6;
-use raklib\protocol\DATA_PACKET_7;
-use raklib\protocol\DATA_PACKET_8;
-use raklib\protocol\DATA_PACKET_9;
-use raklib\protocol\DATA_PACKET_A;
-use raklib\protocol\DATA_PACKET_B;
-use raklib\protocol\DATA_PACKET_C;
-use raklib\protocol\DATA_PACKET_D;
-use raklib\protocol\DATA_PACKET_E;
-use raklib\protocol\DATA_PACKET_F;
+use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\OfflineMessage;
@@ -204,15 +189,10 @@ class SessionManager{
 				try{
 					$pid = ord($buffer{0});
 
-					$pk = $this->getPacketFromPool($pid, $buffer);
-					if($pk !== null){
-						if(($session = $this->getSession($source, $port)) !== null){
-							if($pk instanceof OfflineMessage){
-								$this->server->getLogger()->debug("Ignored offline message " . get_class($pk) . " from $source $port due to session already opened");
-							}else{
-								$session->handlePacket($pk);
-							}
-						}elseif($pk instanceof OfflineMessage){
+					$session = $this->getSession($source, $port);
+					if($session === null){
+						$pk = $this->getPacketFromPool($pid, $buffer);
+						if($pk instanceof OfflineMessage){
 							$pk->decode();
 							if($pk->isValid()){
 								if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
@@ -222,10 +202,20 @@ class SessionManager{
 								$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
 							}
 						}else{
-							$this->server->getLogger()->debug("Unhandled packet ". get_class($pk) . " received from $source $port");
+							$this->streamRaw($source, $port, $buffer);
 						}
 					}else{
-						$this->streamRaw($source, $port, $buffer);
+						if(($pid & Datagram::BITFLAG_VALID) === 0){
+							$this->server->getLogger()->debug("Ignored non-connected message " . bin2hex($pid) . " from $source $port due to session already opened");
+						}else{
+							if($pid & Datagram::BITFLAG_ACK){
+								$session->handlePacket(new ACK($buffer));
+							}elseif($pid & Datagram::BITFLAG_NAK){
+								$session->handlePacket(new NACK($buffer));
+							}else{
+								$session->handlePacket(new Datagram($buffer));
+							}
+						}
 					}
 				}catch(\Throwable $e){
 					$logger = $this->getLogger();
@@ -489,23 +479,5 @@ class SessionManager{
 		$this->registerPacket(OpenConnectionReply2::$ID, OpenConnectionReply2::class);
 		$this->registerPacket(UnconnectedPong::$ID, UnconnectedPong::class);
 		$this->registerPacket(AdvertiseSystem::$ID, AdvertiseSystem::class);
-		$this->registerPacket(DATA_PACKET_0::$ID, DATA_PACKET_0::class);
-		$this->registerPacket(DATA_PACKET_1::$ID, DATA_PACKET_1::class);
-		$this->registerPacket(DATA_PACKET_2::$ID, DATA_PACKET_2::class);
-		$this->registerPacket(DATA_PACKET_3::$ID, DATA_PACKET_3::class);
-		$this->registerPacket(DATA_PACKET_4::$ID, DATA_PACKET_4::class);
-		$this->registerPacket(DATA_PACKET_5::$ID, DATA_PACKET_5::class);
-		$this->registerPacket(DATA_PACKET_6::$ID, DATA_PACKET_6::class);
-		$this->registerPacket(DATA_PACKET_7::$ID, DATA_PACKET_7::class);
-		$this->registerPacket(DATA_PACKET_8::$ID, DATA_PACKET_8::class);
-		$this->registerPacket(DATA_PACKET_9::$ID, DATA_PACKET_9::class);
-		$this->registerPacket(DATA_PACKET_A::$ID, DATA_PACKET_A::class);
-		$this->registerPacket(DATA_PACKET_B::$ID, DATA_PACKET_B::class);
-		$this->registerPacket(DATA_PACKET_C::$ID, DATA_PACKET_C::class);
-		$this->registerPacket(DATA_PACKET_D::$ID, DATA_PACKET_D::class);
-		$this->registerPacket(DATA_PACKET_E::$ID, DATA_PACKET_E::class);
-		$this->registerPacket(DATA_PACKET_F::$ID, DATA_PACKET_F::class);
-		$this->registerPacket(NACK::$ID, NACK::class);
-		$this->registerPacket(ACK::$ID, ACK::class);
 	}
 }

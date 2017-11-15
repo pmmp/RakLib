@@ -19,13 +19,26 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-abstract class DataPacket extends Packet{
+class Datagram extends Packet{
+	const BITFLAG_VALID = 0x80;
+	const BITFLAG_ACK = 0x40;
+	const BITFLAG_NAK = 0x20; // hasBAndAS for ACKs
+	const BITFLAG_PACKET_PAIR = 0x10;
+	const BITFLAG_CONTINUOUS_SEND = 0x08;
+	const BITFLAG_NEEDS_B_AND_AS = 0x04;
+
+	/** @var int */
+	public $headerFlags = 0;
 
 	/** @var EncapsulatedPacket[] */
 	public $packets = [];
 
 	/** @var int */
 	public $seqNumber;
+
+	protected function encodeHeader() : void{
+		$this->putByte(self::BITFLAG_VALID | $this->headerFlags);
+	}
 
 	protected function encodePayload() : void{
 		$this->putLTriad($this->seqNumber);
@@ -41,6 +54,10 @@ abstract class DataPacket extends Packet{
 		}
 
 		return $length;
+	}
+
+	protected function decodeHeader() : void{
+		$this->headerFlags = $this->getByte();
 	}
 
 	protected function decodePayload() : void{
