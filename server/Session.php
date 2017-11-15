@@ -444,8 +444,7 @@ class Session{
 		if($id < MessageIdentifiers::ID_USER_PACKET_ENUM){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
 				if($id === ConnectionRequest::$ID){
-					$dataPacket = new ConnectionRequest;
-					$dataPacket->buffer = $packet->buffer;
+					$dataPacket = new ConnectionRequest($packet->buffer);
 					$dataPacket->decode();
 
 					$pk = new ConnectionRequestAccepted;
@@ -455,8 +454,7 @@ class Session{
 					$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
 					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, RakLib::PRIORITY_IMMEDIATE);
 				}elseif($id === NewIncomingConnection::$ID){
-					$dataPacket = new NewIncomingConnection;
-					$dataPacket->buffer = $packet->buffer;
+					$dataPacket = new NewIncomingConnection($packet->buffer);
 					$dataPacket->decode();
 
 					if($dataPacket->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
@@ -472,8 +470,7 @@ class Session{
 				//TODO: we're supposed to send an ACK for this, but currently we're just deleting the session straight away
 				$this->disconnect("client disconnect");
 			}elseif($id === ConnectedPing::$ID){
-				$dataPacket = new ConnectedPing;
-				$dataPacket->buffer = $packet->buffer;
+				$dataPacket = new ConnectedPing($packet->buffer);
 				$dataPacket->decode();
 
 				$pk = new ConnectedPong;
@@ -481,8 +478,7 @@ class Session{
 				$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
 				$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0);
 			}elseif($id === ConnectedPong::$ID){
-				$dataPacket = new ConnectedPong();
-				$dataPacket->buffer = $packet->buffer;
+				$dataPacket = new ConnectedPong($packet->buffer);
 				$dataPacket->decode();
 
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);

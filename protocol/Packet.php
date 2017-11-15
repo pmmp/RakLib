@@ -34,6 +34,11 @@ abstract class Packet{
 	/** @var float|null */
 	public $sendTime;
 
+	public function __construct(string $buffer = "", int $offset = 0){
+		$this->buffer = $buffer;
+		$this->offset = $offset;
+	}
+
 	protected function get($len){
 		if($len < 0){
 			$this->offset = strlen($this->buffer) - 1;
