@@ -38,6 +38,6 @@ class ConnectionRequest extends Packet{
 	protected function decodePayload() : void{
 		$this->clientID = $this->getLong();
 		$this->sendPingTime = $this->getLong();
-		$this->useSecurity = $this->getByte() > 0;
+		$this->useSecurity = $this->getByte() !== 0;
 	}
 }
