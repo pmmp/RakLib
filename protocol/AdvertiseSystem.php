@@ -17,6 +17,17 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-class AdvertiseSystem extends UnconnectedPong{
+class AdvertiseSystem extends Packet{
 	public static $ID = MessageIdentifiers::ID_ADVERTISE_SYSTEM;
+
+	/** @var string */
+	public $serverName;
+
+	protected function encodePayload() : void{
+		$this->putString($this->serverName);
+	}
+
+	protected function decodePayload() : void{
+		$this->serverName = $this->getString();
+	}
 }
