@@ -25,13 +25,11 @@ class ConnectedPing extends Packet{
 	/** @var int */
 	public $sendPingTime;
 
-	public function encode(){
-		parent::encode();
+	protected function encodePayload() : void{
 		$this->putLong($this->sendPingTime);
 	}
 
-	public function decode(){
-		parent::decode();
+	protected function decodePayload() : void{
 		$this->sendPingTime = $this->getLong();
 	}
 }

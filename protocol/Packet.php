@@ -151,12 +151,33 @@ abstract class Packet{
 		}
 	}
 
-	public function encode(){
-		$this->buffer = chr(static::$ID);
+	public function encode() : void{
+		$this->reset();
+		$this->encodeHeader();
+		$this->encodePayload();
 	}
 
-	public function decode(){
-		$this->offset = 1;
+	protected function encodeHeader() : void{
+		$this->putByte(static::$ID);
+	}
+
+	abstract protected function encodePayload() : void;
+
+	public function decode() : void{
+		$this->offset = 0;
+		$this->decodeHeader();
+		$this->decodePayload();
+	}
+
+	protected function decodeHeader() : void{
+		$this->getByte(); //PID
+	}
+
+	abstract protected function decodePayload() : void;
+
+	public function reset(){
+		$this->buffer = "";
+		$this->offset = 0;
 	}
 
 	public function clean(){

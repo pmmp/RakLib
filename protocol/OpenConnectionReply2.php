@@ -31,8 +31,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 	/** @var int */
 	public $mtuSize;
 
-	public function encode(){
-		parent::encode();
+	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putLong($this->serverID);
 		$this->putAddress($this->clientAddress, $this->clientPort, 4);
@@ -40,8 +39,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 		$this->putByte(0); //server security
 	}
 
-	public function decode(){
-		parent::decode();
+	protected function decodePayload() : void{
 		$this->readMagic();
 		$this->serverID = $this->getLong();
 		$this->getAddress($this->clientAddress, $this->clientPort);

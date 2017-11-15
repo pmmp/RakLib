@@ -38,8 +38,7 @@ class ConnectionRequestAccepted extends Packet{
 	/** @var int */
 	public $sendPongTime;
 
-	public function encode(){
-		parent::encode();
+	protected function encodePayload() : void{
 		$this->putAddress($this->address, $this->port, 4);
 		$this->putShort(0);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
@@ -51,8 +50,7 @@ class ConnectionRequestAccepted extends Packet{
 		$this->putLong($this->sendPongTime);
 	}
 
-	public function decode(){
-		parent::decode();
+	protected function decodePayload() : void{
 		//TODO, not needed yet
 	}
 }

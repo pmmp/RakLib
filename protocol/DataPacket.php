@@ -27,8 +27,7 @@ abstract class DataPacket extends Packet{
 	/** @var int */
 	public $seqNumber;
 
-	public function encode(){
-		parent::encode();
+	protected function encodePayload() : void{
 		$this->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
 			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : (string) $packet);
@@ -44,8 +43,7 @@ abstract class DataPacket extends Packet{
 		return $length;
 	}
 
-	public function decode(){
-		parent::decode();
+	protected function decodePayload() : void{
 		$this->seqNumber = $this->getLTriad();
 
 		while(!$this->feof()){
