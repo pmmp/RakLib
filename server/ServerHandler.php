@@ -75,7 +75,7 @@ class ServerHandler{
 
 	public function emergencyShutdown(){
 		$this->server->shutdown();
-		$this->server->pushMainToThreadPacket("\x7f"); //RakLib::PACKET_EMERGENCY_SHUTDOWN
+		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
 	protected function invalidSession($identifier){
