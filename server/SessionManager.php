@@ -136,13 +136,7 @@ class SessionManager{
 			$session->update($time);
 		}
 
-		foreach($this->ipSec as $address => $count){
-			if($count >= $this->packetLimit){
-				$this->blockAddress($address);
-			}
-		}
 		$this->ipSec = [];
-
 
 		if(($this->ticks % self::RAKLIB_TPS) === 0){
 			$diff = max(0.005, $time - $this->lastMeasure);
@@ -180,7 +174,10 @@ class SessionManager{
 			}
 
 			if(isset($this->ipSec[$source])){
-				$this->ipSec[$source]++;
+				if(++$this->ipSec[$source] >= $this->packetLimit){
+					$this->blockAddress($source);
+					return true;
+				}
 			}else{
 				$this->ipSec[$source] = 1;
 			}
