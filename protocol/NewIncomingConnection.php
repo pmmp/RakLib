@@ -43,9 +43,16 @@ class NewIncomingConnection extends Packet{
 
 	protected function decodePayload() : void{
 		$this->getAddress($this->address, $this->port);
+
+		//TODO: HACK!
+		$stopOffset = strlen($this->buffer) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->getAddress($addr, $port, $version);
-			$this->systemAddresses[$i] = [$addr, $port, $version];
+			if($this->offset >= $stopOffset){
+				$this->systemAddresses[$i] = ["0.0.0.0", 0, 4];
+			}else{
+				$this->getAddress($addr, $port, $version);
+				$this->systemAddresses[$i] = [$addr, $port, $version];
+			}
 		}
 
 		$this->sendPingTime = $this->getLong();

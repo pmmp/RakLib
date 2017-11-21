@@ -116,7 +116,7 @@ class Session{
 	/** @var float */
 	private $lastPingTime = -1;
 	/** @var int */
-	private $lastPingMeasure = 0;
+	private $lastPingMeasure = 1;
 
 	public function __construct(SessionManager $sessionManager, $address, $port, $clientId, int $mtuSize){
 		$this->sessionManager = $sessionManager;
@@ -464,7 +464,7 @@ class Session{
 						$this->isTemporal = false;
 						$this->sessionManager->openSession($this);
 
-						$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
+						//$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime); //can't use this due to system-address count issues in MCPE >.<
 						$this->sendPing();
 					}
 				}
