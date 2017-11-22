@@ -203,7 +203,7 @@ class SessionManager{
 						}
 					}else{
 						if(($pid & Datagram::BITFLAG_VALID) === 0){
-							$this->server->getLogger()->debug("Ignored non-connected message " . bin2hex($pid) . " from $source $port due to session already opened");
+							$this->server->getLogger()->debug("Ignored non-connected message 0x" . bin2hex($buffer{0}) . " from $source $port due to session already opened");
 						}else{
 							if($pid & Datagram::BITFLAG_ACK){
 								$session->handlePacket(new ACK($buffer));
