@@ -119,8 +119,7 @@ class SessionManager{
 
 		while(!$this->shutdown){
 			$start = microtime(true);
-			$max = 1000;
-			while($this->receivePacket() and --$max){}
+			while($this->receivePacket()){}
 			while($this->receiveStream()){}
 			$time = microtime(true) - $start;
 			if($time < self::RAKLIB_TIME_PER_TICK){
