@@ -325,10 +325,6 @@ class Session{
 			$this->needACK[$packet->identifierACK] = [];
 		}
 
-		if($packet->isReliable()){
-			$packet->messageIndex = $this->messageIndex++;
-		}
-
 		if($packet->isSequenced()){
 			$packet->orderIndex = $this->channelIndex[$packet->orderChannel]++;
 		}
@@ -349,10 +345,9 @@ class Session{
 				$pk->reliability = $packet->reliability;
 				$pk->splitIndex = $count;
 				$pk->buffer = $buffer;
-				if($count > 0){
+
+				if($packet->isReliable()){
 					$pk->messageIndex = $this->messageIndex++;
-				}else{
-					$pk->messageIndex = $packet->messageIndex;
 				}
 
 				$pk->orderChannel = $packet->orderChannel;
@@ -361,6 +356,9 @@ class Session{
 				$this->addToQueue($pk, $flags | RakLib::PRIORITY_IMMEDIATE);
 			}
 		}else{
+			if($packet->isReliable()){
+				$packet->messageIndex = $this->messageIndex++;
+			}
 			$this->addToQueue($packet, $flags);
 		}
 	}
