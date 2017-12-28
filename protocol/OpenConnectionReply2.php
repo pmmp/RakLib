@@ -29,6 +29,8 @@ class OpenConnectionReply2 extends OfflineMessage{
 	/** @var int */
 	public $clientPort;
 	/** @var int */
+	public $clientAddressVersion = 4;
+	/** @var int */
 	public $mtuSize;
 	/** @var bool */
 	public $serverSecurity = false;
@@ -36,7 +38,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putLong($this->serverID);
-		$this->putAddress($this->clientAddress, $this->clientPort, 4);
+		$this->putAddress($this->clientAddress, $this->clientPort, $this->clientAddressVersion);
 		$this->putShort($this->mtuSize);
 		$this->putByte($this->serverSecurity ? 1 : 0);
 	}
@@ -44,7 +46,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 	protected function decodePayload() : void{
 		$this->readMagic();
 		$this->serverID = $this->getLong();
-		$this->getAddress($this->clientAddress, $this->clientPort);
+		$this->getAddress($this->clientAddress, $this->clientPort, $this->clientAddressVersion);
 		$this->mtuSize = $this->getShort();
 		$this->serverSecurity = $this->getByte() !== 0;
 	}
