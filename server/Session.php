@@ -338,13 +338,14 @@ class Session{
 
 		if(strlen($packet->buffer) > $maxSize){
 			$buffers = str_split($packet->buffer, $maxSize);
+			$bufferCount = count($buffers);
 
 			$splitID = ++$this->splitID % 65536;
 			foreach($buffers as $count => $buffer){
 				$pk = new EncapsulatedPacket();
 				$pk->splitID = $splitID;
 				$pk->hasSplit = true;
-				$pk->splitCount = count($buffers);
+				$pk->splitCount = $bufferCount;
 				$pk->reliability = $packet->reliability;
 				$pk->splitIndex = $count;
 				$pk->buffer = $buffer;
