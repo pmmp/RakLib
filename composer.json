@@ -1,5 +1,5 @@
 {
-	"name": "pmmp/raklib",
+	"name": "pocketmine/raklib",
 	"description": "A RakNet server implementation written in PHP",
 	"type": "library",
 	"license": "GPL-3.0",
@@ -8,7 +8,7 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
-		"pmmp/pocketmine-spl": "^0.1.0"
+		"pocketmine/pocketmine-spl": "^0.1.0"
 	},
 	"autoload": {
 		"classmap": ["./"]
