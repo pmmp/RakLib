@@ -8,7 +8,7 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
-		"pocketmine/pocketmine-spl": "^0.1.0"
+		"pocketmine/pocketmine-spl": "^0.2.0"
 	},
 	"autoload": {
 		"classmap": ["./"]
