@@ -18,114 +18,37 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 #ifndef COMPILE
-use raklib\Binary;
-
+use pocketmine\utils\Binary;
 #endif
+use pocketmine\utils\BinaryStream;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
-abstract class Packet{
+abstract class Packet extends BinaryStream{
 	public static $ID = -1;
 
-	/** @var int */
-	protected $offset = 0;
-	/** @var string|null */
-	public $buffer;
 	/** @var float|null */
 	public $sendTime;
 
-	public function __construct(string $buffer = "", int $offset = 0){
-		$this->buffer = $buffer;
-		$this->offset = $offset;
-	}
-
-	protected function get($len){
-		if($len < 0){
-			$this->offset = strlen($this->buffer) - 1;
-
-			return "";
-		}elseif($len === true){
-			return substr($this->buffer, $this->offset);
-		}
-
-		return $len === 1 ? $this->buffer{$this->offset++} : substr($this->buffer, ($this->offset += $len) - $len, $len);
-	}
-
-	protected function getLong(){
-		return Binary::readLong($this->get(8));
-	}
-
-	protected function getInt(){
-		return Binary::readInt($this->get(4));
-	}
-
-	protected function getShort($signed = true){
-		return $signed ? Binary::readSignedShort($this->get(2)) : Binary::readShort($this->get(2));
-	}
-
-	protected function getTriad(){
-		return Binary::readTriad($this->get(3));
-	}
-
-	protected function getLTriad(){
-		return Binary::readLTriad($this->get(3));
-	}
-
-	protected function getByte(){
-		return ord($this->buffer{$this->offset++});
-	}
-
 	protected function getString(){
-		return $this->get($this->getShort(false));
+		return $this->get($this->getShort());
 	}
 
 	protected function getAddress(&$addr, &$port, &$version = null){
 		$version = $this->getByte();
 		if($version === 4){
 			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
-			$port = $this->getShort(false);
+			$port = $this->getShort();
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
 			Binary::readLShort($this->get(2)); //Family, AF_INET6
-			$port = $this->getShort(false);
+			$port = $this->getShort();
 			$this->getInt(); //flow info
 			$addr = inet_ntop($this->get(16));
 			$this->getInt(); //scope ID
 		}else{
 			throw new \UnexpectedValueException("Unknown IP address version $version");
 		}
-	}
-
-	protected function feof(){
-		return !isset($this->buffer{$this->offset});
-	}
-
-	protected function put($str){
-		$this->buffer .= $str;
-	}
-
-	protected function putLong($v){
-		$this->buffer .= Binary::writeLong($v);
-	}
-
-	protected function putInt($v){
-		$this->buffer .= Binary::writeInt($v);
-	}
-
-	protected function putShort($v){
-		$this->buffer .= Binary::writeShort($v);
-	}
-
-	protected function putTriad($v){
-		$this->buffer .= Binary::writeTriad($v);
-	}
-
-	protected function putLTriad($v){
-		$this->buffer .= Binary::writeLTriad($v);
-	}
-
-	protected function putByte($v){
-		$this->buffer .= chr($v);
 	}
 
 	protected function putString($v){
@@ -174,11 +97,6 @@ abstract class Packet{
 	}
 
 	abstract protected function decodePayload() : void;
-
-	public function reset(){
-		$this->buffer = "";
-		$this->offset = 0;
-	}
 
 	public function clean(){
 		$this->buffer = null;

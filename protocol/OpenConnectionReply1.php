@@ -40,6 +40,6 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$this->readMagic();
 		$this->serverID = $this->getLong();
 		$this->serverSecurity = $this->getByte() !== 0;
-		$this->mtuSize = $this->getShort(false);
+		$this->mtuSize = $this->getShort();
 	}
 }
