@@ -18,11 +18,11 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 #ifndef COMPILE
-use raklib\Binary;
+use pocketmine\utils\Binary;
 
 #endif
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class EncapsulatedPacket{
 	const RELIABILITY_SHIFT = 5;

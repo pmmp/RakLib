@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class Datagram extends Packet{
 	const BITFLAG_VALID = 0x80;

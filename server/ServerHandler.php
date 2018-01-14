@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use raklib\Binary;
+use pocketmine\utils\Binary;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\RakLib;
 
