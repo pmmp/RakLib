@@ -76,7 +76,7 @@ abstract class Packet{
 	}
 
 	protected function getString(){
-		return $this->get($this->getShort());
+		return $this->get($this->getShort(false));
 	}
 
 	protected function getAddress(&$addr, &$port, &$version = null){

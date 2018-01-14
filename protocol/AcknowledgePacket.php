@@ -75,7 +75,7 @@ abstract class AcknowledgePacket extends Packet{
 	}
 
 	protected function decodePayload() : void{
-		$count = $this->getShort();
+		$count = $this->getShort(false);
 		$this->packets = [];
 		$cnt = 0;
 		for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){
