@@ -67,9 +67,7 @@ class EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
 
 		$offset = 0;
-		$flags = ord($bytes{$offset++});
-		$packet->reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
-		$packet->hasSplit = ($flags & self::SPLIT_FLAG) > 0;
+		$packet->reliability = ord($bytes{$offset++});
 
 		$length = Binary::readInt(substr($bytes, $offset, 4));
 		$offset += 4;
@@ -91,7 +89,7 @@ class EncapsulatedPacket{
 	 */
 	public function toInternalBinary() : string{
 		return
-			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->hasSplit ? self::SPLIT_FLAG : 0)) .
+			chr($this->reliability) .
 			Binary::writeInt(strlen($this->buffer)) .
 			Binary::writeInt($this->identifierACK ?? -1) . //TODO: don't write this for non-ack-receipt reliabilities
 			($this->isSequenced() ? chr($this->orderChannel) : "") .
