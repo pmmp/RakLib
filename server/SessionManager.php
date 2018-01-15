@@ -234,7 +234,7 @@ class SessionManager{
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
 		$id = $session->getAddress() . ":" . $session->getPort();
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toBinary(true);
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -287,7 +287,7 @@ class SessionManager{
 				if($session !== null and $session->isConnected()){
 					$flags = ord($packet{$offset++});
 					$buffer = substr($packet, $offset);
-					$session->addEncapsulatedToQueue(EncapsulatedPacket::fromBinary($buffer, true), $flags);
+					$session->addEncapsulatedToQueue(EncapsulatedPacket::fromInternalBinary($buffer), $flags);
 				}else{
 					$this->streamInvalid($identifier);
 				}

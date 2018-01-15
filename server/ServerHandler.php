@@ -34,7 +34,7 @@ class ServerHandler{
 	}
 
 	public function sendEncapsulated($identifier, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toBinary(true);
+		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
@@ -96,7 +96,7 @@ class ServerHandler{
 				$offset += $len;
 				$flags = ord($packet{$offset++});
 				$buffer = substr($packet, $offset);
-				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromBinary($buffer, true), $flags);
+				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromInternalBinary($buffer), $flags);
 			}elseif($id === RakLib::PACKET_RAW){
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
