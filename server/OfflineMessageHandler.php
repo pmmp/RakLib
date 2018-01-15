@@ -33,7 +33,7 @@ class OfflineMessageHandler{
 		$this->sessionManager = $manager;
 	}
 
-	public function handle(OfflineMessage $packet, string $source, int $port){
+	public function handle(OfflineMessage $packet, string $source, int $port) : bool{
 		switch($packet::$ID){
 			case UnconnectedPing::$ID:
 				/** @var UnconnectedPing $packet */
