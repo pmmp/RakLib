@@ -104,7 +104,7 @@ class EncapsulatedPacket{
 	 *
 	 * @return EncapsulatedPacket
 	 */
-	public static function fromBinary($binary, &$offset = null){
+	public static function fromBinary(string $binary, ?int &$offset = null) : EncapsulatedPacket{
 
 		$packet = new EncapsulatedPacket();
 
@@ -146,7 +146,7 @@ class EncapsulatedPacket{
 	/**
 	 * @return string
 	 */
-	public function toBinary(){
+	public function toBinary() : string{
 		return
 			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->hasSplit ? self::SPLIT_FLAG : 0)) .
 			Binary::writeShort(strlen($this->buffer) << 3) .
@@ -159,7 +159,7 @@ class EncapsulatedPacket{
 			. $this->buffer;
 	}
 
-	public function getTotalLength(){
+	public function getTotalLength() : int{
 		return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 10 : 0);
 	}
 
@@ -182,7 +182,7 @@ class EncapsulatedPacket{
 		);
 	}
 
-	public function __toString(){
+	public function __toString() : string{
 		return $this->toBinary();
 	}
 }
