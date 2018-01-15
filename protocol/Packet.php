@@ -30,11 +30,16 @@ abstract class Packet extends BinaryStream{
 	/** @var float|null */
 	public $sendTime;
 
-	protected function getString(){
+	protected function getString() : string{
 		return $this->get($this->getShort());
 	}
 
-	protected function getAddress(&$addr, &$port, &$version = null){
+	/**
+	 * @param string|null &$addr
+	 * @param int|null    &$port
+	 * @param int|null    &$version
+	 */
+	protected function getAddress(?string &$addr, ?int &$port, ?int &$version = null) : void{
 		$version = $this->getByte();
 		if($version === 4){
 			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
@@ -51,12 +56,12 @@ abstract class Packet extends BinaryStream{
 		}
 	}
 
-	protected function putString($v){
+	protected function putString(string $v) : void{
 		$this->putShort(strlen($v));
 		$this->put($v);
 	}
 
-	protected function putAddress($addr, $port, $version = 4){
+	protected function putAddress(string $addr, int $port, int $version = 4) : void{
 		$this->putByte($version);
 		if($version === 4){
 			foreach(explode(".", $addr) as $b){
