@@ -18,11 +18,10 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 #ifndef COMPILE
-use raklib\Binary;
-
+use pocketmine\utils\Binary;
 #endif
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
@@ -75,7 +74,7 @@ abstract class AcknowledgePacket extends Packet{
 	}
 
 	protected function decodePayload() : void{
-		$count = $this->getShort(false);
+		$count = $this->getShort();
 		$this->packets = [];
 		$cnt = 0;
 		for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){

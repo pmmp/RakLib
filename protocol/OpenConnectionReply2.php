@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class OpenConnectionReply2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;
@@ -47,7 +47,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 		$this->readMagic();
 		$this->serverID = $this->getLong();
 		$this->getAddress($this->clientAddress, $this->clientPort, $this->clientAddressVersion);
-		$this->mtuSize = $this->getShort(false);
+		$this->mtuSize = $this->getShort();
 		$this->serverSecurity = $this->getByte() !== 0;
 	}
 }

@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
+#include <rules/BinaryIO.h>
 
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
@@ -43,7 +43,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	protected function decodePayload() : void{
 		$this->readMagic();
 		$this->getAddress($this->serverAddress, $this->serverPort, $this->serverAddressVersion);
-		$this->mtuSize = $this->getShort(false);
+		$this->mtuSize = $this->getShort();
 		$this->clientID = $this->getLong();
 	}
 }
