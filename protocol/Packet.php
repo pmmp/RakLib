@@ -22,7 +22,7 @@ use pocketmine\utils\Binary;
 #endif
 use pocketmine\utils\BinaryStream;
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 abstract class Packet extends BinaryStream{
 	public static $ID = -1;

@@ -22,7 +22,7 @@ use pocketmine\utils\Binary;
 
 #endif
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 class EncapsulatedPacket{
 	const RELIABILITY_SHIFT = 5;

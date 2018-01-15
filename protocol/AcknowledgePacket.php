@@ -21,7 +21,7 @@ namespace raklib\protocol;
 use pocketmine\utils\Binary;
 #endif
 
-#include <rules/BinaryIO.h>
+#include <rules/RakLibPacket.h>
 
 abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
