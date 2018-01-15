@@ -233,7 +233,7 @@ class SessionManager{
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
-		$id = $session->getAddress() . ":" . $session->getPort();
+		$id = self::addressHash($session->getAddress(), $session->getPort());
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -254,7 +254,7 @@ class SessionManager{
 	}
 
 	protected function streamOpen(Session $session){
-		$identifier = $session->getAddress() . ":" . $session->getPort();
+		$identifier = self::addressHash($session->getAddress(), $session->getPort());
 		$buffer = chr(RakLib::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($session->getAddress())) . $session->getAddress() . Binary::writeShort($session->getPort()) . Binary::writeLong($session->getID());
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -270,7 +270,7 @@ class SessionManager{
 	}
 
 	public function streamPingMeasure(Session $session, int $pingMS){
-		$identifier = $session->getAddress() . ":" . $session->getPort();
+		$identifier = self::addressHash($session->getAddress(), $session->getPort());
 		$buffer = chr(RakLib::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -377,6 +377,10 @@ class SessionManager{
 		$this->getLogger()->debug("Unblocked $address");
 	}
 
+	protected static function addressHash(string $ip, int $port) : string{
+		return $ip . ":" . $port;
+	}
+
 	/**
 	 * @param string $ip
 	 * @param int    $port
@@ -384,21 +388,20 @@ class SessionManager{
 	 * @return Session|null
 	 */
 	public function getSession($ip, $port){
-		$id = $ip . ":" . $port;
-		return $this->sessions[$id] ?? null;
+		return $this->sessions[self::addressHash($ip, $port)] ?? null;
 	}
 
 	public function createSession(string $ip, int $port, $clientId, int $mtuSize){
 		$this->checkSessions();
 
-		$this->sessions[$ip . ":" . $port] = $session = new Session($this, $ip, $port, $clientId, $mtuSize);
+		$this->sessions[self::addressHash($ip, $port)] = $session = new Session($this, $ip, $port, $clientId, $mtuSize);
 		$this->getLogger()->debug("Created session for $ip $port with MTU size $mtuSize");
 
 		return $session;
 	}
 
 	public function removeSession(Session $session, $reason = "unknown"){
-		$id = $session->getAddress() . ":" . $session->getPort();
+		$id = self::addressHash($session->getAddress(), $session->getPort());
 		if(isset($this->sessions[$id])){
 			$this->sessions[$id]->close();
 			$this->removeSessionInternal($session);
@@ -407,7 +410,7 @@ class SessionManager{
 	}
 
 	public function removeSessionInternal(Session $session){
-		unset($this->sessions[$session->getAddress() . ":" . $session->getPort()]);
+		unset($this->sessions[self::addressHash($session->getAddress(), $session->getPort())]);
 	}
 
 	public function openSession(Session $session){
@@ -428,7 +431,7 @@ class SessionManager{
 	}
 
 	public function notifyACK(Session $session, $identifierACK){
-		$this->streamACK($session->getAddress() . ":" . $session->getPort(), $identifierACK);
+		$this->streamACK(self::addressHash($session->getAddress(), $session->getPort()), $identifierACK);
 	}
 
 	public function getName(){
