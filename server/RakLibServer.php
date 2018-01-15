@@ -176,7 +176,7 @@ class RakLibServer extends \Thread{
 
 		$this->getLogger()->debug("An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
 
-		foreach(($trace = $this->getTrace(2)) as $i => $line){
+		foreach($this->getTrace(2) as $i => $line){
 			$this->getLogger()->debug($line);
 		}
 
