@@ -17,9 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-
-use raklib\RakLib;
-
 class RakLibServer extends \Thread{
 	/** @var int */
 	protected $port;
