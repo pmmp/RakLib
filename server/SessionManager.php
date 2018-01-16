@@ -185,24 +185,10 @@ class SessionManager{
 				try{
 					$pid = ord($buffer{0});
 
-					$session = $this->getSession($source, $port);
-					if($session === null){
-						$pk = $this->getPacketFromPool($pid, $buffer);
-						if($pk instanceof OfflineMessage){
-							$pk->decode();
-							if($pk->isValid()){
-								if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
-									$this->server->getLogger()->debug("Unhandled offline message " . get_class($pk) . " received from $source $port");
-								}
-							}else{
-								$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
-							}
-						}else{
-							$this->streamRaw($source, $port, $buffer);
-						}
-					}else{
-						if(($pid & Datagram::BITFLAG_VALID) === 0){
-							$this->server->getLogger()->debug("Ignored non-connected message 0x" . bin2hex($buffer{0}) . " from $source $port due to session already opened");
+					if(($pid & Datagram::BITFLAG_VALID) !== 0){
+						$session = $this->getSession($source, $port);
+						if($session === null){
+							$this->getLogger()->debug("Ignored connected packet from $source $port due to session not opened (0x" . dechex($pid) . ")");
 						}else{
 							if($pid & Datagram::BITFLAG_ACK){
 								$session->handlePacket(new ACK($buffer));
@@ -210,6 +196,22 @@ class SessionManager{
 								$session->handlePacket(new NACK($buffer));
 							}else{
 								$session->handlePacket(new Datagram($buffer));
+							}
+						}
+					}else{
+						if($this->sessionExists($source, $port)){
+							$this->server->getLogger()->debug("Ignored unconnected packet from $source $port due to session already opened (0x" . dechex($pid) . ")");
+						}else{
+							$pk = $this->getPacketFromPool($pid, $buffer);
+							if($pk instanceof OfflineMessage){
+								$pk->decode();
+								if($pk->isValid()){
+									if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
+										$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $source $port");
+									}
+								}
+							}else{
+								$this->streamRaw($source, $port, $buffer);
 							}
 						}
 					}
@@ -393,6 +395,10 @@ class SessionManager{
 	 */
 	public function getSession(string $ip, int $port) : ?Session{
 		return $this->sessions[self::addressHash($ip, $port)] ?? null;
+	}
+
+	public function sessionExists(string $ip, int $port) : bool{
+		return isset($this->sessions[self::addressHash($ip, $port)]);
 	}
 
 	public function createSession(string $ip, int $port, int $clientId, int $mtuSize) : Session{
