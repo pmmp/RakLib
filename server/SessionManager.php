@@ -191,11 +191,9 @@ class SessionManager{
 		try{
 			$pid = ord($buffer{0});
 
-			if(($pid & Datagram::BITFLAG_VALID) !== 0){
-				$session = $this->getSession($source, $port);
-				if($session === null){
-					$this->getLogger()->debug("Ignored connected packet from $source $port due to session not opened (0x" . dechex($pid) . ")");
-				}else{
+			$session = $this->getSession($source, $port);
+			if($session !== null){
+				if(($pid & Datagram::BITFLAG_VALID) !== 0){
 					if($pid & Datagram::BITFLAG_ACK){
 						$session->handlePacket(new ACK($buffer));
 					}elseif($pid & Datagram::BITFLAG_NAK){
@@ -203,23 +201,26 @@ class SessionManager{
 					}else{
 						$session->handlePacket(new Datagram($buffer));
 					}
-				}
-			}else{
-				if($this->sessionExists($source, $port)){
-					$this->server->getLogger()->debug("Ignored unconnected packet from $source $port due to session already opened (0x" . dechex($pid) . ")");
 				}else{
-					$pk = $this->getPacketFromPool($pid, $buffer);
-					if($pk instanceof OfflineMessage){
-						$pk->decode();
-						if($pk->isValid()){
-							if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
-								$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $source $port");
-							}
-						}
-					}else{
-						$this->streamRaw($source, $port, $buffer);
-					}
+					$this->server->getLogger()->debug("Ignored unconnected packet from $source $port due to session already opened (0x" . dechex($pid) . ")");
 				}
+			}elseif(($pk = $this->getPacketFromPool($pid, $buffer)) instanceof OfflineMessage){
+				/** @var OfflineMessage $pk */
+				$pk->decode();
+				if($pk->isValid()){
+					if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
+						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $source $port");
+					}
+				}else{
+					$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
+				}
+			}elseif(($pid & Datagram::BITFLAG_VALID) !== 0 and ($pid & 0x03) === 0){
+				// Loose datagram, don't relay it as a raw packet
+				// RakNet does not currently use the 0x02 or 0x01 bitflags on any datagram header, so we can use
+				// this to identify the difference between loose datagrams and packets like Query.
+				$this->server->getLogger()->debug("Ignored connected packet from $source $port due to no session opened (0x" . dechex($pid) . ")");
+			}else{
+				$this->streamRaw($source, $port, $buffer);
 			}
 		}catch(\Throwable $e){
 			$logger = $this->getLogger();
