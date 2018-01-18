@@ -81,11 +81,15 @@ class SessionManager{
 	/** @var int */
 	protected $startTimeMS;
 
-	public function __construct(RakLibServer $server, UDPServerSocket $socket){
+	/** @var int */
+	protected $maxMtuSize;
+
+	public function __construct(RakLibServer $server, UDPServerSocket $socket, int $maxMtuSize){
 		$this->server = $server;
 		$this->socket = $socket;
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
+		$this->maxMtuSize = $maxMtuSize;
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
@@ -104,6 +108,10 @@ class SessionManager{
 
 	public function getPort() : int{
 		return $this->server->getPort();
+	}
+
+	public function getMaxMtuSize() : int{
+		return $this->maxMtuSize;
 	}
 
 	public function getLogger() : \ThreadedLogger{

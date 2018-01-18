@@ -41,6 +41,8 @@ class RakLibServer extends \Thread{
 
 	/** @var int */
 	protected $serverId = 0;
+	/** @var int */
+	protected $maxMtuSize;
 
 
 	/**
@@ -52,7 +54,7 @@ class RakLibServer extends \Thread{
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, int $port, string $interface = "0.0.0.0", bool $autoStart = true){
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, int $port, string $interface = "0.0.0.0", bool $autoStart = true, int $maxMtuSize = 1492){
 		$this->port = $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
@@ -61,6 +63,7 @@ class RakLibServer extends \Thread{
 		$this->interface = $interface;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
+		$this->maxMtuSize = $maxMtuSize;
 
 		$this->logger = $logger;
 		$this->loaderPath = $autoloaderPath;
@@ -231,7 +234,7 @@ class RakLibServer extends \Thread{
 
 
 			$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
-			new SessionManager($this, $socket);
+			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 		}
