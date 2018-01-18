@@ -227,7 +227,7 @@ class SessionManager{
 						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
 							$logger->debug($line);
 						}
-						$this->blockAddress($source);
+						$this->blockAddress($source, 5);
 						break;
 					}
 
