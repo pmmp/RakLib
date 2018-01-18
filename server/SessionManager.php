@@ -214,14 +214,27 @@ class SessionManager{
 				}
 			}elseif(($pk = $this->getPacketFromPool($pid, $buffer)) instanceof OfflineMessage){
 				/** @var OfflineMessage $pk */
-				$pk->decode();
-				if($pk->isValid()){
+
+				do{
+					try{
+						$pk->decode();
+						if(!$pk->isValid()){
+							throw new \InvalidArgumentException("Packet magic is invalid");
+						}
+					}catch(\Throwable $e){
+						$logger = $this->server->getLogger();
+						$logger->debug("Received garbage message from $source $port (" . $e->getMessage() . "): " . bin2hex($pk->buffer));
+						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
+							$logger->debug($line);
+						}
+						$this->blockAddress($source);
+						break;
+					}
+
 					if(!$this->offlineMessageHandler->handle($pk, $source, $port)){
 						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $source $port");
 					}
-				}else{
-					$this->server->getLogger()->debug("Received garbage message from $source $port: " . bin2hex($pk->buffer));
-				}
+				}while(false);
 			}elseif(($pid & Datagram::BITFLAG_VALID) !== 0 and ($pid & 0x03) === 0){
 				// Loose datagram, don't relay it as a raw packet
 				// RakNet does not currently use the 0x02 or 0x01 bitflags on any datagram header, so we can use
