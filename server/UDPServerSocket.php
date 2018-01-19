@@ -29,7 +29,7 @@ class UDPServerSocket{
 
 	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
-		$this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		$this->socket = socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
 		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
 			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
