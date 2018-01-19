@@ -52,11 +52,11 @@ class RakLibServer extends \Thread{
 	 * @param string          $autoloaderPath Path to Composer autoloader
 	 * @param int             $port
 	 * @param string          $interface
-	 * @param bool            $autoStart
+	 * @param int             $maxMtuSize
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, int $port, string $interface = "0.0.0.0", bool $autoStart = true, int $maxMtuSize = 1492){
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, int $port, string $interface = "0.0.0.0", int $maxMtuSize = 1492){
 		$this->port = $port;
 		if($port < 1 or $port > 65536){
 			throw new \Exception("Invalid port range");
@@ -77,10 +77,6 @@ class RakLibServer extends \Thread{
 			$this->mainPath = \Phar::running(true);
 		}else{
 			$this->mainPath = \realpath(\getcwd()) . DIRECTORY_SEPARATOR;
-		}
-
-		if($autoStart){
-			$this->start();
 		}
 	}
 
