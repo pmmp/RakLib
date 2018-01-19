@@ -30,6 +30,11 @@ class UDPServerSocket{
 	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
 		$this->socket = socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
+
+		if($bindAddress->version === 6){
+			socket_set_option($this->socket, IPPROTO_IPV6, IPV6_V6ONLY, 1); //Don't map IPv4 to IPv6, the implementation can create another RakLib instance to handle IPv4
+		}
+
 		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
 			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
