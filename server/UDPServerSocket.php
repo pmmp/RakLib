@@ -42,6 +42,13 @@ class UDPServerSocket{
 	}
 
 	/**
+	 * @return InternetAddress
+	 */
+	public function getBindAddress() : InternetAddress{
+		return $this->bindAddress;
+	}
+
+	/**
 	 * @return resource
 	 */
 	public function getSocket(){

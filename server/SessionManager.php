@@ -112,7 +112,7 @@ class SessionManager{
 	}
 
 	public function getPort() : int{
-		return $this->server->getPort();
+		return $this->socket->getBindAddress()->port;
 	}
 
 	public function getMaxMtuSize() : int{

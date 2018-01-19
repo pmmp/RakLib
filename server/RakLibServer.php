@@ -20,10 +20,9 @@ namespace raklib\server;
 use raklib\utils\InternetAddress;
 
 class RakLibServer extends \Thread{
-	/** @var int */
-	protected $port;
-	/** @var string */
-	protected $interface;
+	/** @var InternetAddress */
+	private $address;
+
 	/** @var \ThreadedLogger */
 	protected $logger;
 
@@ -50,19 +49,13 @@ class RakLibServer extends \Thread{
 	/**
 	 * @param \ThreadedLogger $logger
 	 * @param string          $autoloaderPath Path to Composer autoloader
-	 * @param int             $port
-	 * @param string          $interface
+	 * @param InternetAddress $address
 	 * @param int             $maxMtuSize
 	 *
 	 * @throws \Exception
 	 */
-	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, int $port, string $interface = "0.0.0.0", int $maxMtuSize = 1492){
-		$this->port = $port;
-		if($port < 1 or $port > 65536){
-			throw new \Exception("Invalid port range");
-		}
-
-		$this->interface = $interface;
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492){
+		$this->address = $address;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
 		$this->maxMtuSize = $maxMtuSize;
@@ -86,14 +79,6 @@ class RakLibServer extends \Thread{
 
 	public function shutdown() : void{
 		$this->shutdown = true;
-	}
-
-	public function getPort() : int{
-		return $this->port;
-	}
-
-	public function getInterface() : string{
-		return $this->interface;
 	}
 
 	/**
@@ -231,7 +216,7 @@ class RakLibServer extends \Thread{
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
-			$socket = new UDPServerSocket($this->getLogger(), new InternetAddress($this->interface, $this->port, 4));
+			$socket = new UDPServerSocket($this->getLogger(), $this->address);
 			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
