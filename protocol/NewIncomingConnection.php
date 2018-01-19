@@ -20,16 +20,15 @@ namespace raklib\protocol;
 #include <rules/RakLibPacket.h>
 
 use raklib\RakLib;
+use raklib\utils\InternetAddress;
 
 class NewIncomingConnection extends Packet{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
-	/** @var string */
+	/** @var InternetAddress */
 	public $address;
-	/** @var int */
-	public $port;
 
-	/** @var array */
+	/** @var InternetAddress[] */
 	public $systemAddresses = [];
 
 	/** @var int */
@@ -42,16 +41,16 @@ class NewIncomingConnection extends Packet{
 	}
 
 	protected function decodePayload() : void{
-		$this->getAddress($this->address, $this->port);
+		$this->address = $this->getAddress();
 
 		//TODO: HACK!
 		$stopOffset = strlen($this->buffer) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
+		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
 			if($this->offset >= $stopOffset){
-				$this->systemAddresses[$i] = ["0.0.0.0", 0, 4];
+				$this->systemAddresses[$i] = clone $dummy;
 			}else{
-				$this->getAddress($addr, $port, $version);
-				$this->systemAddresses[$i] = [$addr, $port, $version];
+				$this->systemAddresses[$i] = $this->getAddress();
 			}
 		}
 

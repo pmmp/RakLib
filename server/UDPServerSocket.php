@@ -17,17 +17,24 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\utils\InternetAddress;
+
 class UDPServerSocket{
 	/** @var resource */
 	protected $socket;
+	/**
+	 * @var InternetAddress
+	 */
+	private $bindAddress;
 
-	public function __construct(\ThreadedLogger $logger, int $port = 19132, string $interface = "0.0.0.0"){
+	public function __construct(\ThreadedLogger $logger, InternetAddress $bindAddress){
+		$this->bindAddress = $bindAddress;
 		$this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-		if(@socket_bind($this->socket, $interface, $port) === true){
+		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
 			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
-			$logger->critical("**** FAILED TO BIND TO " . $interface . ":" . $port . "!");
+			$logger->critical("**** FAILED TO BIND TO " . $bindAddress . "!");
 			$logger->critical("Perhaps a server is already running on that port?");
 			exit(1);
 		}

@@ -19,17 +19,15 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use raklib\utils\InternetAddress;
+
 class OpenConnectionReply2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;
 
 	/** @var int */
 	public $serverID;
-	/** @var string */
+	/** @var InternetAddress */
 	public $clientAddress;
-	/** @var int */
-	public $clientPort;
-	/** @var int */
-	public $clientAddressVersion = 4;
 	/** @var int */
 	public $mtuSize;
 	/** @var bool */
@@ -38,7 +36,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putLong($this->serverID);
-		$this->putAddress($this->clientAddress, $this->clientPort, $this->clientAddressVersion);
+		$this->putAddress($this->clientAddress);
 		$this->putShort($this->mtuSize);
 		$this->putByte($this->serverSecurity ? 1 : 0);
 	}
@@ -46,7 +44,7 @@ class OpenConnectionReply2 extends OfflineMessage{
 	protected function decodePayload() : void{
 		$this->readMagic();
 		$this->serverID = $this->getLong();
-		$this->getAddress($this->clientAddress, $this->clientPort, $this->clientAddressVersion);
+		$this->clientAddress = $this->getAddress();
 		$this->mtuSize = $this->getShort();
 		$this->serverSecurity = $this->getByte() !== 0;
 	}

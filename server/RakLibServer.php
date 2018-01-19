@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\utils\InternetAddress;
+
 class RakLibServer extends \Thread{
 	/** @var int */
 	protected $port;
@@ -233,7 +235,7 @@ class RakLibServer extends \Thread{
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
-			$socket = new UDPServerSocket($this->getLogger(), $this->port, $this->interface);
+			$socket = new UDPServerSocket($this->getLogger(), new InternetAddress($this->interface, $this->port, 4));
 			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);

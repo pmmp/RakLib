@@ -21,6 +21,7 @@ namespace raklib\protocol;
 use pocketmine\utils\Binary;
 #endif
 use pocketmine\utils\BinaryStream;
+use raklib\utils\InternetAddress;
 
 #include <rules/RakLibPacket.h>
 
@@ -34,16 +35,12 @@ abstract class Packet extends BinaryStream{
 		return $this->get($this->getShort());
 	}
 
-	/**
-	 * @param string|null &$addr
-	 * @param int|null    &$port
-	 * @param int|null    &$version
-	 */
-	protected function getAddress(?string &$addr, ?int &$port, ?int &$version = null) : void{
+	protected function getAddress() : InternetAddress{
 		$version = $this->getByte();
 		if($version === 4){
 			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
 			$port = $this->getShort();
+			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
 			Binary::readLShort($this->get(2)); //Family, AF_INET6
@@ -51,6 +48,7 @@ abstract class Packet extends BinaryStream{
 			$this->getInt(); //flow info
 			$addr = inet_ntop($this->get(16));
 			$this->getInt(); //scope ID
+			return new InternetAddress($addr, $port, $version);
 		}else{
 			throw new \UnexpectedValueException("Unknown IP address version $version");
 		}
@@ -61,21 +59,23 @@ abstract class Packet extends BinaryStream{
 		$this->put($v);
 	}
 
-	protected function putAddress(string $addr, int $port, int $version = 4) : void{
-		$this->putByte($version);
-		if($version === 4){
-			foreach(explode(".", $addr) as $b){
+	protected function putAddress(InternetAddress $address) : void{
+		$this->putByte($address->version);
+		if($address->version === 4){
+			$parts = explode(".", $address->ip);
+			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
+			foreach($parts as $b){
 				$this->putByte((~((int) $b)) & 0xff);
 			}
-			$this->putShort($port);
-		}elseif($version === 6){
+			$this->putShort($address->port);
+		}elseif($address->version === 6){
 			$this->put(Binary::writeLShort(AF_INET6));
-			$this->putShort($port);
+			$this->putShort($address->port);
 			$this->putInt(0);
-			$this->put(inet_pton($addr));
+			$this->put(inet_pton($address->ip));
 			$this->putInt(0);
 		}else{
-			throw new \InvalidArgumentException("IP version $version is not supported");
+			throw new \InvalidArgumentException("IP version $address->version is not supported");
 		}
 	}
 

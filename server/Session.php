@@ -31,6 +31,7 @@ use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
 use raklib\RakLib;
+use raklib\utils\InternetAddress;
 
 class Session{
 	const STATE_CONNECTING = 0;
@@ -50,10 +51,10 @@ class Session{
 
 	/** @var SessionManager */
 	private $sessionManager;
-	/** @var string */
+
+	/** @var InternetAddress */
 	private $address;
-	/** @var int */
-	private $port;
+
 	/** @var int */
 	private $state = self::STATE_CONNECTING;
 	/** @var int */
@@ -118,10 +119,9 @@ class Session{
 	/** @var int */
 	private $lastPingMeasure = 1;
 
-	public function __construct(SessionManager $sessionManager, string $address, int $port, int $clientId, int $mtuSize){
+	public function __construct(SessionManager $sessionManager, InternetAddress $address, int $clientId, int $mtuSize){
 		$this->sessionManager = $sessionManager;
 		$this->address = $address;
-		$this->port = $port;
 		$this->id = $clientId;
 		$this->sendQueue = new Datagram();
 		$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
@@ -138,12 +138,8 @@ class Session{
 		$this->mtuSize = $mtuSize;
 	}
 
-	public function getAddress() : string{
+	public function getAddress() : InternetAddress{
 		return $this->address;
-	}
-
-	public function getPort() : int{
-		return $this->port;
 	}
 
 	public function getID() : int{
@@ -270,7 +266,7 @@ class Session{
 	}
 
 	private function sendPacket(Packet $packet) : void{
-		$this->sessionManager->sendPacket($packet, $this->address, $this->port);
+		$this->sessionManager->sendPacket($packet, $this->address);
 	}
 
 	public function sendQueue() : void{
@@ -450,7 +446,6 @@ class Session{
 
 					$pk = new ConnectionRequestAccepted;
 					$pk->address = $this->address;
-					$pk->port = $this->port;
 					$pk->sendPingTime = $dataPacket->sendPingTime;
 					$pk->sendPongTime = $this->sessionManager->getRakNetTimeMS();
 					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, RakLib::PRIORITY_IMMEDIATE);
@@ -458,7 +453,7 @@ class Session{
 					$dataPacket = new NewIncomingConnection($packet->buffer);
 					$dataPacket->decode();
 
-					if($dataPacket->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
+					if($dataPacket->address->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
 						$this->isTemporal = false;
 						$this->sessionManager->openSession($this);
@@ -573,7 +568,7 @@ class Session{
 			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
 			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
 
-			$this->sessionManager->getLogger()->debug("Closed session for $this->address $this->port");
+			$this->sessionManager->getLogger()->debug("Closed session for $this->address");
 			$this->sessionManager->removeSessionInternal($this);
 			$this->sessionManager = null;
 		}
