@@ -27,16 +27,14 @@ class UDPServerSocket{
 	 */
 	private $bindAddress;
 
-	public function __construct(\ThreadedLogger $logger, InternetAddress $bindAddress){
+	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
 		$this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
 			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
-			$logger->critical("**** FAILED TO BIND TO " . $bindAddress . "!");
-			$logger->critical("Perhaps a server is already running on that port?");
-			exit(1);
+			throw new \InvalidStateException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
 		}
 		socket_set_nonblock($this->socket);
 	}

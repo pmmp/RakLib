@@ -216,7 +216,7 @@ class RakLibServer extends \Thread{
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
-			$socket = new UDPServerSocket($this->getLogger(), $this->address);
+			$socket = new UDPServerSocket($this->address);
 			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
