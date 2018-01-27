@@ -415,10 +415,6 @@ class SessionManager{
 		$this->getLogger()->debug("Unblocked $address");
 	}
 
-	protected static function addressHash(string $ip, int $port) : string{
-		return $ip . ":" . $port;
-	}
-
 	/**
 	 * @param InternetAddress $address
 	 *
