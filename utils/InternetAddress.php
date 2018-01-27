@@ -71,4 +71,8 @@ class InternetAddress{
 	public function __toString(){
 		return $this->ip . " " . $this->port;
 	}
+
+	public function toString() : string{
+		return $this->__toString();
+	}
 }
