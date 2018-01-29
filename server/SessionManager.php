@@ -387,7 +387,7 @@ class SessionManager{
 			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
 			}else{
-				return false;
+				$this->getLogger()->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
 			}
 
 			return true;
