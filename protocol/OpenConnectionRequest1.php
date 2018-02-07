@@ -33,7 +33,7 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putByte($this->protocol);
-		$this->buffer = str_pad($this->buffer, "\x00", $this->mtuSize);
+		$this->buffer = str_pad($this->buffer, $this->mtuSize, "\x00");
 	}
 
 	protected function decodePayload() : void{
