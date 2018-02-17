@@ -77,6 +77,6 @@ class InternetAddress{
 	}
 
 	public function equals(InternetAddress $address) : bool{
-		return $this->ip === $address->ip and $this->port === $address->port;
+		return $this->ip === $address->ip and $this->port === $address->port and $this->version === $address->version;
 	}
 }
