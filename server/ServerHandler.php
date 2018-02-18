@@ -82,11 +82,6 @@ class ServerHandler{
 		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
-	protected function invalidSession(string $identifier) : void{
-		$buffer = chr(RakLib::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
-		$this->server->pushMainToThreadPacket($buffer);
-	}
-
 	/**
 	 * @return bool
 	 */
