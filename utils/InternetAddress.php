@@ -75,4 +75,8 @@ class InternetAddress{
 	public function toString() : string{
 		return $this->__toString();
 	}
+
+	public function equals(InternetAddress $address) : bool{
+		return $this->ip === $address->ip and $this->port === $address->port and $this->version === $address->version;
+	}
 }
