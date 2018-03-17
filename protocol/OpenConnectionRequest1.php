@@ -26,7 +26,7 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
 
 	/** @var int */
-	public $protocol = RakLib::PROTOCOL;
+	public $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
 	/** @var int */
 	public $mtuSize;
 

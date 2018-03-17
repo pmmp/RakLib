@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\RakLib;
 use raklib\utils\InternetAddress;
 
 class RakLibServer extends \Thread{
@@ -44,6 +45,8 @@ class RakLibServer extends \Thread{
 	protected $serverId = 0;
 	/** @var int */
 	protected $maxMtuSize;
+	/** @var int */
+	private $protocolVersion;
 
 
 	/**
@@ -51,10 +54,9 @@ class RakLibServer extends \Thread{
 	 * @param string          $autoloaderPath Path to Composer autoloader
 	 * @param InternetAddress $address
 	 * @param int             $maxMtuSize
-	 *
-	 * @throws \Exception
+	 * @param int|null        $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
 	 */
-	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492){
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null){
 		$this->address = $address;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
@@ -71,6 +73,8 @@ class RakLibServer extends \Thread{
 		}else{
 			$this->mainPath = \realpath(\getcwd()) . DIRECTORY_SEPARATOR;
 		}
+
+		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;
 	}
 
 	public function isShutdown() : bool{
@@ -87,6 +91,10 @@ class RakLibServer extends \Thread{
 	 */
 	public function getServerId() : int{
 		return $this->serverId;
+	}
+
+	public function getProtocolVersion() : int{
+		return $this->protocolVersion;
 	}
 
 	/**
