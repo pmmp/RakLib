@@ -8,8 +8,8 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
-		"pocketmine/spl": "^0.2.0",
-		"pocketmine/binaryutils": "dev-master#a7cd5303a3b215d26bf9be76682ce9311f40e887"
+		"pocketmine/spl": "dev-master#ee32424c100fd11ae7f7b8df7604623fd475f0ec",
+		"pocketmine/binaryutils": "dev-master#03e6851f814aba96487ec64181a6ae948edd9f7a"
 	},
 	"autoload": {
 		"classmap": ["./"]
