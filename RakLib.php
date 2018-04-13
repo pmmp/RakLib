@@ -57,7 +57,7 @@ if($errors > 0){
 unset($errors, $exts);
 
 abstract class RakLib{
-	const VERSION = "0.9.0";
+	const VERSION = "0.11.0";
 
 	/**
 	 * Default vanilla Raknet protocol version that this library implements. Things using RakNet can override this
