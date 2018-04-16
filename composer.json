@@ -9,8 +9,8 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
-		"pocketmine/pocketmine-spl": "^0.2.0",
-		"pocketmine/pocketmine-binaryutils": "dev-master#a7cd5303a3b215d26bf9be76682ce9311f40e887"
+		"pocketmine/spl": "0.3.0",
+		"pocketmine/binaryutils": "0.0.1"
 	},
 	"autoload": {
 		"classmap": ["./"]
@@ -18,11 +18,11 @@
 	"repositories": [
 		{
 			"type": "vcs",
-			"url": "https://github.com/pmmp/PocketMine-SPL"
+			"url": "https://github.com/pmmp/SPL"
 		},
 		{
 			"type": "vcs",
-			"url": "https://github.com/pmmp/PocketMine-BinaryUtils"
+			"url": "https://github.com/pmmp/BinaryUtils"
 		}
 	]
 }

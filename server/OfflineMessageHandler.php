@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OfflineMessage;
 use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
@@ -46,11 +47,19 @@ class OfflineMessageHandler{
 				return true;
 			case OpenConnectionRequest1::$ID:
 				/** @var OpenConnectionRequest1 $packet */
-				$packet->protocol; //TODO: check protocol number and refuse connections
-				$pk = new OpenConnectionReply1();
-				$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)
-				$pk->serverID = $this->sessionManager->getID();
-				$this->sessionManager->sendPacket($pk, $address);
+				$serverProtocol = $this->sessionManager->getProtocolVersion();
+				if($packet->protocol !== $serverProtocol){
+					$pk = new IncompatibleProtocolVersion();
+					$pk->protocolVersion = $serverProtocol;
+					$pk->serverId = $this->sessionManager->getID();
+					$this->sessionManager->sendPacket($pk, $address);
+					$this->sessionManager->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (expected $serverProtocol, got $packet->protocol)");
+				}else{
+					$pk = new OpenConnectionReply1();
+					$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)
+					$pk->serverID = $this->sessionManager->getID();
+					$this->sessionManager->sendPacket($pk, $address);
+				}
 				return true;
 			case OpenConnectionRequest2::$ID:
 				/** @var OpenConnectionRequest2 $packet */

@@ -26,14 +26,14 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
 
 	/** @var int */
-	public $protocol = RakLib::PROTOCOL;
+	public $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
 	/** @var int */
 	public $mtuSize;
 
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putByte($this->protocol);
-		$this->buffer = str_pad($this->buffer, "\x00", $this->mtuSize);
+		$this->buffer = str_pad($this->buffer, $this->mtuSize, "\x00");
 	}
 
 	protected function decodePayload() : void{

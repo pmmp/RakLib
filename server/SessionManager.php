@@ -119,6 +119,10 @@ class SessionManager{
 		return $this->maxMtuSize;
 	}
 
+	public function getProtocolVersion() : int{
+		return $this->server->getProtocolVersion();
+	}
+
 	public function getLogger() : \ThreadedLogger{
 		return $this->server->getLogger();
 	}
@@ -266,7 +270,7 @@ class SessionManager{
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$id = (string) $session->getAddress();
+		$id = $session->getAddress()->toString();
 		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -288,7 +292,7 @@ class SessionManager{
 
 	protected function streamOpen(Session $session) : void{
 		$address = $session->getAddress();
-		$identifier = (string) $address;
+		$identifier = $address->toString();
 		$buffer = chr(RakLib::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -308,7 +312,7 @@ class SessionManager{
 	}
 
 	public function streamPingMeasure(Session $session, int $pingMS) : void{
-		$identifier = (string) $session->getAddress();
+		$identifier = $session->getAddress()->toString();
 		$buffer = chr(RakLib::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
@@ -387,7 +391,7 @@ class SessionManager{
 			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
 			}else{
-				return false;
+				$this->getLogger()->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
 			}
 
 			return true;
@@ -415,34 +419,30 @@ class SessionManager{
 		$this->getLogger()->debug("Unblocked $address");
 	}
 
-	protected static function addressHash(string $ip, int $port) : string{
-		return $ip . ":" . $port;
-	}
-
 	/**
 	 * @param InternetAddress $address
 	 *
 	 * @return Session|null
 	 */
 	public function getSession(InternetAddress $address) : ?Session{
-		return $this->sessions[(string) $address] ?? null;
+		return $this->sessions[$address->toString()] ?? null;
 	}
 
 	public function sessionExists(InternetAddress $address) : bool{
-		return isset($this->sessions[(string) $address]);
+		return isset($this->sessions[$address->toString()]);
 	}
 
 	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
 		$this->checkSessions();
 
-		$this->sessions[(string) $address] = $session = new Session($this, clone $address, $clientId, $mtuSize);
+		$this->sessions[$address->toString()] = $session = new Session($this, clone $address, $clientId, $mtuSize);
 		$this->getLogger()->debug("Created session for $address with MTU size $mtuSize");
 
 		return $session;
 	}
 
 	public function removeSession(Session $session, string $reason = "unknown") : void{
-		$id = (string) $session->getAddress();
+		$id = $session->getAddress()->toString();
 		if(isset($this->sessions[$id])){
 			$this->sessions[$id]->close();
 			$this->removeSessionInternal($session);
@@ -451,7 +451,7 @@ class SessionManager{
 	}
 
 	public function removeSessionInternal(Session $session) : void{
-		unset($this->sessions[(string) $session->getAddress()]);
+		unset($this->sessions[$session->getAddress()->toString()]);
 	}
 
 	public function openSession(Session $session) : void{
@@ -472,7 +472,7 @@ class SessionManager{
 	}
 
 	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->streamACK((string) $session->getAddress(), $identifierACK);
+		$this->streamACK($session->getAddress()->toString(), $identifierACK);
 	}
 
 	public function getName() : string{
