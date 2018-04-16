@@ -6,11 +6,12 @@
 	"require": {
 		"php": ">=7.2.0RC3",
 		"php-ipv6": "*",
+		"php-64bit": "*",
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
 		"pocketmine/spl": "0.3.0",
-		"pocketmine/binaryutils": "0.0.1"
+		"pocketmine/binaryutils": "dev-master#c824ac67eeeb6899c2a9ec91a769eb9ed6e3f595"
 	},
 	"autoload": {
 		"classmap": ["./"]
