@@ -53,6 +53,7 @@ if(extension_loaded("pthreads")){
 
 if(!defined('AF_INET6')){
 	echo "[CRITICAL] This build of PHP does not support IPv6. IPv6 support is required.";
+	++$errors;
 }
 
 if($errors > 0){
