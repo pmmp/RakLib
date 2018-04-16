@@ -96,7 +96,7 @@ class SessionManager{
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
-		$this->reusableAddress = new InternetAddress("0.0.0.0", 0, 4);
+		$this->reusableAddress = clone $this->socket->getBindAddress();
 
 		$this->registerPackets();
 
