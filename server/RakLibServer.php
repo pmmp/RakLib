@@ -47,6 +47,8 @@ class RakLibServer extends \Thread{
 	protected $maxMtuSize;
 	/** @var int */
 	private $protocolVersion;
+	/**@var SessionManager*/
+	private $sessionManager;
 
 
 	/**
@@ -225,10 +227,17 @@ class RakLibServer extends \Thread{
 
 
 			$socket = new UDPServerSocket($this->address);
-			new SessionManager($this, $socket, $this->maxMtuSize);
+			$this->sessionManager = new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 		}
 	}
+
+    /**
+     * @return SessionManager|null
+     */
+    public function getSessionManager() {
+        return $this->sessionManager;
+    }
 
 }
