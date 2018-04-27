@@ -37,7 +37,12 @@ class NewIncomingConnection extends Packet{
 	public $sendPongTime;
 
 	protected function encodePayload() : void{
-		//TODO
+		$this->putAddress($this->address);
+		foreach($this->systemAddresses as $address){
+			$this->putAddress($address);
+		}
+		$this->putLong($this->sendPingTime);
+		$this->putLong($this->sendPongTime);
 	}
 
 	protected function decodePayload() : void{
