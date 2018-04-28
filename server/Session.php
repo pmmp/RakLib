@@ -123,7 +123,7 @@ class Session{
 		$this->address = $address;
 		$this->id = $clientId;
 		$this->sendQueue = new Datagram();
-		$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
+		$this->sendQueue->headerFlags = Datagram::BITFLAG_NEEDS_B_AND_AS;
 
 		$this->lastUpdate = microtime(true);
 		$this->windowStart = -1;
@@ -272,7 +272,7 @@ class Session{
 		if(count($this->sendQueue->packets) > 0){
 			$this->sendDatagram($this->sendQueue);
 			$this->sendQueue = new Datagram();
-			$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
+			$this->sendQueue->headerFlags = Datagram::BITFLAG_NEEDS_B_AND_AS;
 		}
 	}
 
