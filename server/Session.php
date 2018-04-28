@@ -112,8 +112,7 @@ class Session{
 	private $reliableWindowEnd;
 	/** @var EncapsulatedPacket[] */
 	private $reliableWindow = [];
-	/** @var int */
-	private $lastReliableIndex = -1;
+
 	/** @var float */
 	private $lastPingTime = -1;
 	/** @var int */
@@ -396,8 +395,7 @@ class Session{
 				return;
 			}
 
-			if(($packet->messageIndex - $this->lastReliableIndex) === 1){
-				$this->lastReliableIndex++;
+			if($packet->messageIndex === $this->reliableWindowStart){
 				$this->reliableWindowStart++;
 				$this->reliableWindowEnd++;
 				$this->handleEncapsulatedPacketRoute($packet);
@@ -406,10 +404,9 @@ class Session{
 					ksort($this->reliableWindow);
 
 					foreach($this->reliableWindow as $index => $pk){
-						if(($index - $this->lastReliableIndex) !== 1){
+						if($index !== $this->reliableWindowStart){
 							break;
 						}
-						$this->lastReliableIndex++;
 						$this->reliableWindowStart++;
 						$this->reliableWindowEnd++;
 						$this->handleEncapsulatedPacketRoute($pk);
