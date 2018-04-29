@@ -39,6 +39,8 @@ class EncapsulatedPacket{
 	/** @var int|null */
 	public $messageIndex;
 	/** @var int|null */
+	public $sequenceIndex;
+	/** @var int|null */
 	public $orderIndex;
 	/** @var int|null */
 	public $orderChannel;
@@ -119,6 +121,11 @@ class EncapsulatedPacket{
 				$offset += 3;
 			}
 
+			if(PacketReliability::isSequenced($reliability)){
+				$packet->sequenceIndex = Binary::readLTriad(substr($binary, $offset, 3));
+				$offset += 3;
+			}
+
 			if(PacketReliability::isSequencedOrOrdered($reliability)){
 				$packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
 				$offset += 3;
@@ -150,6 +157,7 @@ class EncapsulatedPacket{
 			Binary::writeShort(strlen($this->buffer) << 3) .
 			($this->reliability > PacketReliability::UNRELIABLE ?
 				(PacketReliability::isReliable($this->reliability) ? Binary::writeLTriad($this->messageIndex) : "") .
+				(PacketReliability::isSequenced($this->reliability) ? Binary::writeLTriad($this->sequenceIndex) : "") .
 				(PacketReliability::isSequencedOrOrdered($this->reliability) ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "")
 				: ""
 			) .
