@@ -66,8 +66,6 @@ class Session{
 
 	/** @var int */
 	private $sendSeqNumber = 0;
-	/** @var int */
-	private $lastSeqNumber = -1;
 
 	/** @var float */
 	private $lastUpdate;
@@ -101,10 +99,10 @@ class Session{
 
 	/** @var int */
 	private $windowStart;
-	/** @var int[] */
-	private $receivedWindow = [];
 	/** @var int */
 	private $windowEnd;
+	/** @var int */
+	private $highestSeqNumberThisTick = -1;
 
 	/** @var int */
 	private $reliableWindowStart;
@@ -126,7 +124,7 @@ class Session{
 		$this->sendQueue->headerFlags |= Datagram::BITFLAG_NEEDS_B_AND_AS;
 
 		$this->lastUpdate = microtime(true);
-		$this->windowStart = -1;
+		$this->windowStart = 0;
 		$this->windowEnd = self::$WINDOW_SIZE;
 
 		$this->reliableWindowStart = 0;
@@ -174,6 +172,17 @@ class Session{
 
 		$this->isActive = false;
 
+		$diff = $this->highestSeqNumberThisTick - $this->windowStart + 1;
+		assert($diff >= 0);
+		if($diff > 0){
+			//Move the receive window to account for packets we either received or are about to NACK
+			//we ignore any sequence numbers that we sent NACKs for, because we expect the client to resend them
+			//when it gets a NACK for it
+
+			$this->windowStart += $diff;
+			$this->windowEnd += $diff;
+		}
+
 		if(count($this->ACKQueue) > 0){
 			$pk = new ACK();
 			$pk->packets = $this->ACKQueue;
@@ -218,14 +227,6 @@ class Session{
 			if($pk->sendTime < (time() - 8)){
 				$this->packetToSend[] = $pk;
 				unset($this->recoveryQueue[$seq]);
-			}else{
-				break;
-			}
-		}
-
-		foreach($this->receivedWindow as $seq => $bool){
-			if($seq < $this->windowStart){
-				unset($this->receivedWindow[$seq]);
 			}else{
 				break;
 			}
@@ -501,28 +502,35 @@ class Session{
 		if($packet instanceof Datagram){ //In reality, ALL of these packets are datagrams.
 			$packet->decode();
 
-			if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->receivedWindow[$packet->seqNumber])){
+			if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->ACKQueue[$packet->seqNumber])){
+				$this->sessionManager->getLogger()->debug("Received duplicate or out-of-window packet from " . $this->address . " (sequence number $packet->seqNumber, window " . $this->windowStart . "-" . $this->windowEnd . ")");
 				return;
 			}
 
-			$diff = $packet->seqNumber - $this->lastSeqNumber;
-
 			unset($this->NACKQueue[$packet->seqNumber]);
 			$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
-			$this->receivedWindow[$packet->seqNumber] = $packet->seqNumber;
+			if($this->highestSeqNumberThisTick < $packet->seqNumber){
+				$this->highestSeqNumberThisTick = $packet->seqNumber;
+			}
 
-			if($diff !== 1){
-				for($i = $this->lastSeqNumber + 1; $i < $packet->seqNumber; ++$i){
-					if(!isset($this->receivedWindow[$i])){
+			if($packet->seqNumber === $this->windowStart){
+				//got a contiguous packet, shift the receive window
+				//this packet might complete a sequence of out-of-order packets, so we incrementally check the indexes
+				//to see how far to shift the window, and stop as soon as we either find a gap or have an empty window
+				for(; isset($this->ACKQueue[$this->windowStart]); ++$this->windowStart){
+					++$this->windowEnd;
+				}
+			}elseif($packet->seqNumber > $this->windowStart){
+				//we got a gap - a later packet arrived before earlier ones did
+				//we add the earlier ones to the NACK queue
+				//if the missing packets arrive before the end of tick, they'll be removed from the NACK queue
+				for($i = $this->windowStart; $i < $packet->seqNumber; ++$i){
+					if(!isset($this->ACKQueue[$i])){
 						$this->NACKQueue[$i] = $i;
 					}
 				}
-			}
-
-			if($diff >= 1){
-				$this->lastSeqNumber = $packet->seqNumber;
-				$this->windowStart += $diff;
-				$this->windowEnd += $diff;
+			}else{
+				assert(false, "received packet before window start");
 			}
 
 			foreach($packet->packets as $pk){
