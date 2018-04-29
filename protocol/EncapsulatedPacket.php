@@ -74,7 +74,7 @@ class EncapsulatedPacket{
 		$packet->identifierACK = Binary::readInt(substr($bytes, $offset, 4)); //TODO: don't read this for non-ack-receipt reliabilities
 		$offset += 4;
 
-		if($packet->isSequenced()){
+		if(PacketReliability::isSequencedOrOrdered($packet->reliability)){
 			$packet->orderChannel = ord($bytes{$offset++});
 		}
 
@@ -92,7 +92,7 @@ class EncapsulatedPacket{
 			chr($this->reliability) .
 			Binary::writeInt(strlen($this->buffer)) .
 			Binary::writeInt($this->identifierACK ?? -1) . //TODO: don't write this for non-ack-receipt reliabilities
-			($this->isSequenced() ? chr($this->orderChannel) : "") .
+			(PacketReliability::isSequencedOrOrdered($this->reliability) ? chr($this->orderChannel) : "") .
 			$this->buffer;
 	}
 
@@ -114,12 +114,12 @@ class EncapsulatedPacket{
 		$offset = 3;
 
 		if($reliability > PacketReliability::UNRELIABLE){
-			if($reliability >= PacketReliability::RELIABLE and $reliability !== PacketReliability::UNRELIABLE_WITH_ACK_RECEIPT){
+			if(PacketReliability::isReliable($reliability)){
 				$packet->messageIndex = Binary::readLTriad(substr($binary, $offset, 3));
 				$offset += 3;
 			}
 
-			if($reliability <= PacketReliability::RELIABLE_SEQUENCED and $reliability !== PacketReliability::RELIABLE){
+			if(PacketReliability::isSequencedOrOrdered($reliability)){
 				$packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
 				$offset += 3;
 				$packet->orderChannel = ord($binary{$offset++});
@@ -149,8 +149,8 @@ class EncapsulatedPacket{
 			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->hasSplit ? self::SPLIT_FLAG : 0)) .
 			Binary::writeShort(strlen($this->buffer) << 3) .
 			($this->reliability > PacketReliability::UNRELIABLE ?
-				($this->isReliable() ? Binary::writeLTriad($this->messageIndex) : "") .
-				($this->isSequenced() ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "")
+				(PacketReliability::isReliable($this->reliability) ? Binary::writeLTriad($this->messageIndex) : "") .
+				(PacketReliability::isSequencedOrOrdered($this->reliability) ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "")
 				: ""
 			) .
 			($this->hasSplit ? Binary::writeInt($this->splitCount) . Binary::writeShort($this->splitID) . Binary::writeInt($this->splitIndex) : "")
@@ -159,25 +159,6 @@ class EncapsulatedPacket{
 
 	public function getTotalLength() : int{
 		return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 10 : 0);
-	}
-
-	public function isReliable() : bool{
-		return (
-			$this->reliability === PacketReliability::RELIABLE or
-			$this->reliability === PacketReliability::RELIABLE_ORDERED or
-			$this->reliability === PacketReliability::RELIABLE_SEQUENCED or
-			$this->reliability === PacketReliability::RELIABLE_WITH_ACK_RECEIPT or
-			$this->reliability === PacketReliability::RELIABLE_ORDERED_WITH_ACK_RECEIPT
-		);
-	}
-
-	public function isSequenced() : bool{
-		return (
-			$this->reliability === PacketReliability::UNRELIABLE_SEQUENCED or
-			$this->reliability === PacketReliability::RELIABLE_ORDERED or
-			$this->reliability === PacketReliability::RELIABLE_SEQUENCED or
-			$this->reliability === PacketReliability::RELIABLE_ORDERED_WITH_ACK_RECEIPT
-		);
 	}
 
 	public function __toString() : string{
