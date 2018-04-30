@@ -23,6 +23,11 @@ class Datagram extends Packet{
 	const BITFLAG_VALID = 0x80;
 	const BITFLAG_ACK = 0x40;
 	const BITFLAG_NAK = 0x20; // hasBAndAS for ACKs
+
+	/*
+	 * These flags can be set on regular datagrams, but they are useless as per the public version of RakNet
+	 * (the receiving client will not use them or pay any attention to them).
+	 */
 	const BITFLAG_PACKET_PAIR = 0x10;
 	const BITFLAG_CONTINUOUS_SEND = 0x08;
 	const BITFLAG_NEEDS_B_AND_AS = 0x04;
