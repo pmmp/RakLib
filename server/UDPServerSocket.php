@@ -62,6 +62,10 @@ class UDPServerSocket{
 		socket_close($this->socket);
 	}
 
+	public function getLastError() : int{
+		return socket_last_error($this->socket);
+	}
+
 	/**
 	 * @param string &$buffer
 	 * @param string &$source
@@ -70,7 +74,7 @@ class UDPServerSocket{
 	 * @return int|bool
 	 */
 	public function readPacket(?string &$buffer, ?string &$source, ?int &$port){
-		return socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
+		return @socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
 	}
 
 	/**

@@ -186,6 +186,14 @@ class SessionManager{
 
 		$len = $this->socket->readPacket($buffer, $address->ip, $address->port);
 		if($len === false){
+			$error = $this->socket->getLastError();
+			if($error === SOCKET_EWOULDBLOCK){ //no data
+				return false;
+			}elseif($error === SOCKET_ECONNRESET){ //client disconnected improperly, maybe crash or lost connection
+				return true;
+			}
+
+			$this->getLogger()->debug("Socket error occurred while trying to recv ($error): " . trim(socket_strerror($error)));
 			return false;
 		}
 
