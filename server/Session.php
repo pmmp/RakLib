@@ -42,12 +42,23 @@ class Session{
 	const MAX_SPLIT_SIZE = 128;
 	const MAX_SPLIT_COUNT = 4;
 
+	const CHANNEL_COUNT = 32;
+
 	public static $WINDOW_SIZE = 2048;
 
 	/** @var int */
 	private $messageIndex = 0;
+
 	/** @var int[] */
-	private $channelIndex;
+	private $sendOrderedIndex;
+	/** @var int[] */
+	private $sendSequencedIndex;
+	/** @var int[] */
+	private $receiveOrderedIndex;
+	/** @var int[] */
+	private $receiveSequencedHighestIndex;
+	/** @var EncapsulatedPacket[][] */
+	private $receiveOrderedPackets;
 
 	/** @var SessionManager */
 	private $sessionManager;
@@ -108,7 +119,7 @@ class Session{
 	private $reliableWindowStart;
 	/** @var int */
 	private $reliableWindowEnd;
-	/** @var EncapsulatedPacket[] */
+	/** @var bool[] */
 	private $reliableWindow = [];
 
 	/** @var float */
@@ -130,7 +141,13 @@ class Session{
 		$this->reliableWindowStart = 0;
 		$this->reliableWindowEnd = self::$WINDOW_SIZE;
 
-		$this->channelIndex = array_fill(0, 32, 0);
+		$this->sendOrderedIndex = array_fill(0, self::CHANNEL_COUNT, 0);
+		$this->sendSequencedIndex = array_fill(0, self::CHANNEL_COUNT, 0);
+
+		$this->receiveOrderedIndex = array_fill(0, self::CHANNEL_COUNT, 0);
+		$this->receiveSequencedHighestIndex = array_fill(0, self::CHANNEL_COUNT, 0);
+
+		$this->receiveOrderedPackets = array_fill(0, self::CHANNEL_COUNT, []);
 
 		$this->mtuSize = $mtuSize;
 	}
@@ -321,8 +338,11 @@ class Session{
 			$this->needACK[$packet->identifierACK] = [];
 		}
 
-		if(PacketReliability::isSequencedOrOrdered($packet->reliability)){
-			$packet->orderIndex = $this->channelIndex[$packet->orderChannel]++;
+		if(PacketReliability::isOrdered($packet->reliability)){
+			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]++;
+		}elseif(PacketReliability::isSequenced($packet->reliability)){
+			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]; //sequenced packets don't increment the ordered channel index
+			$packet->sequenceIndex = $this->sendSequencedIndex[$packet->orderChannel]++;
 		}
 
 		//IP header size (20 bytes) + UDP header size (8 bytes) + RakNet weird (8 bytes) + datagram header size (4 bytes) + max encapsulated packet header size (20 bytes)
@@ -346,6 +366,7 @@ class Session{
 					$pk->messageIndex = $this->messageIndex++;
 				}
 
+				$pk->sequenceIndex = $packet->sequenceIndex;
 				$pk->orderChannel = $packet->orderChannel;
 				$pk->orderIndex = $packet->orderIndex;
 
@@ -359,24 +380,41 @@ class Session{
 		}
 	}
 
-	private function handleSplit(EncapsulatedPacket $packet) : void{
+	/**
+	 * Processes a split part of an encapsulated packet.
+	 *
+	 * @param EncapsulatedPacket $packet
+	 *
+	 * @return null|EncapsulatedPacket Reassembled packet if we have all the parts, null otherwise.
+	 */
+	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{
 		if($packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitIndex >= self::MAX_SPLIT_SIZE or $packet->splitIndex < 0){
-			return;
+			$this->sessionManager->getLogger()->debug("Invalid split packet part from " . $this->address . ", too many parts or invalid split index (part index $packet->splitIndex, part count $packet->splitCount)");
+			return null;
 		}
 
+		//TODO: this needs to be more strict about split packet part validity
 
 		if(!isset($this->splitPackets[$packet->splitID])){
 			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
-				return;
+				$this->sessionManager->getLogger()->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
+				return null;
 			}
 			$this->splitPackets[$packet->splitID] = [$packet->splitIndex => $packet];
 		}else{
 			$this->splitPackets[$packet->splitID][$packet->splitIndex] = $packet;
 		}
 
-		if(count($this->splitPackets[$packet->splitID]) === $packet->splitCount){
+		if(count($this->splitPackets[$packet->splitID]) === $packet->splitCount){ //got all parts, reassemble the packet
 			$pk = new EncapsulatedPacket();
 			$pk->buffer = "";
+
+			$pk->reliability = $packet->reliability;
+			$pk->messageIndex = $packet->messageIndex;
+			$pk->sequenceIndex = $packet->sequenceIndex;
+			$pk->orderIndex = $packet->orderIndex;
+			$pk->orderChannel = $packet->orderChannel;
+
 			for($i = 0; $i < $packet->splitCount; ++$i){
 				$pk->buffer .= $this->splitPackets[$packet->splitID][$i]->buffer;
 			}
@@ -384,54 +422,71 @@ class Session{
 			$pk->length = strlen($pk->buffer);
 			unset($this->splitPackets[$packet->splitID]);
 
-			$this->handleEncapsulatedPacketRoute($pk);
+			return $pk;
 		}
+
+		return null;
 	}
 
 	private function handleEncapsulatedPacket(EncapsulatedPacket $packet) : void{
-		if($packet->messageIndex === null){
-			$this->handleEncapsulatedPacketRoute($packet);
-		}else{
-			if($packet->messageIndex < $this->reliableWindowStart or $packet->messageIndex > $this->reliableWindowEnd){
+		if($packet->messageIndex !== null){
+			//check for duplicates or out of range
+			if($packet->messageIndex < $this->reliableWindowStart or $packet->messageIndex > $this->reliableWindowEnd or isset($this->reliableWindow[$packet->messageIndex])){
 				return;
 			}
 
+			$this->reliableWindow[$packet->messageIndex] = true;
+
 			if($packet->messageIndex === $this->reliableWindowStart){
-				$this->reliableWindowStart++;
-				$this->reliableWindowEnd++;
-				$this->handleEncapsulatedPacketRoute($packet);
-
-				if(count($this->reliableWindow) > 0){
-					ksort($this->reliableWindow);
-
-					foreach($this->reliableWindow as $index => $pk){
-						if($index !== $this->reliableWindowStart){
-							break;
-						}
-						$this->reliableWindowStart++;
-						$this->reliableWindowEnd++;
-						$this->handleEncapsulatedPacketRoute($pk);
-						unset($this->reliableWindow[$index]);
-					}
+				for(; isset($this->reliableWindow[$this->reliableWindowStart]); ++$this->reliableWindowStart){
+					unset($this->reliableWindow[$this->reliableWindowStart]);
+					++$this->reliableWindowEnd;
 				}
-			}else{
-				$this->reliableWindow[$packet->messageIndex] = $packet;
 			}
 		}
 
+		if($packet->hasSplit and ($packet = $this->handleSplit($packet)) === null){
+			return;
+		}
+
+		if(PacketReliability::isSequenced($packet->reliability)){
+			if($packet->sequenceIndex < $this->receiveSequencedHighestIndex[$packet->orderChannel] or $packet->orderIndex < $this->receiveOrderedIndex[$packet->orderChannel]){
+				//too old sequenced packet, discard it
+				return;
+			}
+
+			$this->receiveSequencedHighestIndex[$packet->orderChannel] = $packet->sequenceIndex + 1;
+			$this->handleEncapsulatedPacketRoute($packet);
+		}elseif(PacketReliability::isOrdered($packet->reliability)){
+			if($packet->orderIndex === $this->receiveOrderedIndex[$packet->orderChannel]){
+				//this is the packet we expected to get next
+				//Any ordered packet resets the sequence index to zero, so that sequenced packets older than this ordered
+				//one get discarded. Sequenced packets also include (but don't increment) the order index, so a sequenced
+				//packet with an order index less than this will get discarded
+				$this->receiveSequencedHighestIndex[$packet->orderIndex] = 0;
+				$this->receiveOrderedIndex[$packet->orderChannel] = $packet->orderIndex + 1;
+
+				$this->handleEncapsulatedPacketRoute($packet);
+				for($i = $this->receiveOrderedIndex[$packet->orderChannel]; isset($this->receiveOrderedPackets[$packet->orderChannel][$i]); ++$i){
+					$this->handleEncapsulatedPacketRoute($this->receiveOrderedPackets[$packet->orderChannel][$i]);
+					unset($this->receiveOrderedPackets[$packet->orderChannel][$i]);
+				}
+
+				$this->receiveOrderedIndex[$packet->orderChannel] = $i;
+			}elseif($packet->orderIndex > $this->receiveOrderedIndex[$packet->orderChannel]){
+				$this->receiveOrderedPackets[$packet->orderChannel][$packet->orderIndex] = $packet;
+			}else{
+				//duplicate/already received packet
+			}
+		}else{
+			//not ordered or sequenced
+			$this->handleEncapsulatedPacketRoute($packet);
+		}
 	}
 
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet) : void{
 		if($this->sessionManager === null){
-			return;
-		}
-
-		if($packet->hasSplit){
-			if($this->state === self::STATE_CONNECTED){
-				$this->handleSplit($packet);
-			}
-
 			return;
 		}
 
@@ -479,8 +534,6 @@ class Session{
 			}
 		}elseif($this->state === self::STATE_CONNECTED){
 			$this->sessionManager->streamEncapsulated($this, $packet);
-
-			//TODO: stream channels
 		}else{
 			//$this->sessionManager->getLogger()->notice("Received packet before connection: " . bin2hex($packet->buffer));
 		}
