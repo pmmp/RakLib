@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\IRakLibNotifier;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 
@@ -48,15 +49,18 @@ class RakLibServer extends \Thread{
 	/** @var int */
 	private $protocolVersion;
 
+	/** @var IRakLibNotifier */
+	protected $sleeper;
 
 	/**
-	 * @param \ThreadedLogger $logger
-	 * @param string          $autoloaderPath Path to Composer autoloader
-	 * @param InternetAddress $address
-	 * @param int             $maxMtuSize
-	 * @param int|null        $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
+	 * @param \ThreadedLogger      $logger
+	 * @param string               $autoloaderPath Path to Composer autoloader
+	 * @param InternetAddress      $address
+	 * @param int                  $maxMtuSize
+	 * @param int|null             $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
+	 * @param IRakLibNotifier|null $sleeper
 	 */
-	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null){
+	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null, ?IRakLibNotifier $sleeper = null){
 		$this->address = $address;
 
 		$this->serverId = mt_rand(0, PHP_INT_MAX);
@@ -75,6 +79,11 @@ class RakLibServer extends \Thread{
 		}
 
 		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;
+
+		if(!($sleeper instanceof \Threaded)){
+			throw new \InvalidArgumentException("Sleeper must be a Threaded instance");
+		}
+		$this->sleeper = $sleeper;
 	}
 
 	public function isShutdown() : bool{
@@ -128,6 +137,9 @@ class RakLibServer extends \Thread{
 
 	public function pushThreadToMainPacket(string $str) : void{
 		$this->externalQueue[] = $str;
+		if($this->sleeper !== null){
+			$this->sleeper->sendRakLibNotification();
+		}
 	}
 
 	public function readThreadToMainPacket() : ?string{
