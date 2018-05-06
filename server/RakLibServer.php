@@ -80,7 +80,7 @@ class RakLibServer extends \Thread{
 
 		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;
 
-		if(!($sleeper instanceof \Threaded)){
+		if($sleeper !== null and !($sleeper instanceof \Threaded)){
 			throw new \InvalidArgumentException("Sleeper must be a Threaded instance");
 		}
 		$this->sleeper = $sleeper;
