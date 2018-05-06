@@ -155,14 +155,16 @@ class SessionManager{
 		$this->ipSec = [];
 
 		if(($this->ticks % self::RAKLIB_TPS) === 0){
-			$diff = max(0.005, $time - $this->lastMeasure);
-			$this->streamOption("bandwidth", serialize([
-				"up" => $this->sendBytes / $diff,
-				"down" => $this->receiveBytes / $diff
-			]));
+			if($this->sendBytes > 0 or $this->receiveBytes > 0){
+				$diff = max(0.005, $time - $this->lastMeasure);
+				$this->streamOption("bandwidth", serialize([
+					"up" => $this->sendBytes / $diff,
+					"down" => $this->receiveBytes / $diff
+				]));
+				$this->sendBytes = 0;
+				$this->receiveBytes = 0;
+			}
 			$this->lastMeasure = $time;
-			$this->sendBytes = 0;
-			$this->receiveBytes = 0;
 
 			if(count($this->block) > 0){
 				asort($this->block);
