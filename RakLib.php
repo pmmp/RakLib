@@ -195,8 +195,4 @@ abstract class RakLib{
 	 * @var int
 	 */
 	public static $SYSTEM_ADDRESS_COUNT = 20;
-
-	public static function bootstrap(\ClassLoader $loader){
-		$loader->addPath(dirname(__FILE__) . DIRECTORY_SEPARATOR . "..");
-	}
 }
