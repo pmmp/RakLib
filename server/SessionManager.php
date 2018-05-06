@@ -72,7 +72,7 @@ class SessionManager{
 	/** @var float */
 	protected $lastMeasure;
 
-	/** @var float[] string (address) => float (unblock time) */
+	/** @var int[] string (address) => int (unblock time) */
 	protected $block = [];
 	/** @var int[] string (address) => int (number of packets) */
 	protected $ipSec = [];
@@ -168,7 +168,7 @@ class SessionManager{
 
 			if(count($this->block) > 0){
 				asort($this->block);
-				$now = microtime(true);
+				$now = time();
 				foreach($this->block as $address => $timeout){
 					if($timeout <= $now){
 						unset($this->block[$address]);
@@ -411,7 +411,7 @@ class SessionManager{
 	}
 
 	public function blockAddress(string $address, int $timeout = 300) : void{
-		$final = microtime(true) + $timeout;
+		$final = time() + $timeout;
 		if(!isset($this->block[$address]) or $timeout === -1){
 			if($timeout === -1){
 				$final = PHP_INT_MAX;
