@@ -25,14 +25,14 @@ abstract class PacketReliability{
 	 * Default: 0b010 (2) or 0b011 (3)
 	 */
 
-	const UNRELIABLE = 0;
-	const UNRELIABLE_SEQUENCED = 1;
-	const RELIABLE = 2;
-	const RELIABLE_ORDERED = 3;
-	const RELIABLE_SEQUENCED = 4;
-	const UNRELIABLE_WITH_ACK_RECEIPT = 5;
-	const RELIABLE_WITH_ACK_RECEIPT = 6;
-	const RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
+	public const UNRELIABLE = 0;
+	public const UNRELIABLE_SEQUENCED = 1;
+	public const RELIABLE = 2;
+	public const RELIABLE_ORDERED = 3;
+	public const RELIABLE_SEQUENCED = 4;
+	public const UNRELIABLE_WITH_ACK_RECEIPT = 5;
+	public const RELIABLE_WITH_ACK_RECEIPT = 6;
+	public const RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
 
 	public static function isReliable(int $reliability) : bool{
 		return (

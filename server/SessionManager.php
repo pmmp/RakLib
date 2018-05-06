@@ -37,8 +37,8 @@ use raklib\utils\InternetAddress;
 
 class SessionManager{
 
-	const RAKLIB_TPS = 100;
-	const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
+	private const RAKLIB_TPS = 100;
+	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
 	/** @var \SplFixedArray<Packet|null> */
 	protected $packetPool;

@@ -25,10 +25,10 @@ use pocketmine\utils\Binary;
 #include <rules/RakLibPacket.h>
 
 class EncapsulatedPacket{
-	const RELIABILITY_SHIFT = 5;
-	const RELIABILITY_FLAGS = 0b111 << self::RELIABILITY_SHIFT;
+	private const RELIABILITY_SHIFT = 5;
+	private const RELIABILITY_FLAGS = 0b111 << self::RELIABILITY_SHIFT;
 
-	const SPLIT_FLAG = 0b00010000;
+	private const SPLIT_FLAG = 0b00010000;
 
 	/** @var int */
 	public $reliability;

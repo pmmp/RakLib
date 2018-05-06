@@ -34,15 +34,15 @@ use raklib\RakLib;
 use raklib\utils\InternetAddress;
 
 class Session{
-	const STATE_CONNECTING = 0;
-	const STATE_CONNECTED = 1;
-	const STATE_DISCONNECTING = 2;
-	const STATE_DISCONNECTED = 3;
+	public const STATE_CONNECTING = 0;
+	public const STATE_CONNECTED = 1;
+	public const STATE_DISCONNECTING = 2;
+	public const STATE_DISCONNECTED = 3;
 
-	const MAX_SPLIT_SIZE = 128;
-	const MAX_SPLIT_COUNT = 4;
+	private const MAX_SPLIT_SIZE = 128;
+	private const MAX_SPLIT_COUNT = 4;
 
-	const CHANNEL_COUNT = 32;
+	private const CHANNEL_COUNT = 32;
 
 	public static $WINDOW_SIZE = 2048;
 
