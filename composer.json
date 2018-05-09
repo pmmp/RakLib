@@ -4,7 +4,7 @@
 	"type": "library",
 	"license": "GPL-3.0",
 	"require": {
-		"php": ">=7.2.0RC3",
+		"php": ">=7.2.0",
 		"php-ipv6": "*",
 		"php-64bit": "*",
 		"ext-bcmath": "*",
