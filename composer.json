@@ -11,7 +11,8 @@
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
 		"pocketmine/spl": "0.3.0",
-		"pocketmine/binaryutils": "dev-master#c824ac67eeeb6899c2a9ec91a769eb9ed6e3f595"
+		"pocketmine/binaryutils": "dev-master#c824ac67eeeb6899c2a9ec91a769eb9ed6e3f595",
+		"pocketmine/snooze": "dev-master#ec30627dadcf338e97cf69644c519cc5eef750d0"
 	},
 	"autoload": {
 		"classmap": ["./"]
@@ -24,6 +25,10 @@
 		{
 			"type": "vcs",
 			"url": "https://github.com/pmmp/BinaryUtils"
+		},
+		{
+			"type": "vcs",
+			"url": "https://github.com/pmmp/Snooze"
 		}
 	]
 }
