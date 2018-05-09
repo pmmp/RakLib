@@ -17,12 +17,10 @@ declare(strict_types=1);
 
 namespace raklib;
 
-const MIN_PHP_VERSION = "7.2.0RC3";
-
 //Dependencies check
 $errors = 0;
-if(version_compare(MIN_PHP_VERSION, PHP_VERSION) > 0){
-	echo "[CRITICAL] Use PHP >= " . MIN_PHP_VERSION . PHP_EOL;
+if(version_compare(RakLib::MIN_PHP_VERSION, PHP_VERSION) > 0){
+	echo "[CRITICAL] Use PHP >= " . RakLib::MIN_PHP_VERSION . PHP_EOL;
 	++$errors;
 }
 
@@ -63,6 +61,8 @@ unset($errors, $exts);
 
 abstract class RakLib{
 	public const VERSION = "0.11.0";
+
+	public const MIN_PHP_VERSION = "7.2.0";
 
 	/**
 	 * Default vanilla Raknet protocol version that this library implements. Things using RakNet can override this
