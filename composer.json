@@ -12,7 +12,7 @@
 		"ext-sockets": "*",
 		"pocketmine/spl": "0.3.0",
 		"pocketmine/binaryutils": "dev-master#c824ac67eeeb6899c2a9ec91a769eb9ed6e3f595",
-		"pocketmine/snooze": "dev-master#ec30627dadcf338e97cf69644c519cc5eef750d0"
+		"pocketmine/snooze": "dev-master#96c740826df04024d2b685aa5ba8b8d0bdc69439"
 	},
 	"autoload": {
 		"classmap": ["./"]
