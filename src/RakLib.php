@@ -60,7 +60,7 @@ if($errors > 0){
 unset($errors, $exts);
 
 abstract class RakLib{
-	public const VERSION = "0.11.0";
+	public const VERSION = "0.12.0";
 
 	public const MIN_PHP_VERSION = "7.2.0";
 
