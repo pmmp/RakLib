@@ -10,9 +10,9 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": ">=3.1.7dev",
 		"ext-sockets": "*",
-		"pocketmine/spl": "^0.3",
-		"pocketmine/binaryutils": "dev-master#c824ac67eeeb6899c2a9ec91a769eb9ed6e3f595",
-		"pocketmine/snooze": "dev-master#96c740826df04024d2b685aa5ba8b8d0bdc69439"
+		"pocketmine/spl": "^0.3.0",
+		"pocketmine/binaryutils": "^0.1.0",
+		"pocketmine/snooze": "^0.1.0"
 	},
 	"autoload": {
 		"classmap": ["./"]
