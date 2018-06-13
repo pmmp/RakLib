@@ -15,7 +15,9 @@
 		"pocketmine/snooze": "^0.1.0"
 	},
 	"autoload": {
-		"classmap": ["./"]
+		"psr-4": {
+			"raklib\\": "src/"
+		}
 	},
 	"repositories": [
 		{
