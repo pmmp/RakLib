@@ -71,9 +71,6 @@ class ServerHandler{
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
 		$this->server->pushMainToThreadPacket($buffer);
 		$this->server->shutdown();
-		$this->server->synchronized(function(RakLibServer $server){
-			$server->wait(20000);
-		}, $this->server);
 		$this->server->join();
 	}
 
