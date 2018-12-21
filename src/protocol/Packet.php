@@ -53,6 +53,31 @@ abstract class Packet extends BinaryStream{
 			throw new \UnexpectedValueException("Unknown IP address version $version");
 		}
 	}
+	
+	public function getConnectionType() : ConnectionType{
+		if(strlen($this->buffer) - $this->offset >= strlen(ConnectionType::getMagic())){
+			$connectionMagicCheck = $this->get(strlen(ConnectionType::getMagic()));
+			if($connectionMagicCheck == ConnectionType::getMagic()){
+				$uuid = $this->getString();
+				$name = $this->getString();
+				$language = $this->getString();
+				$version = $this->getString();
+				
+				$metadata = array();
+				$metadataLength = $this->getByte() & 0xff;
+				for($i = 0; i < $metadataLength; $i++){
+					$key = $this->getString();
+					$value = $this->getString();
+					if(array_key_exists($key, $metadata)){
+						throw new \UnexpectedValueException("Duplicate key \"" . $key . "\"");	
+					}
+					$metadata[$key] = $value;
+				}
+				return new ConnectionType($uuid, $name, $language, $version, $metadata);
+			}	
+		}
+		return ConnectionType::getVanilla();
+	}
 
 	protected function putString(string $v) : void{
 		$this->putShort(strlen($v));
@@ -76,6 +101,25 @@ abstract class Packet extends BinaryStream{
 			$this->putInt(0);
 		}else{
 			throw new \InvalidArgumentException("IP version $address->version is not supported");
+		}
+	}
+	
+	public function putConnectionType(ConnectionType $connectionType = null) : void{
+		$connectionType = (connectionType !== null ? connectionType : ConnectionType::getRakLib());
+		
+		$this->put(ConnectionType::getMagic());
+		$this->putString($connectionType->getUUID());
+		$this->putString($connectionType->getName());
+		$this->putString($connectionType->getLanguage());
+		$this->putString($connectionType->getVersion());
+		
+		if(count($connectionType->getMetaDataArray()) > ConnectionType.MAX_METADATA_VALUES){
+			throw new \InvalidArgumentException("Too many metadata values");
+		}
+		$this->putByte(count($connectionType->getMetaDataArray()) & 0xff);
+		foreach($connectionType->getMetaDataArray() as $key => $value){
+			$this->putString($key);
+			$this->putString($value);
 		}
 	}
 

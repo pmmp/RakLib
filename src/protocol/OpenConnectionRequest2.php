@@ -30,12 +30,15 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	public $serverAddress;
 	/** @var int */
 	public $mtuSize;
+	/** @var ConnecitonType */
+	public $connectionType;
 
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putAddress($this->serverAddress);
 		$this->putShort($this->mtuSize);
 		$this->putLong($this->clientID);
+		$this->putConnectionType();
 	}
 
 	protected function decodePayload() : void{
@@ -43,5 +46,6 @@ class OpenConnectionRequest2 extends OfflineMessage{
 		$this->serverAddress = $this->getAddress();
 		$this->mtuSize = $this->getShort();
 		$this->clientID = $this->getLong();
+		$this->$connectionType = $this->getConnectionType();
 	}
 }

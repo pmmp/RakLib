@@ -24,14 +24,18 @@ class UnconnectedPing extends OfflineMessage{
 
 	/** @var int */
 	public $pingID;
+	/** @var ConnecitonType */
+	public $connectionType;
 
 	protected function encodePayload() : void{
 		$this->putLong($this->pingID);
 		$this->writeMagic();
+		$this->putConnectionType();
 	}
 
 	protected function decodePayload() : void{
 		$this->pingID = $this->getLong();
 		$this->readMagic();
+		$this->$connectionType = $this->getConnectionType();
 	}
 }

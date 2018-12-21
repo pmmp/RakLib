@@ -28,12 +28,15 @@ class UnconnectedPong extends OfflineMessage{
 	public $serverID;
 	/** @var string */
 	public $serverName;
+	/** @var ConnectionType */
+	public $connectionType;
 
 	protected function encodePayload() : void{
 		$this->putLong($this->pingID);
 		$this->putLong($this->serverID);
 		$this->writeMagic();
 		$this->putString($this->serverName);
+		$this->putConnectionType();
 	}
 
 	protected function decodePayload() : void{
@@ -41,5 +44,6 @@ class UnconnectedPong extends OfflineMessage{
 		$this->serverID = $this->getLong();
 		$this->readMagic();
 		$this->serverName = $this->getString();
+		$this->connectionType = $this->getConnectionType();
 	}
 }
