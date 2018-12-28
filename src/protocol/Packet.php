@@ -43,7 +43,7 @@ abstract class Packet extends BinaryStream{
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
-			Binary::readLShort($this->get(2)); //Family, AF_INET6
+			$this->getLShort(); //Family, AF_INET6
 			$port = $this->getShort();
 			$this->getInt(); //flow info
 			$addr = inet_ntop($this->get(16));
@@ -69,7 +69,7 @@ abstract class Packet extends BinaryStream{
 			}
 			$this->putShort($address->port);
 		}elseif($address->version === 6){
-			$this->put(Binary::writeLShort(AF_INET6));
+			$this->putLShort(AF_INET6);
 			$this->putShort($address->port);
 			$this->putInt(0);
 			$this->put(inet_pton($address->ip));
