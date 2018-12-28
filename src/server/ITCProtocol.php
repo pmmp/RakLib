@@ -33,9 +33,8 @@ interface ITCProtocol{
 	 * messages between the RakLib thread and the implementation's thread.
 	 *
 	 * Internal Packet:
-	 * int32 (length without this field)
 	 * byte (packet ID)
-	 * payload
+	 * byte[] (payload)
 	 */
 
 	/*
