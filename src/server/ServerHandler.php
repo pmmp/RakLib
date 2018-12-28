@@ -67,6 +67,10 @@ class ServerHandler{
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
+	public function addRawPacketFilter(string $regex) : void{
+		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_RAW_FILTER) . $regex);
+	}
+
 	public function shutdown() : void{
 		$buffer = chr(RakLib::PACKET_SHUTDOWN);
 		$this->server->pushMainToThreadPacket($buffer);

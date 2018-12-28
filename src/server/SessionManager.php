@@ -77,6 +77,9 @@ class SessionManager{
 	/** @var int[] string (address) => int (number of packets) */
 	protected $ipSec = [];
 
+	/** @var string[] regex filters used to block out unwanted raw packets */
+	protected $rawPacketFilters = [];
+
 	public $portChecking = false;
 
 	/** @var int */
@@ -257,13 +260,15 @@ class SessionManager{
 						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $address");
 					}
 				}while(false);
-			}elseif(($pid & Datagram::BITFLAG_VALID) !== 0 and ($pid & 0x03) === 0){
-				// Loose datagram, don't relay it as a raw packet
-				// RakNet does not currently use the 0x02 or 0x01 bitflags on any datagram header, so we can use
-				// this to identify the difference between loose datagrams and packets like Query.
-				$this->server->getLogger()->debug("Ignored connected packet from $address due to no session opened (0x" . dechex($pid) . ")");
 			}else{
-				$this->streamRaw($address, $buffer);
+				foreach($this->rawPacketFilters as $pattern){
+					if(preg_match($pattern, $buffer) > 0){
+						$this->streamRaw($address, $buffer);
+						break;
+					}
+				}
+
+				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . dechex($pid) . ")");
 			}
 		}catch(\Throwable $e){
 			$logger = $this->getLogger();
@@ -392,6 +397,9 @@ class SessionManager{
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$this->unblockAddress($address);
+			}elseif($id === RakLib::PACKET_RAW_FILTER){
+				$pattern = substr($packet, $offset);
+				$this->rawPacketFilters[] = $pattern;
 			}elseif($id === RakLib::PACKET_SHUTDOWN){
 				foreach($this->sessions as $session){
 					$this->removeSession($session);
