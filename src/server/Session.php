@@ -99,7 +99,7 @@ class Session{
 	/** @var Datagram[] */
 	private $recoveryQueue = [];
 
-	/** @var Datagram[][] */
+	/** @var EncapsulatedPacket[][] */
 	private $splitPackets = [];
 
 	/** @var int[][] */
