@@ -276,7 +276,7 @@ class Session{
 		$encapsulated = new EncapsulatedPacket();
 		$encapsulated->reliability = $reliability;
 		$encapsulated->orderChannel = $orderChannel;
-		$encapsulated->buffer = $packet->buffer;
+		$encapsulated->buffer = $packet->getBuffer();
 
 		$this->addEncapsulatedToQueue($encapsulated, $flags);
 	}
