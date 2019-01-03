@@ -394,7 +394,7 @@ class Session{
 		//TODO: this needs to be more strict about split packet part validity
 
 		if(!isset($this->splitPackets[$packet->splitID])){
-			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
+			if(count($this->splitPackets) > self::MAX_SPLIT_COUNT){
 				$this->sessionManager->getLogger()->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
 				return null;
 			}
