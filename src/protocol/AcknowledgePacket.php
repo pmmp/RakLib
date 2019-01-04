@@ -17,6 +17,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+
+use function chr;
+use function count;
+use function sort;
+use const SORT_NUMERIC;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif

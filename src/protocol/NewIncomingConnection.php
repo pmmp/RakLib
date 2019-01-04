@@ -21,6 +21,7 @@ namespace raklib\protocol;
 
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
+use function strlen;
 
 class NewIncomingConnection extends Packet{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;

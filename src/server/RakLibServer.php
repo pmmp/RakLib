@@ -20,6 +20,44 @@ namespace raklib\server;
 use pocketmine\snooze\SleeperNotifier;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
+use function array_reverse;
+use function error_reporting;
+use function function_exists;
+use function gc_enable;
+use function get_class;
+use function getcwd;
+use function gettype;
+use function ini_set;
+use function is_object;
+use function method_exists;
+use function mt_rand;
+use function preg_replace;
+use function realpath;
+use function register_shutdown_function;
+use function set_error_handler;
+use function str_replace;
+use function strval;
+use function substr;
+use function trim;
+use function xdebug_get_function_stack;
+use const DIRECTORY_SEPARATOR;
+use const E_ALL;
+use const E_COMPILE_ERROR;
+use const E_COMPILE_WARNING;
+use const E_CORE_ERROR;
+use const E_CORE_WARNING;
+use const E_DEPRECATED;
+use const E_ERROR;
+use const E_NOTICE;
+use const E_PARSE;
+use const E_RECOVERABLE_ERROR;
+use const E_STRICT;
+use const E_USER_DEPRECATED;
+use const E_USER_ERROR;
+use const E_USER_NOTICE;
+use const E_USER_WARNING;
+use const E_WARNING;
+use const PHP_INT_MAX;
 
 class RakLibServer extends \Thread{
 	/** @var InternetAddress */
@@ -75,7 +113,7 @@ class RakLibServer extends \Thread{
 		if(\Phar::running(true) !== ""){
 			$this->mainPath = \Phar::running(true);
 		}else{
-			$this->mainPath = \realpath(\getcwd()) . DIRECTORY_SEPARATOR;
+			$this->mainPath = realpath(getcwd()) . DIRECTORY_SEPARATOR;
 		}
 
 		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;

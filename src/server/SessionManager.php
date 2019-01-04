@@ -34,6 +34,25 @@ use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
+use function asort;
+use function bin2hex;
+use function chr;
+use function count;
+use function dechex;
+use function get_class;
+use function max;
+use function microtime;
+use function ord;
+use function serialize;
+use function socket_strerror;
+use function strlen;
+use function substr;
+use function time;
+use function time_sleep_until;
+use function trim;
+use const PHP_INT_MAX;
+use const SOCKET_ECONNRESET;
+use const SOCKET_EWOULDBLOCK;
 
 class SessionManager{
 
