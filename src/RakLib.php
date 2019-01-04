@@ -17,6 +17,14 @@ declare(strict_types=1);
 
 namespace raklib;
 
+use function defined;
+use function extension_loaded;
+use function phpversion;
+use function substr_count;
+use function version_compare;
+use const PHP_EOL;
+use const PHP_VERSION;
+
 //Dependencies check
 $errors = 0;
 if(version_compare(RakLib::MIN_PHP_VERSION, PHP_VERSION) > 0){

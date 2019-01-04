@@ -17,9 +17,13 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use function ceil;
+use function chr;
+use function ord;
+use function strlen;
+use function substr;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
-
 #endif
 
 #include <rules/RakLibPacket.h>

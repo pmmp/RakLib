@@ -19,6 +19,9 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use function strlen;
+use function substr;
+
 class Datagram extends Packet{
 	public const BITFLAG_VALID = 0x80;
 	public const BITFLAG_ACK = 0x40;

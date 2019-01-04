@@ -20,6 +20,10 @@ namespace raklib\server;
 use pocketmine\utils\Binary;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\RakLib;
+use function chr;
+use function ord;
+use function strlen;
+use function substr;
 
 class ServerHandler{
 

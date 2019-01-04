@@ -17,11 +17,18 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\BinaryStream;
+use raklib\utils\InternetAddress;
+use function assert;
+use function count;
+use function explode;
+use function inet_ntop;
+use function inet_pton;
+use function strlen;
+use const AF_INET6;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif
-use pocketmine\utils\BinaryStream;
-use raklib\utils\InternetAddress;
 
 #include <rules/RakLibPacket.h>
 

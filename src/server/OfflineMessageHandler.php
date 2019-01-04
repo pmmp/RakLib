@@ -26,6 +26,8 @@ use raklib\protocol\OpenConnectionRequest2;
 use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
+use function abs;
+use function min;
 
 class OfflineMessageHandler{
 	/** @var SessionManager */

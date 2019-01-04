@@ -18,6 +18,27 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use raklib\utils\InternetAddress;
+use function socket_bind;
+use function socket_close;
+use function socket_create;
+use function socket_last_error;
+use function socket_recvfrom;
+use function socket_sendto;
+use function socket_set_nonblock;
+use function socket_set_option;
+use function socket_strerror;
+use function strlen;
+use function trim;
+use const AF_INET;
+use const AF_INET6;
+use const IPV6_V6ONLY;
+use const SO_RCVBUF;
+use const SO_REUSEADDR;
+use const SO_SNDBUF;
+use const SOCK_DGRAM;
+use const SOCKET_EADDRINUSE;
+use const SOL_SOCKET;
+use const SOL_UDP;
 
 class UDPServerSocket{
 	/** @var resource */
