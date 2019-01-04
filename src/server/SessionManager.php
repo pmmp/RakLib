@@ -43,6 +43,7 @@ use function get_class;
 use function max;
 use function microtime;
 use function ord;
+use function preg_match;
 use function serialize;
 use function socket_strerror;
 use function strlen;
