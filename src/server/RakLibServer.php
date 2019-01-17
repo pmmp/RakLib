@@ -34,13 +34,11 @@ use function method_exists;
 use function mt_rand;
 use function realpath;
 use function register_shutdown_function;
-use function set_error_handler;
 use function str_replace;
 use function strval;
 use function substr;
 use function xdebug_get_function_stack;
 use const DIRECTORY_SEPARATOR;
-use const E_ALL;
 use const PHP_INT_MAX;
 
 class RakLibServer extends \Thread{
@@ -177,14 +175,6 @@ class RakLibServer extends \Thread{
 		}
 	}
 
-	public function errorHandler($severity, $message, $file, $line){
-		if(error_reporting() & $severity){
-			throw new \ErrorException($message, 0, $severity, $file, $line);
-		}
-
-		return true; //stfu operator
-	}
-
 	public function getCrashInfo() : ?\Throwable{
 		return $this->crashInfo;
 	}
@@ -232,7 +222,7 @@ class RakLibServer extends \Thread{
 			ini_set("display_errors", '1');
 			ini_set("display_startup_errors", '1');
 
-			set_error_handler([$this, "errorHandler"], E_ALL);
+			\ErrorUtils::setErrorExceptionHandler();
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
