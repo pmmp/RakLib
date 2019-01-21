@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\BinaryDataException;
+
 abstract class OfflineMessage extends Packet{
 
 	/**
@@ -27,6 +29,9 @@ abstract class OfflineMessage extends Packet{
 	/** @var string */
 	protected $magic;
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	protected function readMagic(){
 		$this->magic = $this->get(16);
 	}

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
 use function assert;
@@ -26,9 +27,6 @@ use function inet_ntop;
 use function inet_pton;
 use function strlen;
 use const AF_INET6;
-#ifndef COMPILE
-use pocketmine\utils\Binary;
-#endif
 
 #include <rules/RakLibPacket.h>
 
@@ -38,10 +36,18 @@ abstract class Packet extends BinaryStream{
 	/** @var float|null */
 	public $sendTime;
 
+	/**
+	 * @return string
+	 * @throws BinaryDataException
+	 */
 	protected function getString() : string{
 		return $this->get($this->getShort());
 	}
 
+	/**
+	 * @return InternetAddress
+	 * @throws BinaryDataException
+	 */
 	protected function getAddress() : InternetAddress{
 		$version = $this->getByte();
 		if($version === 4){
@@ -57,7 +63,7 @@ abstract class Packet extends BinaryStream{
 			$this->getInt(); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
-			throw new \UnexpectedValueException("Unknown IP address version $version");
+			throw new BinaryDataException("Unknown IP address version $version");
 		}
 	}
 
@@ -98,16 +104,25 @@ abstract class Packet extends BinaryStream{
 
 	abstract protected function encodePayload() : void;
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	public function decode() : void{
 		$this->offset = 0;
 		$this->decodeHeader();
 		$this->decodePayload();
 	}
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	protected function decodeHeader() : void{
 		$this->getByte(); //PID
 	}
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	abstract protected function decodePayload() : void;
 
 	public function clean(){
