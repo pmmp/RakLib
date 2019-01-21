@@ -71,11 +71,7 @@ class Datagram extends Packet{
 		$this->seqNumber = $this->getLTriad();
 
 		while(!$this->feof()){
-			$packet = EncapsulatedPacket::fromBinary($this);
-			if($packet->buffer === ''){
-				break;
-			}
-			$this->packets[] = $packet;
+			$this->packets[] = EncapsulatedPacket::fromBinary($this);
 		}
 	}
 
