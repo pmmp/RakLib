@@ -553,10 +553,6 @@ class SessionManager{
 		$this->registerPacket(UnconnectedPing::$ID, UnconnectedPing::class);
 		$this->registerPacket(UnconnectedPingOpenConnections::$ID, UnconnectedPingOpenConnections::class);
 		$this->registerPacket(OpenConnectionRequest1::$ID, OpenConnectionRequest1::class);
-		$this->registerPacket(OpenConnectionReply1::$ID, OpenConnectionReply1::class);
 		$this->registerPacket(OpenConnectionRequest2::$ID, OpenConnectionRequest2::class);
-		$this->registerPacket(OpenConnectionReply2::$ID, OpenConnectionReply2::class);
-		$this->registerPacket(UnconnectedPong::$ID, UnconnectedPong::class);
-		$this->registerPacket(AdvertiseSystem::$ID, AdvertiseSystem::class);
 	}
 }
