@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\Binary;
+use pocketmine\utils\BinaryDataException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
@@ -30,6 +31,7 @@ use function bin2hex;
 use function chr;
 use function count;
 use function dechex;
+use function get_class;
 use function max;
 use function microtime;
 use function ord;
@@ -251,10 +253,16 @@ class SessionManager{
 
 				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 			}
-		}catch(\Throwable $e){
+		}catch(BinaryDataException $e){
 			$logger = $this->getLogger();
-			$logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
-			$logger->logException($e);
+			$logger->synchronized(function() use($logger, $address, $e, $buffer): void{
+				$logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+				$logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+				foreach($this->server->getTrace(0, $e->getTrace()) as $line){
+					$logger->debug($line);
+				}
+				$logger->error("Bad packet from $address: " . $e->getMessage());
+			});
 			$this->blockAddress($address->ip, 5);
 		}
 

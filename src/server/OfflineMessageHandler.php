@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use pocketmine\utils\BinaryDataException;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OfflineMessage;
 use raklib\protocol\OpenConnectionReply1;
@@ -28,8 +29,12 @@ use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
 use function abs;
+use function bin2hex;
+use function get_class;
 use function min;
 use function ord;
+use function strlen;
+use function substr;
 
 class OfflineMessageHandler{
 	/** @var SessionManager */
@@ -42,6 +47,13 @@ class OfflineMessageHandler{
 		$this->sessionManager = $manager;
 	}
 
+	/**
+	 * @param string          $payload
+	 * @param InternetAddress $address
+	 *
+	 * @return bool
+	 * @throws BinaryDataException
+	 */
 	public function handleRaw(string $payload, InternetAddress $address) : bool{
 		if($payload === ""){
 			return false;
