@@ -29,7 +29,6 @@ use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
 use function abs;
-use function bin2hex;
 use function get_class;
 use function min;
 use function ord;
@@ -66,14 +65,18 @@ class OfflineMessageHandler{
 		if(!$pk->isValid()){
 			return false;
 		}
+		if(!$pk->feof()){
+			$remains = substr($pk->getBuffer(), $pk->getOffset());
+			$this->sessionManager->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
+		}
 		return $this->handle($pk, $address);
 	}
 
 	public function handle(OfflineMessage $packet, InternetAddress $address) : bool{
 		if($packet instanceof UnconnectedPing){
 			$pk = new UnconnectedPong();
-			$pk->serverID = $this->sessionManager->getID();
-			$pk->pingID = $packet->pingID;
+			$pk->serverId = $this->sessionManager->getID();
+			$pk->sendPingTime = $packet->sendPingTime;
 			$pk->serverName = $this->sessionManager->getName();
 			$this->sessionManager->sendPacket($pk, $address);
 		}elseif($packet instanceof OpenConnectionRequest1){

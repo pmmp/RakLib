@@ -42,5 +42,6 @@ class OpenConnectionRequest1 extends OfflineMessage{
 		$this->readMagic();
 		$this->protocol = $this->getByte();
 		$this->mtuSize = strlen($this->buffer);
+		$this->getRemaining(); //silence unread warnings
 	}
 }
