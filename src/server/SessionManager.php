@@ -19,19 +19,10 @@ namespace raklib\server;
 
 use pocketmine\utils\Binary;
 use raklib\protocol\ACK;
-use raklib\protocol\AdvertiseSystem;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
-use raklib\protocol\OfflineMessage;
-use raklib\protocol\OpenConnectionReply1;
-use raklib\protocol\OpenConnectionReply2;
-use raklib\protocol\OpenConnectionRequest1;
-use raklib\protocol\OpenConnectionRequest2;
 use raklib\protocol\Packet;
-use raklib\protocol\UnconnectedPing;
-use raklib\protocol\UnconnectedPingOpenConnections;
-use raklib\protocol\UnconnectedPong;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -39,7 +30,6 @@ use function bin2hex;
 use function chr;
 use function count;
 use function dechex;
-use function get_class;
 use function max;
 use function microtime;
 use function ord;
@@ -59,9 +49,6 @@ class SessionManager{
 
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
-
-	/** @var \SplFixedArray<Packet|null> */
-	protected $packetPool;
 
 	/** @var RakLibServer */
 	protected $server;
@@ -120,8 +107,6 @@ class SessionManager{
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
 		$this->reusableAddress = clone $this->socket->getBindAddress();
-
-		$this->registerPackets();
 
 		$this->run();
 	}
@@ -242,45 +227,21 @@ class SessionManager{
 		}
 
 		try{
-			$pid = ord($buffer{0});
-
 			$session = $this->getSession($address);
 			if($session !== null){
-				if(($pid & Datagram::BITFLAG_VALID) !== 0){
-					if($pid & Datagram::BITFLAG_ACK){
+				$header = ord($buffer[0]);
+				if(($header & Datagram::BITFLAG_VALID) !== 0){
+					if($header & Datagram::BITFLAG_ACK){
 						$session->handlePacket(new ACK($buffer));
-					}elseif($pid & Datagram::BITFLAG_NAK){
+					}elseif($header & Datagram::BITFLAG_NAK){
 						$session->handlePacket(new NACK($buffer));
 					}else{
 						$session->handlePacket(new Datagram($buffer));
 					}
 				}else{
-					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . dechex($pid) . ")");
+					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
-			}elseif(($pk = $this->getPacketFromPool($pid, $buffer)) instanceof OfflineMessage){
-				/** @var OfflineMessage $pk */
-
-				do{
-					try{
-						$pk->decode();
-						if(!$pk->isValid()){
-							throw new \InvalidArgumentException("Packet magic is invalid");
-						}
-					}catch(\Throwable $e){
-						$logger = $this->server->getLogger();
-						$logger->debug("Received garbage message from $address (" . $e->getMessage() . "): " . bin2hex($pk->getBuffer()));
-						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
-							$logger->debug($line);
-						}
-						$this->blockAddress($address->ip, 5);
-						break;
-					}
-
-					if(!$this->offlineMessageHandler->handle($pk, $address)){
-						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $address");
-					}
-				}while(false);
-			}else{
+			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
 				foreach($this->rawPacketFilters as $pattern){
 					if(preg_match($pattern, $buffer) > 0){
 						$this->streamRaw($address, $buffer);
@@ -288,7 +249,7 @@ class SessionManager{
 					}
 				}
 
-				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . dechex($pid) . ")");
+				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 			}
 		}catch(\Throwable $e){
 			$logger = $this->getLogger();
@@ -520,39 +481,5 @@ class SessionManager{
 
 	public function getID() : int{
 		return $this->server->getServerId();
-	}
-
-	/**
-	 * @param int    $id
-	 * @param string $class
-	 */
-	private function registerPacket(int $id, string $class) : void{
-		$this->packetPool[$id] = new $class;
-	}
-
-	/**
-	 * @param int    $id
-	 * @param string $buffer
-	 *
-	 * @return Packet|null
-	 */
-	public function getPacketFromPool(int $id, string $buffer = "") : ?Packet{
-		$pk = $this->packetPool[$id];
-		if($pk !== null){
-			$pk = clone $pk;
-			$pk->buffer = $buffer;
-			return $pk;
-		}
-
-		return null;
-	}
-
-	private function registerPackets() : void{
-		$this->packetPool = new \SplFixedArray(256);
-
-		$this->registerPacket(UnconnectedPing::$ID, UnconnectedPing::class);
-		$this->registerPacket(UnconnectedPingOpenConnections::$ID, UnconnectedPingOpenConnections::class);
-		$this->registerPacket(OpenConnectionRequest1::$ID, OpenConnectionRequest1::class);
-		$this->registerPacket(OpenConnectionRequest2::$ID, OpenConnectionRequest2::class);
 	}
 }
