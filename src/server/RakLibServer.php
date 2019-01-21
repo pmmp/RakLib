@@ -21,6 +21,7 @@ use pocketmine\snooze\SleeperNotifier;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function array_reverse;
+use function error_get_last;
 use function error_reporting;
 use function function_exists;
 use function gc_enable;
@@ -31,32 +32,13 @@ use function ini_set;
 use function is_object;
 use function method_exists;
 use function mt_rand;
-use function preg_replace;
 use function realpath;
 use function register_shutdown_function;
-use function set_error_handler;
 use function str_replace;
 use function strval;
 use function substr;
-use function trim;
 use function xdebug_get_function_stack;
 use const DIRECTORY_SEPARATOR;
-use const E_ALL;
-use const E_COMPILE_ERROR;
-use const E_COMPILE_WARNING;
-use const E_CORE_ERROR;
-use const E_CORE_WARNING;
-use const E_DEPRECATED;
-use const E_ERROR;
-use const E_NOTICE;
-use const E_PARSE;
-use const E_RECOVERABLE_ERROR;
-use const E_STRICT;
-use const E_USER_DEPRECATED;
-use const E_USER_ERROR;
-use const E_USER_NOTICE;
-use const E_USER_WARNING;
-use const E_WARNING;
 use const PHP_INT_MAX;
 
 class RakLibServer extends \Thread{
@@ -89,6 +71,9 @@ class RakLibServer extends \Thread{
 
 	/** @var SleeperNotifier */
 	protected $mainThreadNotifier;
+
+	/** @var \Throwable|null */
+	public $crashInfo = null;
 
 	/**
 	 * @param \ThreadedLogger      $logger
@@ -183,45 +168,15 @@ class RakLibServer extends \Thread{
 
 	public function shutdownHandler(){
 		if($this->shutdown !== true){
-			$this->getLogger()->emergency("RakLib crashed!");
+			$error = error_get_last();
+			if($error !== null){ //fatal error
+				$this->crashInfo = new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']);
+			}
 		}
 	}
 
-	public function errorHandler($errno, $errstr, $errfile, $errline){
-		if(error_reporting() === 0){
-			return false;
-		}
-
-		$errorConversion = [
-			E_ERROR => "E_ERROR",
-			E_WARNING => "E_WARNING",
-			E_PARSE => "E_PARSE",
-			E_NOTICE => "E_NOTICE",
-			E_CORE_ERROR => "E_CORE_ERROR",
-			E_CORE_WARNING => "E_CORE_WARNING",
-			E_COMPILE_ERROR => "E_COMPILE_ERROR",
-			E_COMPILE_WARNING => "E_COMPILE_WARNING",
-			E_USER_ERROR => "E_USER_ERROR",
-			E_USER_WARNING => "E_USER_WARNING",
-			E_USER_NOTICE => "E_USER_NOTICE",
-			E_STRICT => "E_STRICT",
-			E_RECOVERABLE_ERROR => "E_RECOVERABLE_ERROR",
-			E_DEPRECATED => "E_DEPRECATED",
-			E_USER_DEPRECATED => "E_USER_DEPRECATED"
-		];
-
-		$errno = $errorConversion[$errno] ?? $errno;
-
-		$errstr = preg_replace('/\s+/', ' ', trim($errstr));
-		$errfile = $this->cleanPath($errfile);
-
-		$this->getLogger()->debug("An $errno error happened: \"$errstr\" in \"$errfile\" at line $errline");
-
-		foreach($this->getTrace(2) as $i => $line){
-			$this->getLogger()->debug($line);
-		}
-
-		return true;
+	public function getCrashInfo() : ?\Throwable{
+		return $this->crashInfo;
 	}
 
 	public function getTrace($start = 0, $trace = null){
@@ -267,13 +222,14 @@ class RakLibServer extends \Thread{
 			ini_set("display_errors", '1');
 			ini_set("display_startup_errors", '1');
 
-			set_error_handler([$this, "errorHandler"], E_ALL);
+			\ErrorUtils::setErrorExceptionHandler();
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
 			$socket = new UDPServerSocket($this->address);
 			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
+			$this->crashInfo = $e;
 			$this->logger->logException($e);
 		}
 	}
