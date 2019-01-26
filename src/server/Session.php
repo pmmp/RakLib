@@ -71,6 +71,9 @@ class Session{
 	/** @var SessionManager */
 	private $sessionManager;
 
+	/** @var \Logger */
+	private $logger;
+
 	/** @var InternetAddress */
 	private $address;
 
@@ -135,8 +138,9 @@ class Session{
 	/** @var int */
 	private $lastPingMeasure = 1;
 
-	public function __construct(SessionManager $sessionManager, InternetAddress $address, int $clientId, int $mtuSize){
+	public function __construct(SessionManager $sessionManager, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize){
 		$this->sessionManager = $sessionManager;
+		$this->logger = $logger;
 		$this->address = $address;
 		$this->id = $clientId;
 		$this->sendQueue = new Datagram();
@@ -157,6 +161,7 @@ class Session{
 		$this->receiveOrderedPackets = array_fill(0, self::CHANNEL_COUNT, []);
 
 		$this->mtuSize = $mtuSize;
+
 	}
 
 	public function getAddress() : InternetAddress{
@@ -395,7 +400,7 @@ class Session{
 	 */
 	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{
 		if($packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitIndex >= self::MAX_SPLIT_SIZE or $packet->splitIndex < 0){
-			$this->sessionManager->getLogger()->debug("Invalid split packet part from " . $this->address . ", too many parts or invalid split index (part index $packet->splitIndex, part count $packet->splitCount)");
+			$this->logger->debug("Invalid split packet part from " . $this->address . ", too many parts or invalid split index (part index $packet->splitIndex, part count $packet->splitCount)");
 			return null;
 		}
 
@@ -403,7 +408,7 @@ class Session{
 
 		if(!isset($this->splitPackets[$packet->splitID])){
 			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
-				$this->sessionManager->getLogger()->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
+				$this->logger->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
 				return null;
 			}
 			$this->splitPackets[$packet->splitID] = [$packet->splitIndex => $packet];
@@ -541,7 +546,7 @@ class Session{
 		}elseif($this->state === self::STATE_CONNECTED){
 			$this->sessionManager->streamEncapsulated($this, $packet);
 		}else{
-			//$this->sessionManager->getLogger()->notice("Received packet before connection: " . bin2hex($packet->buffer));
+			//$this->logger->notice("Received packet before connection: " . bin2hex($packet->buffer));
 		}
 	}
 
@@ -562,7 +567,7 @@ class Session{
 			$packet->decode();
 
 			if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->ACKQueue[$packet->seqNumber])){
-				$this->sessionManager->getLogger()->debug("Received duplicate or out-of-window packet from " . $this->address . " (sequence number $packet->seqNumber, window " . $this->windowStart . "-" . $this->windowEnd . ")");
+				$this->logger->debug("Received duplicate or out-of-window packet from " . $this->address . " (sequence number $packet->seqNumber, window " . $this->windowStart . "-" . $this->windowEnd . ")");
 				return;
 			}
 
@@ -632,7 +637,7 @@ class Session{
 			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
 			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
 
-			$this->sessionManager->getLogger()->debug("Closed session for $this->address");
+			$this->logger->debug("Closed session for $this->address");
 			$this->sessionManager->removeSessionInternal($this);
 			$this->sessionManager = null;
 		}

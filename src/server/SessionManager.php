@@ -444,7 +444,7 @@ class SessionManager{
 	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
 		$this->checkSessions();
 
-		$this->sessions[$address->toString()] = $session = new Session($this, clone $address, $clientId, $mtuSize);
+		$this->sessions[$address->toString()] = $session = new Session($this, $this->server->getLogger(), clone $address, $clientId, $mtuSize);
 		$this->getLogger()->debug("Created session for $address with MTU size $mtuSize");
 
 		return $session;
