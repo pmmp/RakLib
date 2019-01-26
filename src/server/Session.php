@@ -121,7 +121,7 @@ class Session{
 	/** @var int */
 	private $windowEnd;
 	/** @var int */
-	private $highestSeqNumberThisTick = -1;
+	private $highestSeqNumber = -1;
 
 	/** @var int */
 	private $reliableWindowStart;
@@ -196,7 +196,7 @@ class Session{
 
 		$this->isActive = false;
 
-		$diff = $this->highestSeqNumberThisTick - $this->windowStart + 1;
+		$diff = $this->highestSeqNumber - $this->windowStart + 1;
 		assert($diff >= 0);
 		if($diff > 0){
 			//Move the receive window to account for packets we either received or are about to NACK
@@ -568,8 +568,8 @@ class Session{
 
 			unset($this->NACKQueue[$packet->seqNumber]);
 			$this->ACKQueue[$packet->seqNumber] = $packet->seqNumber;
-			if($this->highestSeqNumberThisTick < $packet->seqNumber){
-				$this->highestSeqNumberThisTick = $packet->seqNumber;
+			if($this->highestSeqNumber < $packet->seqNumber){
+				$this->highestSeqNumber = $packet->seqNumber;
 			}
 
 			if($packet->seqNumber === $this->windowStart){
