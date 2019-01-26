@@ -19,6 +19,7 @@ namespace raklib\server;
 
 use pocketmine\utils\Binary;
 use pocketmine\utils\BinaryDataException;
+use raklib\generic\Socket;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
@@ -54,7 +55,7 @@ class SessionManager{
 
 	/** @var RakLibServer */
 	protected $server;
-	/** @var UDPServerSocket */
+	/** @var Socket */
 	protected $socket;
 
 	/** @var int */
@@ -99,7 +100,7 @@ class SessionManager{
 
 	protected $reusableAddress;
 
-	public function __construct(RakLibServer $server, UDPServerSocket $socket, int $maxMtuSize){
+	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize){
 		$this->server = $server;
 		$this->socket = $socket;
 

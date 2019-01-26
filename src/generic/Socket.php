@@ -15,7 +15,7 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\generic;
 
 use raklib\utils\InternetAddress;
 use function socket_bind;
@@ -33,14 +33,13 @@ use const AF_INET;
 use const AF_INET6;
 use const IPV6_V6ONLY;
 use const SO_RCVBUF;
-use const SO_REUSEADDR;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
 use const SOCKET_EADDRINUSE;
 use const SOL_SOCKET;
 use const SOL_UDP;
 
-class UDPServerSocket{
+class Socket{
 	/** @var resource */
 	protected $socket;
 	/**

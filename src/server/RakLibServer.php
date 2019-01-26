@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\snooze\SleeperNotifier;
+use raklib\generic\Socket;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function array_reverse;
@@ -226,7 +227,7 @@ class RakLibServer extends \Thread{
 			register_shutdown_function([$this, "shutdownHandler"]);
 
 
-			$socket = new UDPServerSocket($this->address);
+			$socket = new Socket($this->address);
 			new SessionManager($this, $socket, $this->maxMtuSize);
 		}catch(\Throwable $e){
 			$this->crashInfo = $e;
