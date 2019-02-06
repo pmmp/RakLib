@@ -21,6 +21,8 @@ namespace raklib\protocol;
 
 
 use raklib\RakLib;
+use function str_pad;
+use function strlen;
 
 class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
@@ -40,5 +42,6 @@ class OpenConnectionRequest1 extends OfflineMessage{
 		$this->readMagic();
 		$this->protocol = $this->getByte();
 		$this->mtuSize = strlen($this->buffer);
+		$this->getRemaining(); //silence unread warnings
 	}
 }

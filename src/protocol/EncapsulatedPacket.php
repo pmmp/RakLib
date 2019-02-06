@@ -17,9 +17,16 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\BinaryStream;
+use function ceil;
+use function chr;
+use function ord;
+use function strlen;
+use function substr;
+
 #ifndef COMPILE
 use pocketmine\utils\Binary;
-
 #endif
 
 #include <rules/RakLibPacket.h>
@@ -99,52 +106,45 @@ class EncapsulatedPacket{
 	}
 
 	/**
-	 * @param string $binary
-	 * @param int    &$offset
+	 * @param BinaryStream $stream
 	 *
 	 * @return EncapsulatedPacket
+	 * @throws BinaryDataException
 	 */
-	public static function fromBinary(string $binary, ?int &$offset = null) : EncapsulatedPacket{
-
+	public static function fromBinary(BinaryStream $stream) : EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
 
-		$flags = ord($binary{0});
+		$flags = $stream->getByte();
 		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
 		$packet->hasSplit = $hasSplit = ($flags & self::SPLIT_FLAG) > 0;
 
-		$length = (int) ceil(Binary::readShort(substr($binary, 1, 2)) / 8);
-		$offset = 3;
+		$length = (int) ceil($stream->getShort() / 8);
+		if($length === 0){
+			throw new BinaryDataException("Encapsulated payload length cannot be zero");
+		}
 
 		if($reliability > PacketReliability::UNRELIABLE){
 			if(PacketReliability::isReliable($reliability)){
-				$packet->messageIndex = Binary::readLTriad(substr($binary, $offset, 3));
-				$offset += 3;
+				$packet->messageIndex = $stream->getLTriad();
 			}
 
 			if(PacketReliability::isSequenced($reliability)){
-				$packet->sequenceIndex = Binary::readLTriad(substr($binary, $offset, 3));
-				$offset += 3;
+				$packet->sequenceIndex = $stream->getLTriad();
 			}
 
 			if(PacketReliability::isSequencedOrOrdered($reliability)){
-				$packet->orderIndex = Binary::readLTriad(substr($binary, $offset, 3));
-				$offset += 3;
-				$packet->orderChannel = ord($binary{$offset++});
+				$packet->orderIndex = $stream->getLTriad();
+				$packet->orderChannel = $stream->getByte();
 			}
 		}
 
 		if($hasSplit){
-			$packet->splitCount = Binary::readInt(substr($binary, $offset, 4));
-			$offset += 4;
-			$packet->splitID = Binary::readShort(substr($binary, $offset, 2));
-			$offset += 2;
-			$packet->splitIndex = Binary::readInt(substr($binary, $offset, 4));
-			$offset += 4;
+			$packet->splitCount = $stream->getInt();
+			$packet->splitID = $stream->getShort();
+			$packet->splitIndex = $stream->getInt();
 		}
 
-		$packet->buffer = substr($binary, $offset, $length);
-		$offset += $length;
-
+		$packet->buffer = $stream->get($length);
 		return $packet;
 	}
 

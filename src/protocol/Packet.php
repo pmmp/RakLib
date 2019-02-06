@@ -17,11 +17,16 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#ifndef COMPILE
-use pocketmine\utils\Binary;
-#endif
+use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
+use function assert;
+use function count;
+use function explode;
+use function inet_ntop;
+use function inet_pton;
+use function strlen;
+use const AF_INET6;
 
 #include <rules/RakLibPacket.h>
 
@@ -31,10 +36,18 @@ abstract class Packet extends BinaryStream{
 	/** @var float|null */
 	public $sendTime;
 
+	/**
+	 * @return string
+	 * @throws BinaryDataException
+	 */
 	protected function getString() : string{
 		return $this->get($this->getShort());
 	}
 
+	/**
+	 * @return InternetAddress
+	 * @throws BinaryDataException
+	 */
 	protected function getAddress() : InternetAddress{
 		$version = $this->getByte();
 		if($version === 4){
@@ -43,14 +56,14 @@ abstract class Packet extends BinaryStream{
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
-			Binary::readLShort($this->get(2)); //Family, AF_INET6
+			$this->getLShort(); //Family, AF_INET6
 			$port = $this->getShort();
 			$this->getInt(); //flow info
 			$addr = inet_ntop($this->get(16));
 			$this->getInt(); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
-			throw new \UnexpectedValueException("Unknown IP address version $version");
+			throw new BinaryDataException("Unknown IP address version $version");
 		}
 	}
 	
@@ -94,7 +107,7 @@ abstract class Packet extends BinaryStream{
 			}
 			$this->putShort($address->port);
 		}elseif($address->version === 6){
-			$this->put(Binary::writeLShort(AF_INET6));
+			$this->putLShort(AF_INET6);
 			$this->putShort($address->port);
 			$this->putInt(0);
 			$this->put(inet_pton($address->ip));
@@ -135,16 +148,25 @@ abstract class Packet extends BinaryStream{
 
 	abstract protected function encodePayload() : void;
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	public function decode() : void{
 		$this->offset = 0;
 		$this->decodeHeader();
 		$this->decodePayload();
 	}
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	protected function decodeHeader() : void{
 		$this->getByte(); //PID
 	}
 
+	/**
+	 * @throws BinaryDataException
+	 */
 	abstract protected function decodePayload() : void;
 
 	public function clean(){

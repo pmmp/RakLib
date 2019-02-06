@@ -18,34 +18,44 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\Binary;
+use pocketmine\utils\BinaryDataException;
+use raklib\generic\Socket;
 use raklib\protocol\ACK;
-use raklib\protocol\AdvertiseSystem;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
-use raklib\protocol\OfflineMessage;
-use raklib\protocol\OpenConnectionReply1;
-use raklib\protocol\OpenConnectionReply2;
-use raklib\protocol\OpenConnectionRequest1;
-use raklib\protocol\OpenConnectionRequest2;
 use raklib\protocol\Packet;
-use raklib\protocol\UnconnectedPing;
-use raklib\protocol\UnconnectedPingOpenConnections;
-use raklib\protocol\UnconnectedPong;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
+use function asort;
+use function bin2hex;
+use function chr;
+use function count;
+use function dechex;
+use function get_class;
+use function max;
+use function microtime;
+use function ord;
+use function preg_match;
+use function serialize;
+use function socket_strerror;
+use function strlen;
+use function substr;
+use function time;
+use function time_sleep_until;
+use function trim;
+use const PHP_INT_MAX;
+use const SOCKET_ECONNRESET;
+use const SOCKET_EWOULDBLOCK;
 
 class SessionManager{
 
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
-	/** @var \SplFixedArray<Packet|null> */
-	protected $packetPool;
-
 	/** @var RakLibServer */
 	protected $server;
-	/** @var UDPServerSocket */
+	/** @var Socket */
 	protected $socket;
 
 	/** @var int */
@@ -77,6 +87,9 @@ class SessionManager{
 	/** @var int[] string (address) => int (number of packets) */
 	protected $ipSec = [];
 
+	/** @var string[] regex filters used to block out unwanted raw packets */
+	protected $rawPacketFilters = [];
+
 	public $portChecking = false;
 
 	/** @var int */
@@ -87,7 +100,7 @@ class SessionManager{
 
 	protected $reusableAddress;
 
-	public function __construct(RakLibServer $server, UDPServerSocket $socket, int $maxMtuSize){
+	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize){
 		$this->server = $server;
 		$this->socket = $socket;
 
@@ -97,8 +110,6 @@ class SessionManager{
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
 		$this->reusableAddress = clone $this->socket->getBindAddress();
-
-		$this->registerPackets();
 
 		$this->run();
 	}
@@ -219,56 +230,40 @@ class SessionManager{
 		}
 
 		try{
-			$pid = ord($buffer{0});
-
 			$session = $this->getSession($address);
 			if($session !== null){
-				if(($pid & Datagram::BITFLAG_VALID) !== 0){
-					if($pid & Datagram::BITFLAG_ACK){
+				$header = ord($buffer[0]);
+				if(($header & Datagram::BITFLAG_VALID) !== 0){
+					if($header & Datagram::BITFLAG_ACK){
 						$session->handlePacket(new ACK($buffer));
-					}elseif($pid & Datagram::BITFLAG_NAK){
+					}elseif($header & Datagram::BITFLAG_NAK){
 						$session->handlePacket(new NACK($buffer));
 					}else{
 						$session->handlePacket(new Datagram($buffer));
 					}
 				}else{
-					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . dechex($pid) . ")");
+					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
-			}elseif(($pk = $this->getPacketFromPool($pid, $buffer)) instanceof OfflineMessage){
-				/** @var OfflineMessage $pk */
-
-				do{
-					try{
-						$pk->decode();
-						if(!$pk->isValid()){
-							throw new \InvalidArgumentException("Packet magic is invalid");
-						}
-					}catch(\Throwable $e){
-						$logger = $this->server->getLogger();
-						$logger->debug("Received garbage message from $address (" . $e->getMessage() . "): " . bin2hex($pk->buffer));
-						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
-							$logger->debug($line);
-						}
-						$this->blockAddress($address->ip, 5);
+			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
+				foreach($this->rawPacketFilters as $pattern){
+					if(preg_match($pattern, $buffer) > 0){
+						$this->streamRaw($address, $buffer);
 						break;
 					}
+				}
 
-					if(!$this->offlineMessageHandler->handle($pk, $address)){
-						$this->server->getLogger()->debug("Unhandled unconnected packet " . get_class($pk) . " received from $address");
-					}
-				}while(false);
-			}elseif(($pid & Datagram::BITFLAG_VALID) !== 0 and ($pid & 0x03) === 0){
-				// Loose datagram, don't relay it as a raw packet
-				// RakNet does not currently use the 0x02 or 0x01 bitflags on any datagram header, so we can use
-				// this to identify the difference between loose datagrams and packets like Query.
-				$this->server->getLogger()->debug("Ignored connected packet from $address due to no session opened (0x" . dechex($pid) . ")");
-			}else{
-				$this->streamRaw($address, $buffer);
+				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 			}
-		}catch(\Throwable $e){
+		}catch(BinaryDataException $e){
 			$logger = $this->getLogger();
-			$logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
-			$logger->logException($e);
+			$logger->synchronized(function() use($logger, $address, $e, $buffer): void{
+				$logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+				$logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+				foreach($this->server->getTrace(0, $e->getTrace()) as $line){
+					$logger->debug($line);
+				}
+				$logger->error("Bad packet from $address: " . $e->getMessage());
+			});
 			$this->blockAddress($address->ip, 5);
 		}
 
@@ -277,39 +272,39 @@ class SessionManager{
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
 		$packet->encode();
-		$this->sendBytes += $this->socket->writePacket($packet->buffer, $address->ip, $address->port);
+		$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
 		$id = $session->getAddress()->toString();
-		$buffer = chr(RakLib::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	public function streamRaw(InternetAddress $source, string $payload) : void{
-		$buffer = chr(RakLib::PACKET_RAW) . chr(strlen($source->ip)) . $source->ip . Binary::writeShort($source->port) . $payload;
+		$buffer = chr(ITCProtocol::PACKET_RAW) . chr(strlen($source->ip)) . $source->ip . Binary::writeShort($source->port) . $payload;
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamClose(string $identifier, string $reason) : void{
-		$buffer = chr(RakLib::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
+		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamInvalid(string $identifier) : void{
-		$buffer = chr(RakLib::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
+		$buffer = chr(ITCProtocol::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamOpen(Session $session) : void{
 		$address = $session->getAddress();
 		$identifier = $address->toString();
-		$buffer = chr(RakLib::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
+		$buffer = chr(ITCProtocol::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamACK(string $identifier, int $identifierACK) : void{
-		$buffer = chr(RakLib::PACKET_ACK_NOTIFICATION) . chr(strlen($identifier)) . $identifier . Binary::writeInt($identifierACK);
+		$buffer = chr(ITCProtocol::PACKET_ACK_NOTIFICATION) . chr(strlen($identifier)) . $identifier . Binary::writeInt($identifierACK);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -318,13 +313,13 @@ class SessionManager{
 	 * @param mixed  $value
 	 */
 	protected function streamOption(string $name, $value) : void{
-		$buffer = chr(RakLib::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
+		$buffer = chr(ITCProtocol::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	public function streamPingMeasure(Session $session, int $pingMS) : void{
 		$identifier = $session->getAddress()->toString();
-		$buffer = chr(RakLib::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
+		$buffer = chr(ITCProtocol::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -332,7 +327,7 @@ class SessionManager{
 		if(($packet = $this->server->readMainToThreadPacket()) !== null){
 			$id = ord($packet{0});
 			$offset = 1;
-			if($id === RakLib::PACKET_ENCAPSULATED){
+			if($id === ITCProtocol::PACKET_ENCAPSULATED){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
@@ -344,7 +339,7 @@ class SessionManager{
 				}else{
 					$this->streamInvalid($identifier);
 				}
-			}elseif($id === RakLib::PACKET_RAW){
+			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
@@ -352,7 +347,7 @@ class SessionManager{
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$this->socket->writePacket($payload, $address, $port);
-			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
+			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
@@ -360,13 +355,13 @@ class SessionManager{
 				}else{
 					$this->streamInvalid($identifier);
 				}
-			}elseif($id === RakLib::PACKET_INVALID_SESSION){
+			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
 				$len = ord($packet{$offset++});
 				$identifier = substr($packet, $offset, $len);
 				if(isset($this->sessions[$identifier])){
 					$this->removeSession($this->sessions[$identifier]);
 				}
-			}elseif($id === RakLib::PACKET_SET_OPTION){
+			}elseif($id === ITCProtocol::PACKET_SET_OPTION){
 				$len = ord($packet{$offset++});
 				$name = substr($packet, $offset, $len);
 				$offset += $len;
@@ -382,24 +377,27 @@ class SessionManager{
 						$this->packetLimit = (int) $value;
 						break;
 				}
-			}elseif($id === RakLib::PACKET_BLOCK_ADDRESS){
+			}elseif($id === ITCProtocol::PACKET_BLOCK_ADDRESS){
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
 				$timeout = Binary::readInt(substr($packet, $offset, 4));
 				$this->blockAddress($address, $timeout);
-			}elseif($id === RakLib::PACKET_UNBLOCK_ADDRESS){
+			}elseif($id === ITCProtocol::PACKET_UNBLOCK_ADDRESS){
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$this->unblockAddress($address);
-			}elseif($id === RakLib::PACKET_SHUTDOWN){
+			}elseif($id === ITCProtocol::PACKET_RAW_FILTER){
+				$pattern = substr($packet, $offset);
+				$this->rawPacketFilters[] = $pattern;
+			}elseif($id === ITCProtocol::PACKET_SHUTDOWN){
 				foreach($this->sessions as $session){
 					$this->removeSession($session);
 				}
 
 				$this->socket->close();
 				$this->shutdown = true;
-			}elseif($id === RakLib::PACKET_EMERGENCY_SHUTDOWN){
+			}elseif($id === ITCProtocol::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
 			}else{
 				$this->getLogger()->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
@@ -446,7 +444,7 @@ class SessionManager{
 	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
 		$this->checkSessions();
 
-		$this->sessions[$address->toString()] = $session = new Session($this, clone $address, $clientId, $mtuSize);
+		$this->sessions[$address->toString()] = $session = new Session($this, $this->server->getLogger(), clone $address, $clientId, $mtuSize);
 		$this->getLogger()->debug("Created session for $address with MTU size $mtuSize");
 
 		return $session;
@@ -492,43 +490,5 @@ class SessionManager{
 
 	public function getID() : int{
 		return $this->server->getServerId();
-	}
-
-	/**
-	 * @param int    $id
-	 * @param string $class
-	 */
-	private function registerPacket(int $id, string $class) : void{
-		$this->packetPool[$id] = new $class;
-	}
-
-	/**
-	 * @param int    $id
-	 * @param string $buffer
-	 *
-	 * @return Packet|null
-	 */
-	public function getPacketFromPool(int $id, string $buffer = "") : ?Packet{
-		$pk = $this->packetPool[$id];
-		if($pk !== null){
-			$pk = clone $pk;
-			$pk->buffer = $buffer;
-			return $pk;
-		}
-
-		return null;
-	}
-
-	private function registerPackets() : void{
-		$this->packetPool = new \SplFixedArray(256);
-
-		$this->registerPacket(UnconnectedPing::$ID, UnconnectedPing::class);
-		$this->registerPacket(UnconnectedPingOpenConnections::$ID, UnconnectedPingOpenConnections::class);
-		$this->registerPacket(OpenConnectionRequest1::$ID, OpenConnectionRequest1::class);
-		$this->registerPacket(OpenConnectionReply1::$ID, OpenConnectionReply1::class);
-		$this->registerPacket(OpenConnectionRequest2::$ID, OpenConnectionRequest2::class);
-		$this->registerPacket(OpenConnectionReply2::$ID, OpenConnectionReply2::class);
-		$this->registerPacket(UnconnectedPong::$ID, UnconnectedPong::class);
-		$this->registerPacket(AdvertiseSystem::$ID, AdvertiseSystem::class);
 	}
 }

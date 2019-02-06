@@ -15,11 +15,31 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\generic;
 
 use raklib\utils\InternetAddress;
+use function socket_bind;
+use function socket_close;
+use function socket_create;
+use function socket_last_error;
+use function socket_recvfrom;
+use function socket_sendto;
+use function socket_set_nonblock;
+use function socket_set_option;
+use function socket_strerror;
+use function strlen;
+use function trim;
+use const AF_INET;
+use const AF_INET6;
+use const IPV6_V6ONLY;
+use const SO_RCVBUF;
+use const SO_SNDBUF;
+use const SOCK_DGRAM;
+use const SOCKET_EADDRINUSE;
+use const SOL_SOCKET;
+use const SOL_UDP;
 
-class UDPServerSocket{
+class Socket{
 	/** @var resource */
 	protected $socket;
 	/**
@@ -36,9 +56,12 @@ class UDPServerSocket{
 		}
 
 		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
-			socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 0);
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
+			$error = socket_last_error($this->socket);
+			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
+				throw new \RuntimeException("Failed to bind socket: Something else is already running on $bindAddress");
+			}
 			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
 		}
 		socket_set_nonblock($this->socket);

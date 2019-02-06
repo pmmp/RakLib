@@ -23,19 +23,23 @@ class UnconnectedPing extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
 
 	/** @var int */
-	public $pingID;
-	/** @var ConnecitonType */
-	public $connectionType;
+	public $sendPingTime;
+	/** @var int */
+	public $clientId;
+  /** @var ConnecitonType */
+  public $connectionType;
 
 	protected function encodePayload() : void{
-		$this->putLong($this->pingID);
+		$this->putLong($this->sendPingTime);
 		$this->writeMagic();
+    $this->putLong($this->clientId);
 		$this->putConnectionType();
 	}
 
 	protected function decodePayload() : void{
-		$this->pingID = $this->getLong();
+		$this->sendPingTime = $this->getLong();
 		$this->readMagic();
+    $this->clientId = $this->getLong();
 		$this->$connectionType = $this->getConnectionType();
 	}
 }
