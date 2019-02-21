@@ -95,7 +95,6 @@ class ServerHandler{
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				//TODO: this is a binary-encoded int
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$flags = ord($packet{$offset++});
