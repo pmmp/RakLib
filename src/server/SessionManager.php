@@ -248,14 +248,18 @@ class SessionManager{
 					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
+				$handled = false;
 				foreach($this->rawPacketFilters as $pattern){
 					if(preg_match($pattern, $buffer) > 0){
+						$handled = true;
 						$this->streamRaw($address, $buffer);
 						break;
 					}
 				}
 
-				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
+				if(!$handled){
+					$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
+				}
 			}
 		}catch(BinaryDataException $e){
 			$logger = $this->getLogger();
