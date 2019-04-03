@@ -68,9 +68,9 @@ abstract class Packet extends BinaryStream{
 	}
 	
 	public function getConnectionType() : ConnectionType{
-		if(strlen($this->buffer) - $this->offset >= strlen(ConnectionType::getMagic())){
-			$connectionMagicCheck = $this->get(strlen(ConnectionType::getMagic()));
-			if($connectionMagicCheck == ConnectionType::getMagic()){
+		if(strlen($this->buffer) - $this->offset >= strlen(ConnectionType::MAGIC)){
+			$connectionMagicCheck = $this->get(strlen(ConnectionType::MAGIC));
+			if($connectionMagicCheck === ConnectionType::MAGIC){
 				$uuidMostSignificant = $this->getLong();
 				$uuidLeastSignificant = $this->getLong();
 				$name = $this->getString();
@@ -82,7 +82,7 @@ abstract class Packet extends BinaryStream{
 					$key = $this->getString();
 					$value = $this->getString();
 					if(array_key_exists($key, $metadata)){
-						throw new \UnexpectedValueException("Duplicate key \"" . $key . "\"");	
+						throw new UnexpectedValueException("Duplicate key \"" . $key . "\"");
 					}
 					$metadata[$key] = $value;
 				}
@@ -113,20 +113,20 @@ abstract class Packet extends BinaryStream{
 			$this->put(inet_pton($address->ip));
 			$this->putInt(0);
 		}else{
-			throw new \InvalidArgumentException("IP version $address->version is not supported");
+			throw new InvalidArgumentException("IP version $address->version is not supported");
 		}
 	}
 	
 	public function putConnectionType(ConnectionType $connectionType = null) : void{
-		$connectionType = (connectionType !== null ? connectionType : ConnectionType::getRakLib());
-		$this->put(ConnectionType::getMagic());
+		$connectionType = $connectionType === null ? ConnectionType::getRakLib() : $connectionType;
+		$this->put(ConnectionType::MAGIC);
 		$this->putLong($connectionType->getUUIDMostSignificant());
 		$this->putLong($connectionType->getUUIDLeastSignificant());
 		$this->putString($connectionType->getName());
 		$this->putString($connectionType->getLanguage());
 		$this->putString($connectionType->getVersion());
-		if(count($connectionType->getMetaDataArray()) > ConnectionType.MAX_METADATA_VALUES){
-			throw new \InvalidArgumentException("Too many metadata values");
+		if(count($connectionType->getMetaDataArray()) > ConnectionType::MAX_METADATA_VALUES){
+			throw new InvalidArgumentException("Too many metadata values");
 		}
 		$this->putByte(count($connectionType->getMetaDataArray()) & 0xff);
 		foreach($connectionType->getMetaDataArray() as $key => $value){

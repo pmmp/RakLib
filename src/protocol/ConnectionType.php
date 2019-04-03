@@ -24,16 +24,18 @@ use raklib\RakLib;
 class ConnectionType{
 	
 	public const MAX_METADATA_VALUES = 0xff;
+
+    public const MAGIC = "\x03\x08\x05\x0B\x43\x54\x49";
 	
 	public static function createMetaData(string ... $metadata) : array{
 		if(count($metadata) % 2 != 0){
 			throw new InvalidArgumentException("There must be a value for every key");
-		}elseif(count($metadata) / 2 > MAX_METADATA_VALUES){
+		}elseif(count($metadata) / 2 > ConnectionType::MAX_METADATA_VALUES){
 			throw new InvalidArgumentException("Too many metadata values");
 		}
 		
 		$metadataArray = array();
-		for($i = 0; i < count($metadata); $i += 2){
+		for($i = 0; $i < count($metadata); $i += 2){
 			$metadataArray[$metadata[$i]] = $metadata[$i + 1];
 		}
 		return $metadataArray;
@@ -43,34 +45,24 @@ class ConnectionType{
 	private static $VANILLA = null;
 	
 	public static function getVanilla() : ConnectionType{
-		if($VANILLA === null) {
-			$VANILLA = new ConnectionType(null, "Vanilla", null, null, null, true);
+		if(ConnectionType::$VANILLA === null) {
+			ConnectionType::$VANILLA = new ConnectionType(0, 0, "Vanilla", null, null, null, true);
 		}
-		return $VANILLA;
+		return ConnectionType::$VANILLA;
 	}
 	/** @var ConnectionType */
 	private static $RAKLIB = null;
 	
 	public static function getRakLib() : ConnectionType{
-		if($RAKLIB === null) {
-			$RAKLIB = new ConnectionType(-3302738621981308437, -6084673292449311602, "RakLib", "PHP", RakLib::VERSION);
+		if(ConnectionType::$RAKLIB === null) {
+			ConnectionType::$RAKLIB = new ConnectionType(-3302738621981308437, -6084673292449311602, "RakLib", "PHP", RakLib::VERSION);
 		}
-		return $RAKLIB;
+		return ConnectionType::$RAKLIB;
 	}
 	
-	/** @var byte[] */
-	private static $MAGIC = null;
-	
-	public static function getMagic() : string{
-		if($MAGIC === null) {
-			$MAGIC = pack("C*", 0x03, 0x08, 0x05, 0x0B, 0x43, 0x54, 0x49);
-		}
-		return $MAGIC;
-	}
-	
-	/** @var long */
+	/** @var int */
 	private $uuidMostSignificant;
-	/** @var long */
+	/** @var int */
 	private $uuidLeastSignificant;
 	/** @var string */
 	private $name;
@@ -83,7 +75,7 @@ class ConnectionType{
 	/** @var bool */
 	private $vanilla;
 	
-	public function __construct(long $uuidMostSignificant, long $uuidLeastSignificant, string $name, string $language, string $version, array $metadata = array(), bool $vanilla = false){
+	public function __construct(int $uuidMostSignificant, int $uuidLeastSignificant, string $name, ?string $language, ?string $version, array $metadata = array(), bool $vanilla = false){
 		$this->uuidMostSignificant = $uuidMostSignificant;
 		$this->uuidLeastSignificant = $uuidLeastSignificant;
 		$this->name = $name;
@@ -93,11 +85,11 @@ class ConnectionType{
 		$this->vanilla = $vanilla;
 	}
 	
-	public function getUUIDMostSignificant() : string{
+	public function getUUIDMostSignificant() : int{
 		return $this->uuidMostSignificant;
 	}
 	
-	public function getUUIDLeastSignificant() : string{
+	public function getUUIDLeastSignificant() : int{
 		return $this->uuidLeastSignificant;
 	}
 	
@@ -114,15 +106,15 @@ class ConnectionType{
 	}
 	
 	public function getMetaData(string $key) : string{
-		return $metadata.get(key);
+		return $this->metadata[$key];
 	}
 	
 	public function getMetaDataArray() : array{
-		return $metadata;
+		return $this->metadata;
 	}
 	
 	public function isVanilla() : bool{
 		return $this->vanilla;
 	}
-	
+
 }
