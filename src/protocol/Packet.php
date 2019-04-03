@@ -71,11 +71,11 @@ abstract class Packet extends BinaryStream{
 		if(strlen($this->buffer) - $this->offset >= strlen(ConnectionType::getMagic())){
 			$connectionMagicCheck = $this->get(strlen(ConnectionType::getMagic()));
 			if($connectionMagicCheck == ConnectionType::getMagic()){
-				$uuid = $this->getString();
+				$uuidMostSignificant = $this->getLong();
+				$uuidLeastSignificant = $this->getLong();
 				$name = $this->getString();
 				$language = $this->getString();
 				$version = $this->getString();
-				
 				$metadata = array();
 				$metadataLength = $this->getByte() & 0xff;
 				for($i = 0; i < $metadataLength; $i++){
@@ -86,7 +86,7 @@ abstract class Packet extends BinaryStream{
 					}
 					$metadata[$key] = $value;
 				}
-				return new ConnectionType($uuid, $name, $language, $version, $metadata);
+				return new ConnectionType($uuidMostSignificant, $uuidLeastSignificant, $name, $language, $version, $metadata);
 			}	
 		}
 		return ConnectionType::getVanilla();
@@ -119,13 +119,12 @@ abstract class Packet extends BinaryStream{
 	
 	public function putConnectionType(ConnectionType $connectionType = null) : void{
 		$connectionType = (connectionType !== null ? connectionType : ConnectionType::getRakLib());
-		
 		$this->put(ConnectionType::getMagic());
-		$this->putString($connectionType->getUUID());
+		$this->putLong($connectionType->getUUIDMostSignificant());
+		$this->putLong($connectionType->getUUIDLeastSignificant());
 		$this->putString($connectionType->getName());
 		$this->putString($connectionType->getLanguage());
 		$this->putString($connectionType->getVersion());
-		
 		if(count($connectionType->getMetaDataArray()) > ConnectionType.MAX_METADATA_VALUES){
 			throw new \InvalidArgumentException("Too many metadata values");
 		}

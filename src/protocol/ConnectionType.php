@@ -25,11 +25,11 @@ class ConnectionType{
 	
 	public const MAX_METADATA_VALUES = 0xff;
 	
-	public static function createMetaData(string... $metadata) : array{
+	public static function createMetaData(string ... $metadata) : array{
 		if(count($metadata) % 2 != 0){
-			throw new \InvalidArgumentException("There must be a value for every key");
+			throw new InvalidArgumentException("There must be a value for every key");
 		}elseif(count($metadata) / 2 > MAX_METADATA_VALUES){
-			throw new \InvalidArgumentException("Too many metadata values");
+			throw new InvalidArgumentException("Too many metadata values");
 		}
 		
 		$metadataArray = array();
@@ -53,7 +53,7 @@ class ConnectionType{
 	
 	public static function getRakLib() : ConnectionType{
 		if($RAKLIB === null) {
-			$RAKLIB = new ConnectionType("d22a50b8-d2d7-49eb-ab8e-e5e0e540948e", "RakLib", "PHP", RakLib::VERSION);
+			$RAKLIB = new ConnectionType(-3302738621981308437, -6084673292449311602, "RakLib", "PHP", RakLib::VERSION);
 		}
 		return $RAKLIB;
 	}
@@ -68,8 +68,10 @@ class ConnectionType{
 		return $MAGIC;
 	}
 	
-	/** @var string */
-	private $uuid;
+	/** @var long */
+	private $uuidMostSignificant;
+	/** @var long */
+	private $uuidLeastSignificant;
 	/** @var string */
 	private $name;
 	/** @var string */
@@ -81,8 +83,9 @@ class ConnectionType{
 	/** @var bool */
 	private $vanilla;
 	
-	public function __construct(string $uuid, string $name, string $language, string $version, array $metadata = array(), bool $vanilla = false){
-		$this->uuid = $uuid;
+	public function __construct(long $uuidMostSignificant, long $uuidLeastSignificant, string $name, string $language, string $version, array $metadata = array(), bool $vanilla = false){
+		$this->uuidMostSignificant = $uuidMostSignificant;
+		$this->uuidLeastSignificant = $uuidLeastSignificant;
 		$this->name = $name;
 		$this->language = $language;
 		$this->version = $version;
@@ -90,8 +93,12 @@ class ConnectionType{
 		$this->vanilla = $vanilla;
 	}
 	
-	public function getUUID() : string{
-		return $this->uuid;
+	public function getUUIDMostSignificant() : string{
+		return $this->uuidMostSignificant;
+	}
+	
+	public function getUUIDLeastSignificant() : string{
+		return $this->uuidLeastSignificant;
 	}
 	
 	public function getName() : string{
