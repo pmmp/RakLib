@@ -64,6 +64,8 @@ class SessionManager{
 	protected $sendBytes = 0;
 
 	/** @var Session[] */
+	protected $sessionsByAddress = [];
+	/** @var Session[] */
 	protected $sessions = [];
 
 	/** @var OfflineMessageHandler */
@@ -100,6 +102,9 @@ class SessionManager{
 
 	protected $reusableAddress;
 
+	/** @var int */
+	protected $nextSessionId = 0;
+
 	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize){
 		$this->server = $server;
 		$this->socket = $socket;
@@ -110,8 +115,6 @@ class SessionManager{
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
 		$this->reusableAddress = clone $this->socket->getBindAddress();
-
-		$this->run();
 	}
 
 	/**
@@ -230,7 +233,7 @@ class SessionManager{
 		}
 
 		try{
-			$session = $this->getSession($address);
+			$session = $this->getSessionByAddress($address);
 			if($session !== null){
 				$header = ord($buffer[0]);
 				if(($header & Datagram::BITFLAG_VALID) !== 0){
@@ -245,14 +248,18 @@ class SessionManager{
 					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
+				$handled = false;
 				foreach($this->rawPacketFilters as $pattern){
 					if(preg_match($pattern, $buffer) > 0){
+						$handled = true;
 						$this->streamRaw($address, $buffer);
 						break;
 					}
 				}
 
-				$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
+				if(!$handled){
+					$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
+				}
 			}
 		}catch(BinaryDataException $e){
 			$logger = $this->getLogger();
@@ -276,8 +283,7 @@ class SessionManager{
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$id = $session->getAddress()->toString();
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . chr(strlen($id)) . $id . chr($flags) . $packet->toInternalBinary();
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -286,25 +292,24 @@ class SessionManager{
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
-	protected function streamClose(string $identifier, string $reason) : void{
-		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
+	protected function streamClose(int $identifier, string $reason) : void{
+		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier) . chr(strlen($reason)) . $reason;
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
-	protected function streamInvalid(string $identifier) : void{
-		$buffer = chr(ITCProtocol::PACKET_INVALID_SESSION) . chr(strlen($identifier)) . $identifier;
+	protected function streamInvalid(int $identifier) : void{
+		$buffer = chr(ITCProtocol::PACKET_INVALID_SESSION) . Binary::writeInt($identifier);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
 	protected function streamOpen(Session $session) : void{
 		$address = $session->getAddress();
-		$identifier = $address->toString();
-		$buffer = chr(ITCProtocol::PACKET_OPEN_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
+		$buffer = chr(ITCProtocol::PACKET_OPEN_SESSION) . Binary::writeInt($session->getInternalId()) . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
-	protected function streamACK(string $identifier, int $identifierACK) : void{
-		$buffer = chr(ITCProtocol::PACKET_ACK_NOTIFICATION) . chr(strlen($identifier)) . $identifier . Binary::writeInt($identifierACK);
+	protected function streamACK(int $identifier, int $identifierACK) : void{
+		$buffer = chr(ITCProtocol::PACKET_ACK_NOTIFICATION) . Binary::writeInt($identifier) . Binary::writeInt($identifierACK);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -318,8 +323,7 @@ class SessionManager{
 	}
 
 	public function streamPingMeasure(Session $session, int $pingMS) : void{
-		$identifier = $session->getAddress()->toString();
-		$buffer = chr(ITCProtocol::PACKET_REPORT_PING) . chr(strlen($identifier)) . $identifier . Binary::writeInt($pingMS);
+		$buffer = chr(ITCProtocol::PACKET_REPORT_PING) . Binary::writeInt($session->getInternalId()) . Binary::writeInt($pingMS);
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
@@ -328,9 +332,8 @@ class SessionManager{
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$session = $this->sessions[$identifier] ?? null;
 				if($session !== null and $session->isConnected()){
 					$flags = ord($packet{$offset++});
@@ -348,16 +351,14 @@ class SessionManager{
 				$payload = substr($packet, $offset);
 				$this->socket->writePacket($payload, $address, $port);
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				if(isset($this->sessions[$identifier])){
 					$this->sessions[$identifier]->flagForDisconnection();
 				}else{
 					$this->streamInvalid($identifier);
 				}
 			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				if(isset($this->sessions[$identifier])){
 					$this->removeSession($this->sessions[$identifier]);
 				}
@@ -433,25 +434,32 @@ class SessionManager{
 	 *
 	 * @return Session|null
 	 */
-	public function getSession(InternetAddress $address) : ?Session{
-		return $this->sessions[$address->toString()] ?? null;
+	public function getSessionByAddress(InternetAddress $address) : ?Session{
+		return $this->sessionsByAddress[$address->toString()] ?? null;
 	}
 
 	public function sessionExists(InternetAddress $address) : bool{
-		return isset($this->sessions[$address->toString()]);
+		return isset($this->sessionsByAddress[$address->toString()]);
 	}
 
 	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
 		$this->checkSessions();
 
-		$this->sessions[$address->toString()] = $session = new Session($this, $this->server->getLogger(), clone $address, $clientId, $mtuSize);
+		while(isset($this->sessions[$this->nextSessionId])){
+			$this->nextSessionId++;
+			$this->nextSessionId &= 0x7fffffff; //we don't expect more than 2 billion simultaneous connections, and this fits in 4 bytes
+		}
+
+		$session = new Session($this, $this->server->getLogger(), clone $address, $clientId, $mtuSize, $this->nextSessionId);
+		$this->sessionsByAddress[$address->toString()] = $session;
+		$this->sessions[$this->nextSessionId] = $session;
 		$this->getLogger()->debug("Created session for $address with MTU size $mtuSize");
 
 		return $session;
 	}
 
 	public function removeSession(Session $session, string $reason = "unknown") : void{
-		$id = $session->getAddress()->toString();
+		$id = $session->getInternalId();
 		if(isset($this->sessions[$id])){
 			$this->sessions[$id]->close();
 			$this->removeSessionInternal($session);
@@ -460,7 +468,7 @@ class SessionManager{
 	}
 
 	public function removeSessionInternal(Session $session) : void{
-		unset($this->sessions[$session->getAddress()->toString()]);
+		unset($this->sessionsByAddress[$session->getAddress()->toString()], $this->sessions[$session->getInternalId()]);
 	}
 
 	public function openSession(Session $session) : void{
@@ -469,9 +477,9 @@ class SessionManager{
 
 	private function checkSessions() : void{
 		if(count($this->sessions) > 4096){
-			foreach($this->sessions as $i => $s){
-				if($s->isTemporal()){
-					unset($this->sessions[$i]);
+			foreach($this->sessions as $sessionId => $session){
+				if($session->isTemporal()){
+					$this->removeSessionInternal($session);
 					if(count($this->sessions) <= 4096){
 						break;
 					}
@@ -481,7 +489,7 @@ class SessionManager{
 	}
 
 	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->streamACK($session->getAddress()->toString(), $identifierACK);
+		$this->streamACK($session->getInternalId(), $identifierACK);
 	}
 
 	public function getName() : string{

@@ -41,6 +41,7 @@ use function substr;
 use function xdebug_get_function_stack;
 use const DIRECTORY_SEPARATOR;
 use const PHP_INT_MAX;
+use const PTHREADS_INHERIT_NONE;
 
 class RakLibServer extends \Thread{
 	/** @var InternetAddress */
@@ -54,6 +55,8 @@ class RakLibServer extends \Thread{
 
 	/** @var bool */
 	protected $shutdown = false;
+	/** @var bool */
+	protected $ready = false;
 
 	/** @var \Threaded */
 	protected $externalQueue;
@@ -171,13 +174,21 @@ class RakLibServer extends \Thread{
 		if($this->shutdown !== true){
 			$error = error_get_last();
 			if($error !== null){ //fatal error
-				$this->crashInfo = new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']);
+				$this->setCrashInfo(new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']));
 			}
+
 		}
 	}
 
 	public function getCrashInfo() : ?\Throwable{
 		return $this->crashInfo;
+	}
+
+	private function setCrashInfo(\Throwable $e){
+		$this->synchronized(function($e){
+			$this->crashInfo = $e;
+			$this->notify();
+		}, $e);
 	}
 
 	public function getTrace($start = 0, $trace = null){
@@ -214,6 +225,18 @@ class RakLibServer extends \Thread{
 		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
 	}
 
+	public function startAndWait(int $options = PTHREADS_INHERIT_NONE) : void{
+		$this->start($options);
+		$this->synchronized(function(){
+			while(!$this->ready and $this->crashInfo === null){
+				$this->wait();
+			}
+			if($this->crashInfo !== null){
+				throw $this->crashInfo;
+			}
+		});
+	}
+
 	public function run() : void{
 		try{
 			require $this->loaderPath;
@@ -228,9 +251,14 @@ class RakLibServer extends \Thread{
 
 
 			$socket = new Socket($this->address);
-			new SessionManager($this, $socket, $this->maxMtuSize);
+			$manager = new SessionManager($this, $socket, $this->maxMtuSize);
+			$this->synchronized(function(){
+				$this->ready = true;
+				$this->notify();
+			});
+			$manager->run();
 		}catch(\Throwable $e){
-			$this->crashInfo = $e;
+			$this->setCrashInfo($e);
 			$this->logger->logException($e);
 		}
 	}

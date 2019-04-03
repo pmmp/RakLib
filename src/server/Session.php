@@ -138,7 +138,10 @@ class Session{
 	/** @var int */
 	private $lastPingMeasure = 1;
 
-	public function __construct(SessionManager $sessionManager, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize){
+	/** @var int */
+	private $internalId;
+
+	public function __construct(SessionManager $sessionManager, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
 		$this->sessionManager = $sessionManager;
 		$this->logger = $logger;
 		$this->address = $address;
@@ -162,6 +165,15 @@ class Session{
 
 		$this->mtuSize = $mtuSize;
 
+		$this->internalId = $internalId;
+	}
+
+	/**
+	 * Returns an ID used to identify this session across threads.
+	 * @return int
+	 */
+	public function getInternalId() : int{
+		return $this->internalId;
 	}
 
 	public function getAddress() : InternetAddress{

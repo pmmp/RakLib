@@ -37,8 +37,8 @@ class ServerHandler{
 		$this->instance = $instance;
 	}
 
-	public function sendEncapsulated(string $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . chr(strlen($identifier)) . $identifier . chr($flags) . $packet->toInternalBinary();
+	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($identifier) . chr($flags) . $packet->toInternalBinary();
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
@@ -47,8 +47,8 @@ class ServerHandler{
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
-	public function closeSession(string $identifier, string $reason) : void{
-		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . chr(strlen($identifier)) . $identifier . chr(strlen($reason)) . $reason;
+	public function closeSession(int $identifier, string $reason) : void{
+		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier) . chr(strlen($reason)) . $reason;
 		$this->server->pushMainToThreadPacket($buffer);
 	}
 
@@ -95,9 +95,8 @@ class ServerHandler{
 			$id = ord($packet{0});
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$flags = ord($packet{$offset++});
 				$buffer = substr($packet, $offset);
 				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromInternalBinary($buffer), $flags);
@@ -116,9 +115,8 @@ class ServerHandler{
 				$value = substr($packet, $offset);
 				$this->instance->handleOption($name, $value);
 			}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$len = ord($packet{$offset++});
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
@@ -127,26 +125,22 @@ class ServerHandler{
 				$clientID = Binary::readLong(substr($packet, $offset, 8));
 				$this->instance->openSession($identifier, $address, $port, $clientID);
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$len = ord($packet{$offset++});
 				$reason = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, $reason);
 			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$this->instance->closeSession($identifier, "Invalid session");
 			}elseif($id === ITCProtocol::PACKET_ACK_NOTIFICATION){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
 				$this->instance->notifyACK($identifier, $identifierACK);
 			}elseif($id === ITCProtocol::PACKET_REPORT_PING){
-				$len = ord($packet{$offset++});
-				$identifier = substr($packet, $offset, $len);
-				$offset += $len;
+				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$offset += 4;
 				$pingMS = Binary::readInt(substr($packet, $offset, 4));
 				$this->instance->updatePing($identifier, $pingMS);
 			}

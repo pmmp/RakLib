@@ -25,6 +25,7 @@ namespace raklib\server;
 
 /**
  * @internal
+ * This interface contains descriptions of ITC packets used to transmit data into RakLib from the main thread.
  */
 interface ITCProtocol{
 
@@ -39,8 +40,7 @@ interface ITCProtocol{
 
 	/*
 	 * ENCAPSULATED payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 * byte (flags, last 3 bits, priority)
 	 * payload (binary internal EncapsulatedPacket)
 	 */
@@ -48,8 +48,7 @@ interface ITCProtocol{
 
 	/*
 	 * OPEN_SESSION payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 * byte (address length)
 	 * byte[] (address)
 	 * short (port)
@@ -59,31 +58,27 @@ interface ITCProtocol{
 
 	/*
 	 * CLOSE_SESSION payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 * string (reason)
 	 */
 	public const PACKET_CLOSE_SESSION = 0x03;
 
 	/*
 	 * INVALID_SESSION payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 */
 	public const PACKET_INVALID_SESSION = 0x04;
 
 	/* TODO: implement this
 	 * SEND_QUEUE payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 */
 	public const PACKET_SEND_QUEUE = 0x05;
 
 	/*
 	 * ACK_NOTIFICATION payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
-	 * int (identifierACK)
+	 * int32 (internal session ID)
+	 * int32 (identifierACK)
 	 */
 	public const PACKET_ACK_NOTIFICATION = 0x06;
 
@@ -121,8 +116,7 @@ interface ITCProtocol{
 
 	/*
 	 * REPORT_PING payload:
-	 * byte (identifier length)
-	 * byte[] (identifier)
+	 * int32 (internal session ID)
 	 * int32 (measured latency in MS)
 	 */
 	public const PACKET_REPORT_PING = 0x11;
