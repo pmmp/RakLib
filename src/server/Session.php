@@ -455,7 +455,7 @@ class Session{
 			return;
 		}
 
-		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= self::CHANNEL_COUNT)){
+		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and $packet->orderChannel >= self::CHANNEL_COUNT){
 			//TODO: this should result in peer banning
 			$this->sessionManager->getLogger()->debug("Invalid packet from " . $this->address . ", bad order channel ($packet->orderChannel)");
 			return;
