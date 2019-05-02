@@ -28,7 +28,6 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
-use function abs;
 use function get_class;
 use function min;
 use function ord;
@@ -95,7 +94,11 @@ class OfflineMessageHandler{
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
 			if($packet->serverAddress->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
-				$mtuSize = min(abs($packet->mtuSize), $this->sessionManager->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
+				if($packet->mtuSize < Session::MIN_MTU_SIZE){
+					$this->sessionManager->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");
+					return true;
+				}
+				$mtuSize = min($packet->mtuSize, $this->sessionManager->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
 				$pk = new OpenConnectionReply2();
 				$pk->mtuSize = $mtuSize;
 				$pk->serverID = $this->sessionManager->getID();

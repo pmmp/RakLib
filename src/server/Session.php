@@ -47,6 +47,8 @@ class Session{
 	public const STATE_DISCONNECTING = 2;
 	public const STATE_DISCONNECTED = 3;
 
+	public const MIN_MTU_SIZE = 400;
+
 	private const MAX_SPLIT_SIZE = 128;
 	private const MAX_SPLIT_COUNT = 4;
 
@@ -142,6 +144,9 @@ class Session{
 	private $internalId;
 
 	public function __construct(SessionManager $sessionManager, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
+		if($mtuSize < self::MIN_MTU_SIZE){
+			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
+		}
 		$this->sessionManager = $sessionManager;
 		$this->logger = $logger;
 		$this->address = $address;
