@@ -150,8 +150,21 @@ class SessionManager{
 
 		while(!$this->shutdown){
 			$start = microtime(true);
-			while($this->receivePacket()){}
-			while($this->receiveStream()){}
+
+			/*
+			 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
+			 * when high traffic is coming either way. Yielding will occur after 100 messages.
+			 */
+			do{
+				for($stream = true, $i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
+					$stream = $this->receiveStream();
+				}
+
+				for($socket = true, $i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
+					$socket = $this->receivePacket();
+				}
+			}while(!$this->shutdown && ($stream || $socket));
+
 			$this->tick();
 
 			$time = microtime(true) - $start;
