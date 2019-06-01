@@ -88,7 +88,11 @@ class OfflineMessageHandler{
 				$this->sessionManager->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (expected $serverProtocol, got $packet->protocol)");
 			}else{
 				$pk = new OpenConnectionReply1();
-				$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)
+				$IPHeaderSize = 20; // IPv4 header size (minimum) in bytes.
+				if($address->version === 6) {
+					$IPHeaderSize = 40; // IPv6 header size in bytes.
+				}
+				$pk->mtuSize = $packet->mtuSize + $IPHeaderSize + 8; // IP header size + UDP header size (8 bytes)
 				$pk->serverID = $this->sessionManager->getID();
 				$this->sessionManager->sendPacket($pk, $address);
 			}
