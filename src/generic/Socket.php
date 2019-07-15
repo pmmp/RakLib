@@ -62,7 +62,7 @@ class Socket{
 			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
 				throw new \RuntimeException("Failed to bind socket: Something else is already running on $bindAddress");
 			}
-			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
+			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror($error)));
 		}
 		socket_set_nonblock($this->socket);
 	}
