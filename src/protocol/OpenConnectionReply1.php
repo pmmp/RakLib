@@ -34,6 +34,8 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$this->putLong($this->serverID);
 		$this->putByte($this->serverSecurity ? 1 : 0);
 		$this->putShort($this->mtuSize);
+
+		$this->put(str_repeat("\x00", $this->mtuSize - strlen($this->buffer) - 28)); //a hack to avoid getting a wrong MTU size
 	}
 
 	protected function decodePayload() : void{
