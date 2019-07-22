@@ -173,10 +173,13 @@ class RakLibServer extends \Thread{
 	public function shutdownHandler(){
 		if($this->shutdown !== true){
 			$error = error_get_last();
-			if($error !== null){ //fatal error
-				$this->setCrashInfo(new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']));
-			}
 
+			if($error !== null){
+				$this->logger->emergency("Fatal error: " . $error["message"] . " in " . $error["file"] . " on line " . $error["line"]);
+				$this->setCrashInfo(new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']));
+			}else{
+				$this->logger->emergency("RakLib shutdown unexpectedly");
+			}
 		}
 	}
 

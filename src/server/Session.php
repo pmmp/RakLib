@@ -524,7 +524,7 @@ class Session{
 			return;
 		}
 
-		$id = ord($packet->buffer{0});
+		$id = ord($packet->buffer[0]);
 		if($id < MessageIdentifiers::ID_USER_PACKET_ENUM){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
 				if($id === ConnectionRequest::$ID){

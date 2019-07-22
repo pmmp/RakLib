@@ -75,13 +75,13 @@ class EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
 
 		$offset = 0;
-		$packet->reliability = ord($bytes{$offset++});
+		$packet->reliability = ord($bytes[$offset++]);
 
 		$packet->identifierACK = Binary::readInt(substr($bytes, $offset, 4)); //TODO: don't read this for non-ack-receipt reliabilities
 		$offset += 4;
 
 		if(PacketReliability::isSequencedOrOrdered($packet->reliability)){
-			$packet->orderChannel = ord($bytes{$offset++});
+			$packet->orderChannel = ord($bytes[$offset++]);
 		}
 
 		$packet->buffer = substr($bytes, $offset);

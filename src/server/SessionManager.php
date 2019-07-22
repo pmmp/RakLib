@@ -342,21 +342,21 @@ class SessionManager{
 
 	public function receiveStream() : bool{
 		if(($packet = $this->server->readMainToThreadPacket()) !== null){
-			$id = ord($packet{0});
+			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$session = $this->sessions[$identifier] ?? null;
 				if($session !== null and $session->isConnected()){
-					$flags = ord($packet{$offset++});
+					$flags = ord($packet[$offset++]);
 					$buffer = substr($packet, $offset);
 					$session->addEncapsulatedToQueue(EncapsulatedPacket::fromInternalBinary($buffer), $flags);
 				}else{
 					$this->streamInvalid($identifier);
 				}
 			}elseif($id === ITCProtocol::PACKET_RAW){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
 				$port = Binary::readShort(substr($packet, $offset, 2));
@@ -376,7 +376,7 @@ class SessionManager{
 					$this->removeSession($this->sessions[$identifier]);
 				}
 			}elseif($id === ITCProtocol::PACKET_SET_OPTION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$name = substr($packet, $offset, $len);
 				$offset += $len;
 				$value = substr($packet, $offset);
@@ -392,13 +392,13 @@ class SessionManager{
 						break;
 				}
 			}elseif($id === ITCProtocol::PACKET_BLOCK_ADDRESS){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
 				$timeout = Binary::readInt(substr($packet, $offset, 4));
 				$this->blockAddress($address, $timeout);
 			}elseif($id === ITCProtocol::PACKET_UNBLOCK_ADDRESS){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
 				$this->unblockAddress($address);
 			}elseif($id === ITCProtocol::PACKET_RAW_FILTER){
