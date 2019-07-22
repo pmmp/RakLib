@@ -264,7 +264,7 @@ class SessionManager{
 						}
 					}catch(\Throwable $e){
 						$logger = $this->server->getLogger();
-						$logger->debug("Received garbage message from $address (" . $e->getMessage() . "): " . bin2hex($pk->buffer));
+						$logger->debug("Received garbage message from $address (" . $e->getMessage() . "): " . bin2hex($pk->getBuffer()));
 						foreach($this->server->getTrace(0, $e->getTrace()) as $line){
 							$logger->debug($line);
 						}
@@ -296,7 +296,7 @@ class SessionManager{
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
 		$packet->encode();
-		$this->sendBytes += $this->socket->writePacket($packet->buffer, $address->ip, $address->port);
+		$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
