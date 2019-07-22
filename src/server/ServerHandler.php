@@ -88,17 +88,17 @@ class ServerHandler{
 	 */
 	public function handlePacket() : bool{
 		if(($packet = $this->server->readThreadToMainPacket()) !== null){
-			$id = ord($packet{0});
+			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === RakLib::PACKET_ENCAPSULATED){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
-				$flags = ord($packet{$offset++});
+				$flags = ord($packet[$offset++]);
 				$buffer = substr($packet, $offset);
 				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromInternalBinary($buffer), $flags);
 			}elseif($id === RakLib::PACKET_RAW){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
 				$port = Binary::readShort(substr($packet, $offset, 2));
@@ -106,16 +106,16 @@ class ServerHandler{
 				$payload = substr($packet, $offset);
 				$this->instance->handleRaw($address, $port, $payload);
 			}elseif($id === RakLib::PACKET_SET_OPTION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$name = substr($packet, $offset, $len);
 				$offset += $len;
 				$value = substr($packet, $offset);
 				$this->instance->handleOption($name, $value);
 			}elseif($id === RakLib::PACKET_OPEN_SESSION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
 				$offset += $len;
 				$port = Binary::readShort(substr($packet, $offset, 2));
@@ -123,24 +123,24 @@ class ServerHandler{
 				$clientID = Binary::readLong(substr($packet, $offset, 8));
 				$this->instance->openSession($identifier, $address, $port, $clientID);
 			}elseif($id === RakLib::PACKET_CLOSE_SESSION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$reason = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, $reason);
 			}elseif($id === RakLib::PACKET_INVALID_SESSION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, "Invalid session");
 			}elseif($id === RakLib::PACKET_ACK_NOTIFICATION){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
 				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
 				$this->instance->notifyACK($identifier, $identifierACK);
 			}elseif($id === RakLib::PACKET_REPORT_PING){
-				$len = ord($packet{$offset++});
+				$len = ord($packet[$offset++]);
 				$identifier = substr($packet, $offset, $len);
 				$offset += $len;
 				$pingMS = Binary::readInt(substr($packet, $offset, 4));
