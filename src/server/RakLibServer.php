@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use function error_get_last;
 use pocketmine\snooze\SleeperNotifier;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
@@ -183,7 +184,12 @@ class RakLibServer extends \Thread{
 
 	public function shutdownHandler(){
 		if($this->shutdown !== true){
-			$this->getLogger()->emergency("RakLib crashed!");
+			$error = error_get_last();
+			if($error !== null){
+				$this->logger->emergency("Fatal error: " . $error["message"] . " in " . $error["file"] . " on line " . $error["line"]);
+			}else{
+				$this->logger->emergency("RakLib shutdown unexpectedly");
+			}
 		}
 	}
 
