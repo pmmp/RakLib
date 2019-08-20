@@ -109,7 +109,7 @@ class Socket{
 			if($errno === SOCKET_EWOULDBLOCK){
 				return null;
 			}
-			throw new SocketException("Failed to recv: " . trim(socket_strerror($errno)), $errno);
+			throw new SocketException("Failed to recv (errno $errno): " . trim(socket_strerror($errno)), $errno);
 		}
 		return $buffer;
 	}
@@ -126,7 +126,7 @@ class Socket{
 		$result = @socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
 		if($result === false){
 			$errno = socket_last_error($this->socket);
-			throw new SocketException("Failed to send to $dest $port: " . trim(socket_strerror($errno)), $errno);
+			throw new SocketException("Failed to send to $dest $port (errno $errno): " . trim(socket_strerror($errno)), $errno);
 		}
 		return $result;
 	}
