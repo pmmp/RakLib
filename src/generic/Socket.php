@@ -105,10 +105,16 @@ class Socket{
 	 * @param string $dest
 	 * @param int    $port
 	 *
-	 * @return int|bool
+	 * @return int
+	 * @throws SocketException
 	 */
-	public function writePacket(string $buffer, string $dest, int $port){
-		return socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
+	public function writePacket(string $buffer, string $dest, int $port) : int{
+		$result = @socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
+		if($result === false){
+			$errno = socket_last_error($this->socket);
+			throw new SocketException("Failed to send payload to $dest $port: " . trim(socket_strerror($errno), $errno));
+		}
+		return $result;
 	}
 
 	/**
