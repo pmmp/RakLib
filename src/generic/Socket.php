@@ -36,6 +36,7 @@ use const SO_RCVBUF;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
 use const SOCKET_EADDRINUSE;
+use const SOCKET_EWOULDBLOCK;
 use const SOL_SOCKET;
 use const SOL_UDP;
 
@@ -90,14 +91,22 @@ class Socket{
 	}
 
 	/**
-	 * @param string &$buffer
 	 * @param string &$source
 	 * @param int    &$port
 	 *
-	 * @return int|bool
+	 * @return string|null
+	 * @throws SocketException
 	 */
-	public function readPacket(?string &$buffer, ?string &$source, ?int &$port){
-		return @socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
+	public function readPacket(?string &$source, ?int &$port) : ?string{
+		$buffer = "";
+		if(@socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port) === false){
+			$errno = socket_last_error($this->socket);
+			if($errno === SOCKET_EWOULDBLOCK){
+				return null;
+			}
+			throw new SocketException("Failed to recv: " . trim(socket_strerror($errno)), $errno);
+		}
+		return $buffer;
 	}
 
 	/**

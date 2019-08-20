@@ -20,6 +20,7 @@ namespace raklib\server;
 use pocketmine\utils\Binary;
 use pocketmine\utils\BinaryDataException;
 use raklib\generic\Socket;
+use raklib\generic\SocketException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
@@ -38,15 +39,12 @@ use function microtime;
 use function ord;
 use function preg_match;
 use function serialize;
-use function socket_strerror;
 use function strlen;
 use function substr;
 use function time;
 use function time_sleep_until;
-use function trim;
 use const PHP_INT_MAX;
 use const SOCKET_ECONNRESET;
-use const SOCKET_EWOULDBLOCK;
 
 class SessionManager{
 
@@ -214,18 +212,21 @@ class SessionManager{
 	private function receivePacket() : bool{
 		$address = $this->reusableAddress;
 
-		$len = $this->socket->readPacket($buffer, $address->ip, $address->port);
-		if($len === false){
-			$error = $this->socket->getLastError();
-			if($error === SOCKET_EWOULDBLOCK){ //no data
-				return false;
-			}elseif($error === SOCKET_ECONNRESET){ //client disconnected improperly, maybe crash or lost connection
+		try{
+			$buffer = $this->socket->readPacket($address->ip, $address->port);
+		}catch(SocketException $e){
+			$error = $e->getCode();
+			if($error === SOCKET_ECONNRESET){ //client disconnected improperly, maybe crash or lost connection
 				return true;
 			}
 
-			$this->getLogger()->debug("Socket error occurred while trying to recv ($error): " . trim(socket_strerror($error)));
+			$this->getLogger()->debug($e->getMessage());
 			return false;
 		}
+		if($buffer === null){
+			return false; //no data
+		}
+		$len = strlen($buffer);
 
 		$this->receiveBytes += $len;
 		if(isset($this->block[$address->ip])){
