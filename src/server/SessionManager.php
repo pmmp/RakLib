@@ -293,7 +293,11 @@ class SessionManager{
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
 		$packet->encode();
-		$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
+		try{
+			$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
+		}catch(SocketException $e){
+			$this->getLogger()->debug($e->getMessage());
+		}
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
@@ -363,7 +367,11 @@ class SessionManager{
 				$port = Binary::readShort(substr($packet, $offset, 2));
 				$offset += 2;
 				$payload = substr($packet, $offset);
-				$this->socket->writePacket($payload, $address, $port);
+				try{
+					$this->socket->writePacket($payload, $address, $port);
+				}catch(SocketException $e){
+					$this->getLogger()->debug($e->getMessage());
+				}
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				if(isset($this->sessions[$identifier])){
