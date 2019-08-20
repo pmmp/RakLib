@@ -112,7 +112,7 @@ class Socket{
 		$result = @socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
 		if($result === false){
 			$errno = socket_last_error($this->socket);
-			throw new SocketException("Failed to send payload to $dest $port: " . trim(socket_strerror($errno), $errno));
+			throw new SocketException("Failed to send to $dest $port: " . trim(socket_strerror($errno)), $errno);
 		}
 		return $result;
 	}
