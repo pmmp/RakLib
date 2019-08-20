@@ -48,6 +48,11 @@ class Socket{
 	 */
 	private $bindAddress;
 
+	/**
+	 * @param InternetAddress $bindAddress
+	 *
+	 * @throws SocketException
+	 */
 	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
 		$this->socket = socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
@@ -61,9 +66,9 @@ class Socket{
 		}else{
 			$error = socket_last_error($this->socket);
 			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
-				throw new \RuntimeException("Failed to bind socket: Something else is already running on $bindAddress");
+				throw new SocketException("Failed to bind socket: Something else is already running on $bindAddress", $error);
 			}
-			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
+			throw new SocketException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror($error)), $error);
 		}
 		socket_set_nonblock($this->socket);
 	}
