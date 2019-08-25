@@ -132,7 +132,7 @@ class OfflineMessageHandler{
 		$pk = $this->packetPool[ord($buffer[0])];
 		if($pk !== null){
 			$pk = clone $pk;
-			$pk->buffer = $buffer;
+			$pk->setBuffer($buffer);
 			return $pk;
 		}
 
