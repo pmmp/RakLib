@@ -50,7 +50,7 @@ class Datagram extends Packet{
 	protected function encodePayload() : void{
 		$this->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
-			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : (string) $packet);
+			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : $packet);
 		}
 	}
 
