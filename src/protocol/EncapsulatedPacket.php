@@ -165,7 +165,14 @@ class EncapsulatedPacket{
 	}
 
 	public function getTotalLength() : int{
-		return 3 + strlen($this->buffer) + ($this->messageIndex !== null ? 3 : 0) + ($this->orderIndex !== null ? 4 : 0) + ($this->hasSplit ? 10 : 0);
+		return
+			1 + //reliability
+			2 + //length
+			(PacketReliability::isReliable($this->reliability) ? 3 : 0) + //message index
+			(PacketReliability::isSequenced($this->reliability) ? 3 : 0) + //sequence index
+			(PacketReliability::isSequencedOrOrdered($this->reliability) ? 3 + 1 : 0) + //order index (3) + order channel (1)
+			($this->hasSplit ? 4 + 2 + 4 : 0) + //split count (4) + split ID (2) + split index (4)
+			strlen($this->buffer);
 	}
 
 	public function __toString() : string{
