@@ -10,6 +10,7 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": "~3.2.0",
 		"ext-sockets": "*",
+		"pocketmine/log": "dev-master",
 		"pocketmine/spl": "dev-master",
 		"pocketmine/binaryutils": "dev-master",
 		"pocketmine/snooze": "^0.1.0"
@@ -31,6 +32,10 @@
 		{
 			"type": "vcs",
 			"url": "https://github.com/pmmp/Snooze"
+		},
+		{
+			"type": "vcs",
+			"url": "https://github.com/pmmp/Log"
 		}
 	]
 }
