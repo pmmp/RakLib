@@ -112,7 +112,7 @@ class Session{
 	/** @var Datagram[] */
 	private $recoveryQueue = [];
 
-	/** @var EncapsulatedPacket[][] */
+	/** @var (EncapsulatedPacket|null)[][] */
 	private $splitPackets = [];
 
 	/** @var int[][] */
@@ -416,44 +416,51 @@ class Session{
 	 * @return null|EncapsulatedPacket Reassembled packet if we have all the parts, null otherwise.
 	 */
 	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{
-		if($packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitIndex >= self::MAX_SPLIT_SIZE or $packet->splitIndex < 0){
+		if(
+			$packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitCount < 0 or
+			$packet->splitIndex >= $packet->splitCount or $packet->splitIndex < 0
+		){
 			$this->logger->debug("Invalid split packet part from " . $this->address . ", too many parts or invalid split index (part index $packet->splitIndex, part count $packet->splitCount)");
 			return null;
 		}
-
-		//TODO: this needs to be more strict about split packet part validity
 
 		if(!isset($this->splitPackets[$packet->splitID])){
 			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
 				$this->logger->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
 				return null;
 			}
-			$this->splitPackets[$packet->splitID] = [$packet->splitIndex => $packet];
-		}else{
-			$this->splitPackets[$packet->splitID][$packet->splitIndex] = $packet;
+			$this->splitPackets[$packet->splitID] = array_fill(0, $packet->splitCount, null);
+		}elseif(count($this->splitPackets[$packet->splitID]) !== $packet->splitCount){
+			$this->sessionManager->getLogger()->debug("Wrong split count $packet->splitCount for split packet $packet->splitID from $this->address, expected " . count($this->splitPackets[$packet->splitID]));
+			return null;
 		}
 
-		if(count($this->splitPackets[$packet->splitID]) === $packet->splitCount){ //got all parts, reassemble the packet
-			$pk = new EncapsulatedPacket();
-			$pk->buffer = "";
+		$this->splitPackets[$packet->splitID][$packet->splitIndex] = $packet;
 
-			$pk->reliability = $packet->reliability;
-			$pk->messageIndex = $packet->messageIndex;
-			$pk->sequenceIndex = $packet->sequenceIndex;
-			$pk->orderIndex = $packet->orderIndex;
-			$pk->orderChannel = $packet->orderChannel;
-
-			for($i = 0; $i < $packet->splitCount; ++$i){
-				$pk->buffer .= $this->splitPackets[$packet->splitID][$i]->buffer;
+		foreach($this->splitPackets[$packet->splitID] as $splitIndex => $part){
+			if($part === null){
+				return null;
 			}
-
-			$pk->length = strlen($pk->buffer);
-			unset($this->splitPackets[$packet->splitID]);
-
-			return $pk;
 		}
 
-		return null;
+		//got all parts, reassemble the packet
+		$pk = new EncapsulatedPacket();
+		$pk->buffer = "";
+
+		$pk->reliability = $packet->reliability;
+		$pk->messageIndex = $packet->messageIndex;
+		$pk->sequenceIndex = $packet->sequenceIndex;
+		$pk->orderIndex = $packet->orderIndex;
+		$pk->orderChannel = $packet->orderChannel;
+
+		for($i = 0; $i < $packet->splitCount; ++$i){
+			$pk->buffer .= $this->splitPackets[$packet->splitID][$i]->buffer;
+		}
+
+		$pk->length = strlen($pk->buffer);
+		unset($this->splitPackets[$packet->splitID]);
+
+		return $pk;
 	}
 
 	private function handleEncapsulatedPacket(EncapsulatedPacket $packet) : void{
