@@ -1,0 +1,21 @@
+parameters:
+	level: 5
+	paths:
+		- src
+	ignoreErrors:
+		-
+			message: "#^Cannot access an offset on Threaded\\.$#"
+			count: 2
+			path: src/server/RakLibServer.php
+
+		-
+			message: "#^Call to function assert\\(\\) with false and 'received packet…' will always evaluate to false\\.$#"
+			count: 1
+			path: src/server/Session.php
+
+		-
+			#bad assumption that having return type = no side effects
+			message: "#^Negated boolean expression is always true\\.$#"
+			count: 3
+			path: src/server/SessionManager.php
+

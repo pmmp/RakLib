@@ -96,8 +96,8 @@ class Socket{
 	}
 
 	/**
-	 * @param string &$source
-	 * @param int    &$port
+	 * @param string $source reference parameter
+	 * @param int    $port reference parameter
 	 *
 	 * @return string|null
 	 * @throws SocketException

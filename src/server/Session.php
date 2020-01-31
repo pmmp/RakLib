@@ -669,7 +669,6 @@ class Session{
 
 			$this->logger->debug("Closed session for $this->address");
 			$this->sessionManager->removeSessionInternal($this);
-			$this->sessionManager = null;
 		}
 	}
 }
