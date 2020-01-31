@@ -111,7 +111,7 @@ abstract class Packet extends BinaryStream{
 	abstract protected function decodePayload() : void;
 
 	public function clean(){
-		$this->buffer = null;
+		$this->buffer = "";
 		$this->offset = 0;
 		$this->sendTime = null;
 
