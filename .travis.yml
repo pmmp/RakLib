@@ -1,0 +1,27 @@
+language: php
+
+php:
+ - 7.2
+ - 7.3
+
+before_script:
+ - git clone https://github.com/pmmp/pthreads.git
+ - cd pthreads
+ - git checkout 46962cf9c2d30b6e1e1ea50ca36de3df5d6d4e58
+ - phpize
+ - ./configure
+ - make
+ - make install
+ - cd ..
+ - echo "extension=pthreads.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+ - composer install --prefer-dist
+
+script:
+ - ./vendor/bin/phpstan analyze --no-progress
+
+cache:
+ directories:
+  - vendor
+
+notifications:
+ email: false
