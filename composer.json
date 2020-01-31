@@ -19,23 +19,5 @@
 		"psr-4": {
 			"raklib\\": "src/"
 		}
-	},
-	"repositories": [
-		{
-			"type": "vcs",
-			"url": "https://github.com/pmmp/SPL"
-		},
-		{
-			"type": "vcs",
-			"url": "https://github.com/pmmp/BinaryUtils"
-		},
-		{
-			"type": "vcs",
-			"url": "https://github.com/pmmp/Snooze"
-		},
-		{
-			"type": "vcs",
-			"url": "https://github.com/pmmp/Log"
-		}
-	]
+	}
 }
