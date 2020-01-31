@@ -10,7 +10,7 @@
 		"ext-bcmath": "*",
 		"ext-pthreads": "~3.2.0",
 		"ext-sockets": "*",
-		"pocketmine/spl": "^0.3.0",
+		"pocketmine/log": "^0.1.0",
 		"pocketmine/binaryutils": "^0.1.9",
 		"pocketmine/snooze": "^0.1.0"
 	},
