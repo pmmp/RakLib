@@ -38,11 +38,11 @@ class Datagram extends Packet{
 	/** @var int */
 	public $headerFlags = 0;
 
-	/** @var EncapsulatedPacket[] */
+	/** @var (EncapsulatedPacket|string)[] */
 	public $packets = [];
 
-	/** @var int */
-	public $seqNumber;
+	/** @var int|null */
+	public $seqNumber = null;
 
 	protected function encodeHeader() : void{
 		$this->putByte(self::BITFLAG_VALID | $this->headerFlags);
