@@ -15,6 +15,9 @@
 		"pocketmine/binaryutils": "dev-master",
 		"pocketmine/snooze": "^0.1.0"
 	},
+	"require-dev": {
+		"phpstan/phpstan": "^0.12.8"
+	},
 	"autoload": {
 		"psr-4": {
 			"raklib\\": "src/"
