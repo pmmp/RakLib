@@ -182,6 +182,9 @@ class RakLibServer extends \Thread{
 		return $this->externalQueue->shift();
 	}
 
+	/**
+	 * @return void
+	 */
 	public function shutdownHandler(){
 		if($this->shutdown !== true){
 			$error = error_get_last();
