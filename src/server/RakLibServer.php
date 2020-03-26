@@ -259,7 +259,7 @@ class RakLibServer extends \Thread{
 
 		$messages = [];
 		$j = 0;
-		for($i = (int) $start; isset($trace[$i]); ++$i, ++$j){
+		for($i = $start; isset($trace[$i]); ++$i, ++$j){
 			$params = "";
 			if(isset($trace[$i]["args"]) or isset($trace[$i]["params"])){
 				if(isset($trace[$i]["args"])){

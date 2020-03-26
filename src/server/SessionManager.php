@@ -163,11 +163,13 @@ class SessionManager{
 			 * when high traffic is coming either way. Yielding will occur after 100 messages.
 			 */
 			do{
-				for($stream = true, $i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
+				$stream = true;
+				for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
 					$stream = $this->receiveStream();
 				}
 
-				for($socket = true, $i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
+				$socket = true;
+				for($i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
 					$socket = $this->receivePacket();
 				}
 			}while(!$this->shutdown && ($stream || $socket));
@@ -258,9 +260,9 @@ class SessionManager{
 			$session = $this->getSession($address);
 			if($session !== null){
 				if(($pid & Datagram::BITFLAG_VALID) !== 0){
-					if($pid & Datagram::BITFLAG_ACK){
+					if(($pid & Datagram::BITFLAG_ACK) !== 0){
 						$session->handlePacket(new ACK($buffer));
-					}elseif($pid & Datagram::BITFLAG_NAK){
+					}elseif(($pid & Datagram::BITFLAG_NAK) !== 0){
 						$session->handlePacket(new NACK($buffer));
 					}else{
 						$session->handlePacket(new Datagram($buffer));
