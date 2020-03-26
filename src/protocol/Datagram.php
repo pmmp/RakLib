@@ -55,6 +55,9 @@ class Datagram extends Packet{
 		}
 	}
 
+	/**
+	 * @return int
+	 */
 	public function length(){
 		$length = 4;
 		foreach($this->packets as $packet){

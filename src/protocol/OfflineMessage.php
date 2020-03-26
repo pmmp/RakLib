@@ -23,10 +23,16 @@ abstract class OfflineMessage extends Packet{
 	/** @var string */
 	protected $magic;
 
+	/**
+	 * @return void
+	 */
 	protected function readMagic(){
 		$this->magic = $this->get(16);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function writeMagic(){
 		$this->put(RakLib::MAGIC);
 	}

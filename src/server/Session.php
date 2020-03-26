@@ -54,6 +54,7 @@ class Session{
 
 	private const CHANNEL_COUNT = 32;
 
+	/** @var int */
 	public static $WINDOW_SIZE = 2048;
 
 	/** @var int */

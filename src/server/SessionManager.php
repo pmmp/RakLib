@@ -96,6 +96,7 @@ class SessionManager{
 	/** @var int[] string (address) => int (number of packets) */
 	protected $ipSec = [];
 
+	/** @var bool */
 	public $portChecking = false;
 
 	/** @var int */
@@ -104,6 +105,7 @@ class SessionManager{
 	/** @var int */
 	protected $maxMtuSize;
 
+	/** @var InternetAddress */
 	protected $reusableAddress;
 
 	public function __construct(RakLibServer $server, UDPServerSocket $socket, int $maxMtuSize){
