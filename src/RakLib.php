@@ -45,8 +45,8 @@ foreach($exts as $ext => $name){
 	}
 }
 
-if(extension_loaded("pthreads")){
-	$pthreads_version = phpversion("pthreads");
+$pthreads_version = phpversion("pthreads");
+if($pthreads_version !== false){
 	if(substr_count($pthreads_version, ".") < 2){
 		$pthreads_version = "0.$pthreads_version";
 	}

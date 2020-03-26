@@ -362,6 +362,7 @@ class Session{
 
 		if(strlen($packet->buffer) > $maxSize){
 			$buffers = str_split($packet->buffer, $maxSize);
+			assert($buffers !== false);
 			$bufferCount = count($buffers);
 
 			$splitID = ++$this->splitID % 65536;
@@ -613,6 +614,7 @@ class Session{
 			}
 
 			foreach($packet->packets as $pk){
+				assert($pk instanceof EncapsulatedPacket);
 				$this->handleEncapsulatedPacket($pk);
 			}
 		}else{

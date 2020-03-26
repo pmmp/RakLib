@@ -114,7 +114,10 @@ class RakLibServer extends \Thread{
 		if(\Phar::running(true) !== ""){
 			$this->mainPath = \Phar::running(true);
 		}else{
-			$this->mainPath = realpath(getcwd()) . DIRECTORY_SEPARATOR;
+			if(($cwd = getcwd()) === false or ($realCwd = realpath($cwd)) === false){
+				throw new \RuntimeException("Failed to get current working directory");
+			}
+			$this->mainPath = $realCwd . DIRECTORY_SEPARATOR;
 		}
 
 		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;
