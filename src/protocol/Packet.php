@@ -125,15 +125,4 @@ abstract class Packet extends BinaryStream{
 	 * @throws BinaryDataException
 	 */
 	abstract protected function decodePayload() : void;
-
-	/**
-	 * @return $this
-	 */
-	public function clean(){
-		$this->buffer = "";
-		$this->offset = 0;
-		$this->sendTime = null;
-
-		return $this;
-	}
 }

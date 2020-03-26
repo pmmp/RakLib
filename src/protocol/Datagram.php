@@ -77,11 +77,4 @@ class Datagram extends Packet{
 			$this->packets[] = EncapsulatedPacket::fromBinary($this);
 		}
 	}
-
-	public function clean(){
-		$this->packets = [];
-		$this->seqNumber = null;
-
-		return parent::clean();
-	}
 }
