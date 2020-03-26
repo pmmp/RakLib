@@ -2,12 +2,8 @@ parameters:
 	level: 5
 	paths:
 		- src
+	reportUnmatchedIgnoredErrors: false #enabling this makes build results too volatile when phpstan bugs get fixed
 	ignoreErrors:
-		-
-			message: "#^Cannot access an offset on Threaded\\.$#"
-			count: 2
-			path: src/server/RakLibServer.php
-
 		-
 			message: "#^Call to function assert\\(\\) with false and 'received packet…' will always evaluate to false\\.$#"
 			count: 1
