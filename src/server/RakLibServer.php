@@ -190,8 +190,8 @@ class RakLibServer extends \Thread{
 		return $this->crashInfo;
 	}
 
-	private function setCrashInfo(\Throwable $e){
-		$this->synchronized(function($e){
+	private function setCrashInfo(\Throwable $e) : void{
+		$this->synchronized(function(\Throwable $e) : void{
 			$this->crashInfo = $e;
 			$this->notify();
 		}, $e);
@@ -244,7 +244,7 @@ class RakLibServer extends \Thread{
 
 	public function startAndWait(int $options = PTHREADS_INHERIT_NONE) : void{
 		$this->start($options);
-		$this->synchronized(function(){
+		$this->synchronized(function() : void{
 			while(!$this->ready and $this->crashInfo === null){
 				$this->wait();
 			}
@@ -269,7 +269,7 @@ class RakLibServer extends \Thread{
 
 			$socket = new Socket($this->address);
 			$manager = new SessionManager($this, $socket, $this->maxMtuSize);
-			$this->synchronized(function(){
+			$this->synchronized(function() : void{
 				$this->ready = true;
 				$this->notify();
 			});

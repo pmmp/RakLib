@@ -37,7 +37,7 @@ use function substr;
 class OfflineMessageHandler{
 	/** @var SessionManager */
 	private $sessionManager;
-	/** @var OfflineMessage[]|\SplFixedArray */
+	/** @var OfflineMessage[]|\SplFixedArray<OfflineMessage> */
 	private $packetPool;
 
 	public function __construct(SessionManager $manager){
