@@ -31,6 +31,7 @@ use const AF_INET6;
 #include <rules/RakLibPacket.h>
 
 abstract class Packet extends BinaryStream{
+	/** @var int */
 	public static $ID = -1;
 
 	/** @var float|null */
@@ -125,6 +126,9 @@ abstract class Packet extends BinaryStream{
 	 */
 	abstract protected function decodePayload() : void;
 
+	/**
+	 * @return $this
+	 */
 	public function clean(){
 		$this->buffer = "";
 		$this->offset = 0;

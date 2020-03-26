@@ -16,7 +16,8 @@
 		"pocketmine/snooze": "^0.1.0"
 	},
 	"require-dev": {
-		"phpstan/phpstan": "^0.12.18"
+		"phpstan/phpstan": "^0.12.18",
+		"phpstan/phpstan-strict-rules": "^0.12.2"
 	},
 	"autoload": {
 		"psr-4": {

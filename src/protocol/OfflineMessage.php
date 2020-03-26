@@ -31,11 +31,15 @@ abstract class OfflineMessage extends Packet{
 
 	/**
 	 * @throws BinaryDataException
+	 * @return void
 	 */
 	protected function readMagic(){
 		$this->magic = $this->get(16);
 	}
 
+	/**
+	 * @return void
+	 */
 	protected function writeMagic(){
 		$this->put(self::MAGIC);
 	}

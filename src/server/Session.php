@@ -54,6 +54,7 @@ class Session{
 
 	private const CHANNEL_COUNT = 32;
 
+	/** @var int */
 	public static $WINDOW_SIZE = 2048;
 
 	/** @var int */
@@ -209,7 +210,7 @@ class Session{
 		}
 
 		if($this->state === self::STATE_DISCONNECTING and (
-			(empty($this->ACKQueue) and empty($this->NACKQueue) and empty($this->packetToSend) and empty($this->recoveryQueue)) or
+			(count($this->ACKQueue) === 0 and count($this->NACKQueue) === 0 and count($this->packetToSend) === 0 and count($this->recoveryQueue) === 0) or
 			$this->disconnectionTime + 10 < $time)
 		){
 			$this->close();
@@ -508,7 +509,8 @@ class Session{
 				$this->receiveOrderedIndex[$packet->orderChannel] = $packet->orderIndex + 1;
 
 				$this->handleEncapsulatedPacketRoute($packet);
-				for($i = $this->receiveOrderedIndex[$packet->orderChannel]; isset($this->receiveOrderedPackets[$packet->orderChannel][$i]); ++$i){
+				$i = $this->receiveOrderedIndex[$packet->orderChannel];
+				for(; isset($this->receiveOrderedPackets[$packet->orderChannel][$i]); ++$i){
 					$this->handleEncapsulatedPacketRoute($this->receiveOrderedPackets[$packet->orderChannel][$i]);
 					unset($this->receiveOrderedPackets[$packet->orderChannel][$i]);
 				}

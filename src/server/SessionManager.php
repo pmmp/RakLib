@@ -90,6 +90,7 @@ class SessionManager{
 	/** @var string[] regex filters used to block out unwanted raw packets */
 	protected $rawPacketFilters = [];
 
+	/** @var bool */
 	public $portChecking = false;
 
 	/** @var int */
@@ -98,6 +99,7 @@ class SessionManager{
 	/** @var int */
 	protected $maxMtuSize;
 
+	/** @var InternetAddress */
 	protected $reusableAddress;
 
 	/** @var int */
@@ -154,11 +156,13 @@ class SessionManager{
 			 * when high traffic is coming either way. Yielding will occur after 100 messages.
 			 */
 			do{
-				for($stream = true, $i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
+				$stream = true;
+				for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
 					$stream = $this->receiveStream();
 				}
 
-				for($socket = true, $i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
+				$socket = true;
+				for($i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
 					$socket = $this->receivePacket();
 				}
 			}while(!$this->shutdown && ($stream || $socket));
@@ -251,9 +255,9 @@ class SessionManager{
 			if($session !== null){
 				$header = ord($buffer[0]);
 				if(($header & Datagram::BITFLAG_VALID) !== 0){
-					if($header & Datagram::BITFLAG_ACK){
+					if(($header & Datagram::BITFLAG_ACK) !== 0){
 						$session->handlePacket(new ACK($buffer));
-					}elseif($header & Datagram::BITFLAG_NAK){
+					}elseif(($header & Datagram::BITFLAG_NAK) !== 0){
 						$session->handlePacket(new NACK($buffer));
 					}else{
 						$session->handlePacket(new Datagram($buffer));

@@ -197,6 +197,12 @@ class RakLibServer extends \Thread{
 		}, $e);
 	}
 
+	/**
+	 * @param int $start
+	 * @param list<array<string, mixed>>|null $trace
+	 *
+	 * @return list<string>
+	 */
 	public function getTrace($start = 0, $trace = null){
 		if($trace === null){
 			if(function_exists("xdebug_get_function_stack")){
@@ -209,7 +215,7 @@ class RakLibServer extends \Thread{
 
 		$messages = [];
 		$j = 0;
-		for($i = (int) $start; isset($trace[$i]); ++$i, ++$j){
+		for($i = $start; isset($trace[$i]); ++$i, ++$j){
 			$params = "";
 			if(isset($trace[$i]["args"]) or isset($trace[$i]["params"])){
 				if(isset($trace[$i]["args"])){
@@ -227,6 +233,11 @@ class RakLibServer extends \Thread{
 		return $messages;
 	}
 
+	/**
+	 * @param string $path
+	 *
+	 * @return string
+	 */
 	public function cleanPath($path){
 		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
 	}
