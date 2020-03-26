@@ -1,5 +1,5 @@
 parameters:
-	level: 5
+	level: 6
 	paths:
 		- src
 	reportUnmatchedIgnoredErrors: false #enabling this makes build results too volatile when phpstan bugs get fixed
