@@ -55,7 +55,11 @@ class Socket{
 	 */
 	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
-		$this->socket = socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
+		$socket = @socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
+		if($socket === false){
+			throw new \RuntimeException("Failed to create socket: " . trim(socket_strerror(socket_last_error())));
+		}
+		$this->socket = $socket;
 
 		if($bindAddress->version === 6){
 			socket_set_option($this->socket, IPPROTO_IPV6, IPV6_V6ONLY, 1); //Don't map IPv4 to IPv6, the implementation can create another RakLib instance to handle IPv4

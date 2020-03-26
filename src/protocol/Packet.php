@@ -61,6 +61,9 @@ abstract class Packet extends BinaryStream{
 			$port = $this->getShort();
 			$this->getInt(); //flow info
 			$addr = inet_ntop($this->get(16));
+			if($addr === false){
+				throw new BinaryDataException("Failed to parse IPv6 address");
+			}
 			$this->getInt(); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
@@ -86,7 +89,11 @@ abstract class Packet extends BinaryStream{
 			$this->putLShort(AF_INET6);
 			$this->putShort($address->port);
 			$this->putInt(0);
-			$this->put(inet_pton($address->ip));
+			$rawIp = inet_pton($address->ip);
+			if($rawIp === false){
+				throw new \InvalidArgumentException("Invalid IPv6 address could not be encoded");
+			}
+			$this->put($rawIp);
 			$this->putInt(0);
 		}else{
 			throw new \InvalidArgumentException("IP version $address->version is not supported");
