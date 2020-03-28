@@ -119,7 +119,7 @@ class Session{
 			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
 		}
 		$this->sessionManager = $sessionManager;
-		$this->logger = $logger;
+		$this->logger = new \PrefixedLogger($logger, "Session: " . $address->toString());
 		$this->address = $address;
 		$this->id = $clientId;
 		$this->sendQueue = new Datagram();
@@ -463,7 +463,7 @@ class Session{
 			//TODO: the client will send an ACK for this, but we aren't handling it (debug spam)
 			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
 
-			$this->logger->debug("Closed session for $this->address");
+			$this->logger->debug("Closed session");
 			$this->sessionManager->removeSessionInternal($this);
 		}
 	}
