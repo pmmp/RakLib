@@ -40,6 +40,9 @@ use function microtime;
 use function ord;
 
 class Session{
+	public const MAX_SPLIT_PART_COUNT = 128;
+	public const MAX_CONCURRENT_SPLIT_COUNT = 4;
+
 	public const STATE_CONNECTING = 0;
 	public const STATE_CONNECTED = 1;
 	public const STATE_DISCONNECTING = 2;
@@ -107,7 +110,9 @@ class Session{
 			},
 			function(AcknowledgePacket $pk) : void{
 				$this->sendPacket($pk);
-			}
+			},
+			self::MAX_SPLIT_PART_COUNT,
+			self::MAX_CONCURRENT_SPLIT_COUNT
 		);
 		$this->sendLayer = new SendReliabilityLayer(
 			$mtuSize,

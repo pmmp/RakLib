@@ -29,8 +29,6 @@ use function count;
 use function strlen;
 
 final class ReceiveReliabilityLayer{
-	private const MAX_SPLIT_SIZE = 128;
-	private const MAX_SPLIT_COUNT = 4;
 
 	/** @var int */
 	public static $WINDOW_SIZE = 2048;
@@ -79,11 +77,16 @@ final class ReceiveReliabilityLayer{
 	/** @var (EncapsulatedPacket|null)[][] */
 	private $splitPackets = [];
 
+	/** @var int */
+	private $maxSplitPacketPartCount;
+	/** @var int */
+	private $maxConcurrentSplitPackets;
+
 	/**
 	 * @phpstan-param \Closure(EncapsulatedPacket) : void $onRecv
 	 * @phpstan-param \Closure(AcknowledgePacket) : void  $sendPacket
 	 */
-	public function __construct(\Logger $logger, \Closure $onRecv, \Closure $sendPacket){
+	public function __construct(\Logger $logger, \Closure $onRecv, \Closure $sendPacket, int $maxSplitPacketPartCount = PHP_INT_MAX, int $maxConcurrentSplitPackets = PHP_INT_MAX){
 		$this->logger = $logger;
 		$this->onRecv = $onRecv;
 		$this->sendPacket = $sendPacket;
@@ -99,6 +102,8 @@ final class ReceiveReliabilityLayer{
 
 		$this->receiveOrderedPackets = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, []);
 
+		$this->maxSplitPacketPartCount = $maxSplitPacketPartCount;
+		$this->maxConcurrentSplitPackets = $maxConcurrentSplitPackets;
 	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $pk) : void{
@@ -116,7 +121,7 @@ final class ReceiveReliabilityLayer{
 		$totalParts = $packet->splitInfo->getTotalPartCount();
 		$partIndex = $packet->splitInfo->getPartIndex();
 		if(
-			$totalParts >= self::MAX_SPLIT_SIZE or $totalParts < 0 or
+			$totalParts >= $this->maxSplitPacketPartCount or $totalParts < 0 or
 			$partIndex >= $totalParts or $partIndex < 0
 		){
 			$this->logger->debug("Invalid split packet part, too many parts or invalid split index (part index $partIndex, part count $totalParts)");
@@ -125,8 +130,8 @@ final class ReceiveReliabilityLayer{
 
 		$splitId = $packet->splitInfo->getId();
 		if(!isset($this->splitPackets[$splitId])){
-			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
-				$this->logger->debug("Ignored split packet part because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
+			if(count($this->splitPackets) >= $this->maxConcurrentSplitPackets){
+				$this->logger->debug("Ignored split packet part because reached concurrent split packet limit of $this->maxConcurrentSplitPackets");
 				return null;
 			}
 			$this->splitPackets[$splitId] = array_fill(0, $totalParts, null);
