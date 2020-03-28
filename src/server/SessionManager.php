@@ -27,6 +27,7 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
 use raklib\RakLib;
+use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
 use function bin2hex;
@@ -51,8 +52,6 @@ class SessionManager{
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
-	/** @var RakLibServer */
-	protected $server;
 	/** @var Socket */
 	protected $socket;
 
@@ -119,18 +118,20 @@ class SessionManager{
 	/** @var InterThreadChannelWriter */
 	private $sendInternalChannel;
 
-	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize, InterThreadChannelReader $recvChan, InterThreadChannelWriter $sendChan){
-		$this->server = $server;
+	/** @var ExceptionTraceCleaner */
+	private $traceCleaner;
+
+	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, InterThreadChannelReader $recvChan, InterThreadChannelWriter $sendChan, ExceptionTraceCleaner $traceCleaner){
+		$this->serverId = $serverId;
+		$this->logger = $logger;
 		$this->socket = $socket;
-		$this->logger = $server->getLogger();
-		$this->serverId = $server->getServerId();
-		$this->protocolVersion = $server->getProtocolVersion();
-
-		$this->startTimeMS = (int) (microtime(true) * 1000);
 		$this->maxMtuSize = $maxMtuSize;
-
+		$this->protocolVersion = $protocolVersion;
 		$this->recvInternalChannel = $recvChan;
 		$this->sendInternalChannel = $sendChan;
+		$this->traceCleaner = $traceCleaner;
+
+		$this->startTimeMS = (int) (microtime(true) * 1000);
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
@@ -303,7 +304,7 @@ class SessionManager{
 			$this->logger->synchronized(function() use($address, $e, $buffer): void{
 				$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
 				$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-				foreach($this->server->getTrace(0, $e->getTrace()) as $line){
+				foreach($this->traceCleaner->getTrace(0, $e->getTrace()) as $line){
 					$this->logger->debug($line);
 				}
 				$this->logger->error("Bad packet from $address: " . $e->getMessage());

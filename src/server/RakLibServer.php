@@ -20,25 +20,16 @@ namespace raklib\server;
 use pocketmine\snooze\SleeperNotifier;
 use raklib\generic\Socket;
 use raklib\RakLib;
+use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
-use function array_reverse;
 use function error_get_last;
 use function error_reporting;
-use function function_exists;
 use function gc_enable;
-use function get_class;
 use function getcwd;
-use function gettype;
 use function ini_set;
-use function is_object;
-use function method_exists;
 use function mt_rand;
 use function realpath;
 use function register_shutdown_function;
-use function str_replace;
-use function strval;
-use function substr;
-use function xdebug_get_function_stack;
 use const DIRECTORY_SEPARATOR;
 use const PHP_INT_MAX;
 use const PTHREADS_INHERIT_NONE;
@@ -181,51 +172,6 @@ class RakLibServer extends \Thread{
 		}, $e);
 	}
 
-	/**
-	 * @param int $start
-	 * @param list<array<string, mixed>>|null $trace
-	 *
-	 * @return list<string>
-	 */
-	public function getTrace($start = 0, $trace = null){
-		if($trace === null){
-			if(function_exists("xdebug_get_function_stack")){
-				$trace = array_reverse(xdebug_get_function_stack());
-			}else{
-				$e = new \Exception();
-				$trace = $e->getTrace();
-			}
-		}
-
-		$messages = [];
-		$j = 0;
-		for($i = $start; isset($trace[$i]); ++$i, ++$j){
-			$params = "";
-			if(isset($trace[$i]["args"]) or isset($trace[$i]["params"])){
-				if(isset($trace[$i]["args"])){
-					$args = $trace[$i]["args"];
-				}else{
-					$args = $trace[$i]["params"];
-				}
-				foreach($args as $name => $value){
-					$params .= (is_object($value) ? get_class($value) . " " . (method_exists($value, "__toString") ? $value->__toString() : "object") : gettype($value) . " " . @strval($value)) . ", ";
-				}
-			}
-			$messages[] = "#$j " . (isset($trace[$i]["file"]) ? $this->cleanPath($trace[$i]["file"]) : "") . "(" . (isset($trace[$i]["line"]) ? $trace[$i]["line"] : "") . "): " . (isset($trace[$i]["class"]) ? $trace[$i]["class"] . (($trace[$i]["type"] === "dynamic" or $trace[$i]["type"] === "->") ? "->" : "::") : "") . $trace[$i]["function"] . "(" . substr($params, 0, -2) . ")";
-		}
-
-		return $messages;
-	}
-
-	/**
-	 * @param string $path
-	 *
-	 * @return string
-	 */
-	public function cleanPath($path){
-		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
-	}
-
 	public function startAndWait(int $options = PTHREADS_INHERIT_NONE) : void{
 		$this->start($options);
 		$this->synchronized(function() : void{
@@ -250,9 +196,17 @@ class RakLibServer extends \Thread{
 			\ErrorUtils::setErrorExceptionHandler();
 			register_shutdown_function([$this, "shutdownHandler"]);
 
-
 			$socket = new Socket($this->address);
-			$manager = new SessionManager($this, $socket, $this->maxMtuSize, new InterThreadChannelReader($this->internalQueue), new InterThreadChannelWriter($this->externalQueue, $this->mainThreadNotifier));
+			$manager = new SessionManager(
+				$this->serverId,
+				$this->logger,
+				$socket,
+				$this->maxMtuSize,
+				$this->protocolVersion,
+				new InterThreadChannelReader($this->internalQueue),
+				new InterThreadChannelWriter($this->externalQueue, $this->mainThreadNotifier),
+				new ExceptionTraceCleaner($this->mainPath)
+			);
 			$this->synchronized(function() : void{
 				$this->ready = true;
 				$this->notify();
