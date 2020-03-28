@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use raklib\protocol\EncapsulatedPacket;
-
 interface ServerInstance{
 
 	/**
@@ -36,10 +34,10 @@ interface ServerInstance{
 	public function closeSession(int $sessionId, string $reason) : void;
 
 	/**
-	 * @param int                $sessionId
-	 * @param EncapsulatedPacket $packet
+	 * @param int    $sessionId
+	 * @param string $packet
 	 */
-	public function handleEncapsulated(int $sessionId, EncapsulatedPacket $packet) : void;
+	public function handleEncapsulated(int $sessionId, string $packet) : void;
 
 	/**
 	 * @param string $address

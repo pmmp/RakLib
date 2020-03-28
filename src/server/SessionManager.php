@@ -325,7 +325,7 @@ class SessionManager{
 	}
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet) : void{
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . $packet->toInternalBinary();
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . $packet->buffer;
 		$this->sendInternalChannel->write($buffer);
 	}
 
