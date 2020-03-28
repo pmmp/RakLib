@@ -154,25 +154,6 @@ class RakLibServer extends \Thread{
 		return $this->internalQueue;
 	}
 
-	public function pushMainToThreadPacket(string $str) : void{
-		$this->internalQueue[] = $str;
-	}
-
-	public function readMainToThreadPacket() : ?string{
-		return $this->internalQueue->shift();
-	}
-
-	public function pushThreadToMainPacket(string $str) : void{
-		$this->externalQueue[] = $str;
-		if($this->mainThreadNotifier !== null){
-			$this->mainThreadNotifier->wakeupSleeper();
-		}
-	}
-
-	public function readThreadToMainPacket() : ?string{
-		return $this->externalQueue->shift();
-	}
-
 	/**
 	 * @return void
 	 */
@@ -271,7 +252,7 @@ class RakLibServer extends \Thread{
 
 
 			$socket = new Socket($this->address);
-			$manager = new SessionManager($this, $socket, $this->maxMtuSize);
+			$manager = new SessionManager($this, $socket, $this->maxMtuSize, new InterThreadChannelReader($this->internalQueue), new InterThreadChannelWriter($this->externalQueue, $this->mainThreadNotifier));
 			$this->synchronized(function() : void{
 				$this->ready = true;
 				$this->notify();

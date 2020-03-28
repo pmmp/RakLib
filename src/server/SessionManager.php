@@ -105,12 +105,21 @@ class SessionManager{
 	/** @var int */
 	protected $nextSessionId = 0;
 
-	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize){
+	/** @var InterThreadChannelReader */
+	private $recvInternalChannel;
+
+	/** @var InterThreadChannelWriter */
+	private $sendInternalChannel;
+
+	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize, InterThreadChannelReader $recvChan, InterThreadChannelWriter $sendChan){
 		$this->server = $server;
 		$this->socket = $socket;
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
 		$this->maxMtuSize = $maxMtuSize;
+
+		$this->recvInternalChannel = $recvChan;
+		$this->sendInternalChannel = $sendChan;
 
 		$this->offlineMessageHandler = new OfflineMessageHandler($this);
 
@@ -306,33 +315,33 @@ class SessionManager{
 
 	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
 		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . chr($flags) . $packet->toInternalBinary();
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function streamRaw(InternetAddress $source, string $payload) : void{
 		$buffer = chr(ITCProtocol::PACKET_RAW) . chr(strlen($source->ip)) . $source->ip . Binary::writeShort($source->port) . $payload;
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	protected function streamClose(int $identifier, string $reason) : void{
 		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier) . chr(strlen($reason)) . $reason;
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	protected function streamInvalid(int $identifier) : void{
 		$buffer = chr(ITCProtocol::PACKET_INVALID_SESSION) . Binary::writeInt($identifier);
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	protected function streamOpen(Session $session) : void{
 		$address = $session->getAddress();
 		$buffer = chr(ITCProtocol::PACKET_OPEN_SESSION) . Binary::writeInt($session->getInternalId()) . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	protected function streamACK(int $identifier, int $identifierACK) : void{
 		$buffer = chr(ITCProtocol::PACKET_ACK_NOTIFICATION) . Binary::writeInt($identifier) . Binary::writeInt($identifierACK);
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	/**
@@ -341,16 +350,16 @@ class SessionManager{
 	 */
 	protected function streamOption(string $name, $value) : void{
 		$buffer = chr(ITCProtocol::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function streamPingMeasure(Session $session, int $pingMS) : void{
 		$buffer = chr(ITCProtocol::PACKET_REPORT_PING) . Binary::writeInt($session->getInternalId()) . Binary::writeInt($pingMS);
-		$this->server->pushThreadToMainPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function receiveStream() : bool{
-		if(($packet = $this->server->readMainToThreadPacket()) !== null){
+		if(($packet = $this->recvInternalChannel->read()) !== null){
 			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){

@@ -32,24 +32,34 @@ class ServerHandler{
 	/** @var ServerInstance */
 	protected $instance;
 
+	/** @var InterThreadChannelReader */
+	private $recvInternalChannel;
+
+	/** @var InterThreadChannelWriter */
+	private $sendInternalChannel;
+
 	public function __construct(RakLibServer $server, ServerInstance $instance){
 		$this->server = $server;
 		$this->instance = $instance;
+
+		//TODO: allow these to be injected?
+		$this->recvInternalChannel = new InterThreadChannelReader($server->getExternalQueue());
+		$this->sendInternalChannel = new InterThreadChannelWriter($server->getInternalQueue());
 	}
 
 	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
 		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($identifier) . chr($flags) . $packet->toInternalBinary();
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function sendRaw(string $address, int $port, string $payload) : void{
 		$buffer = chr(ITCProtocol::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function closeSession(int $identifier, string $reason) : void{
 		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier) . chr(strlen($reason)) . $reason;
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	/**
@@ -58,40 +68,40 @@ class ServerHandler{
 	 */
 	public function sendOption(string $name, $value) : void{
 		$buffer = chr(ITCProtocol::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function blockAddress(string $address, int $timeout) : void{
 		$buffer = chr(ITCProtocol::PACKET_BLOCK_ADDRESS) . chr(strlen($address)) . $address . Binary::writeInt($timeout);
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function unblockAddress(string $address) : void{
 		$buffer = chr(ITCProtocol::PACKET_UNBLOCK_ADDRESS) . chr(strlen($address)) . $address;
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 	}
 
 	public function addRawPacketFilter(string $regex) : void{
-		$this->server->pushMainToThreadPacket(chr(ITCProtocol::PACKET_RAW_FILTER) . $regex);
+		$this->sendInternalChannel->write(chr(ITCProtocol::PACKET_RAW_FILTER) . $regex);
 	}
 
 	public function shutdown() : void{
 		$buffer = chr(ITCProtocol::PACKET_SHUTDOWN);
-		$this->server->pushMainToThreadPacket($buffer);
+		$this->sendInternalChannel->write($buffer);
 		$this->server->shutdown();
 		$this->server->join();
 	}
 
 	public function emergencyShutdown() : void{
 		$this->server->shutdown();
-		$this->server->pushMainToThreadPacket(chr(ITCProtocol::PACKET_EMERGENCY_SHUTDOWN));
+		$this->sendInternalChannel->write(chr(ITCProtocol::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
 	/**
 	 * @return bool
 	 */
 	public function handlePacket() : bool{
-		if(($packet = $this->server->readThreadToMainPacket()) !== null){
+		if(($packet = $this->recvInternalChannel->read()) !== null){
 			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
