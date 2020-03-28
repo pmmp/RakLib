@@ -113,28 +113,31 @@ final class ReceiveReliabilityLayer{
 	 * @return null|EncapsulatedPacket Reassembled packet if we have all the parts, null otherwise.
 	 */
 	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{
+		$totalParts = $packet->splitInfo->getTotalPartCount();
+		$partIndex = $packet->splitInfo->getPartIndex();
 		if(
-			$packet->splitCount >= self::MAX_SPLIT_SIZE or $packet->splitCount < 0 or
-			$packet->splitIndex >= $packet->splitCount or $packet->splitIndex < 0
+			$totalParts >= self::MAX_SPLIT_SIZE or $totalParts < 0 or
+			$partIndex >= $totalParts or $partIndex < 0
 		){
-			$this->logger->debug("Invalid split packet part, too many parts or invalid split index (part index $packet->splitIndex, part count $packet->splitCount)");
+			$this->logger->debug("Invalid split packet part, too many parts or invalid split index (part index $partIndex, part count $totalParts)");
 			return null;
 		}
 
-		if(!isset($this->splitPackets[$packet->splitID])){
+		$splitId = $packet->splitInfo->getId();
+		if(!isset($this->splitPackets[$splitId])){
 			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
 				$this->logger->debug("Ignored split packet part because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
 				return null;
 			}
-			$this->splitPackets[$packet->splitID] = array_fill(0, $packet->splitCount, null);
-		}elseif(count($this->splitPackets[$packet->splitID]) !== $packet->splitCount){
-			$this->logger->debug("Wrong split count $packet->splitCount for split packet $packet->splitID, expected " . count($this->splitPackets[$packet->splitID]));
+			$this->splitPackets[$splitId] = array_fill(0, $totalParts, null);
+		}elseif(count($this->splitPackets[$splitId]) !== $totalParts){
+			$this->logger->debug("Wrong split count $totalParts for split packet $splitId, expected " . count($this->splitPackets[$splitId]));
 			return null;
 		}
 
-		$this->splitPackets[$packet->splitID][$packet->splitIndex] = $packet;
+		$this->splitPackets[$splitId][$partIndex] = $packet;
 
-		foreach($this->splitPackets[$packet->splitID] as $splitIndex => $part){
+		foreach($this->splitPackets[$splitId] as $splitIndex => $part){
 			if($part === null){
 				return null;
 			}
@@ -150,12 +153,12 @@ final class ReceiveReliabilityLayer{
 		$pk->orderIndex = $packet->orderIndex;
 		$pk->orderChannel = $packet->orderChannel;
 
-		for($i = 0; $i < $packet->splitCount; ++$i){
-			$pk->buffer .= $this->splitPackets[$packet->splitID][$i]->buffer;
+		for($i = 0; $i < $totalParts; ++$i){
+			$pk->buffer .= $this->splitPackets[$splitId][$i]->buffer;
 		}
 
 		$pk->length = strlen($pk->buffer);
-		unset($this->splitPackets[$packet->splitID]);
+		unset($this->splitPackets[$splitId]);
 
 		return $pk;
 	}
@@ -177,7 +180,7 @@ final class ReceiveReliabilityLayer{
 			}
 		}
 
-		if($packet->hasSplit and ($packet = $this->handleSplit($packet)) === null){
+		if($packet->splitInfo !== null and ($packet = $this->handleSplit($packet)) === null){
 			return;
 		}
 

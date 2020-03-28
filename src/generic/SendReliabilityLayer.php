@@ -22,6 +22,7 @@ use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\PacketReliability;
+use raklib\protocol\SplitPacketInfo;
 use raklib\RakLib;
 use function array_fill;
 use function assert;
@@ -161,11 +162,8 @@ final class SendReliabilityLayer{
 			$splitID = ++$this->splitID % 65536;
 			foreach($buffers as $count => $buffer){
 				$pk = new EncapsulatedPacket();
-				$pk->splitID = $splitID;
-				$pk->hasSplit = true;
-				$pk->splitCount = $bufferCount;
+				$pk->splitInfo = new SplitPacketInfo($splitID, $count, $bufferCount);
 				$pk->reliability = $packet->reliability;
-				$pk->splitIndex = $count;
 				$pk->buffer = $buffer;
 
 				if(PacketReliability::isReliable($pk->reliability)){
