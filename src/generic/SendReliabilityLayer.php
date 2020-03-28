@@ -216,9 +216,9 @@ final class SendReliabilityLayer{
 
 	public function needsUpdate() : bool{
 		return (
-			count($this->sendQueue->packets) === 0 and
-			count($this->packetToSend) === 0 and
-			count($this->recoveryQueue) === 0
+			count($this->sendQueue->packets) !== 0 or
+			count($this->packetToSend) !== 0 or
+			count($this->recoveryQueue) !== 0
 		);
 	}
 
