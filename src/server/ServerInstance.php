@@ -38,9 +38,8 @@ interface ServerInstance{
 	/**
 	 * @param int                $sessionId
 	 * @param EncapsulatedPacket $packet
-	 * @param int                $flags
 	 */
-	public function handleEncapsulated(int $sessionId, EncapsulatedPacket $packet, int $flags) : void;
+	public function handleEncapsulated(int $sessionId, EncapsulatedPacket $packet) : void;
 
 	/**
 	 * @param string $address

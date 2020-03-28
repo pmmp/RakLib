@@ -107,9 +107,8 @@ class ServerHandler{
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
-				$flags = ord($packet[$offset++]);
 				$buffer = substr($packet, $offset);
-				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromInternalBinary($buffer), $flags);
+				$this->instance->handleEncapsulated($identifier, EncapsulatedPacket::fromInternalBinary($buffer));
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);

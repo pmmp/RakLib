@@ -324,8 +324,8 @@ class SessionManager{
 		}
 	}
 
-	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . chr($flags) . $packet->toInternalBinary();
+	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet) : void{
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . $packet->toInternalBinary();
 		$this->sendInternalChannel->write($buffer);
 	}
 
