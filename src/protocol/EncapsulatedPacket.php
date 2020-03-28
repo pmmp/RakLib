@@ -39,8 +39,6 @@ class EncapsulatedPacket{
 
 	/** @var int */
 	public $reliability;
-	/** @var int */
-	public $length = 0;
 	/** @var int|null */
 	public $messageIndex;
 	/** @var int|null */

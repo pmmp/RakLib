@@ -157,7 +157,6 @@ final class ReceiveReliabilityLayer{
 			$pk->buffer .= $this->splitPackets[$splitId][$i]->buffer;
 		}
 
-		$pk->length = strlen($pk->buffer);
 		unset($this->splitPackets[$splitId]);
 
 		return $pk;
