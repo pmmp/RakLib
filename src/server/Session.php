@@ -138,7 +138,6 @@ class Session{
 				$this->handleEncapsulatedPacketRoute($pk);
 			},
 			function(AcknowledgePacket $pk) : void{
-				$this->logger->debug("Reliability layer sending " . get_class($pk));
 				$this->sendPacket($pk);
 			}
 		);
