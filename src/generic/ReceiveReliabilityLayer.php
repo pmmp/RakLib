@@ -50,9 +50,6 @@ final class ReceiveReliabilityLayer{
 	 */
 	private $sendPacket;
 
-	/** @var bool */
-	private $needsUpdate = false;
-
 	/** @var int */
 	private $windowStart;
 	/** @var int */
@@ -227,7 +224,6 @@ final class ReceiveReliabilityLayer{
 	}
 
 	public function onDatagram(Datagram $packet) : void{
-		$this->needsUpdate = true;
 		$packet->decode();
 
 		if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->ACKQueue[$packet->seqNumber])){
@@ -292,11 +288,9 @@ final class ReceiveReliabilityLayer{
 			($this->sendPacket)($pk);
 			$this->NACKQueue = [];
 		}
-
-		$this->needsUpdate = false;
 	}
 
 	public function needsUpdate() : bool{
-		return $this->needsUpdate;
+		return count($this->ACKQueue) !== 0 or count($this->NACKQueue) !== 0;
 	}
 }
