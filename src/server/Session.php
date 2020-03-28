@@ -428,12 +428,12 @@ class Session{
 
 		if(!isset($this->splitPackets[$packet->splitID])){
 			if(count($this->splitPackets) >= self::MAX_SPLIT_COUNT){
-				$this->logger->debug("Ignored split packet part from " . $this->address . " because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
+				$this->logger->debug("Ignored split packet part because reached concurrent split packet limit of " . self::MAX_SPLIT_COUNT);
 				return null;
 			}
 			$this->splitPackets[$packet->splitID] = array_fill(0, $packet->splitCount, null);
 		}elseif(count($this->splitPackets[$packet->splitID]) !== $packet->splitCount){
-			$this->sessionManager->getLogger()->debug("Wrong split count $packet->splitCount for split packet $packet->splitID from $this->address, expected " . count($this->splitPackets[$packet->splitID]));
+			$this->logger->debug("Wrong split count $packet->splitCount for split packet $packet->splitID, expected " . count($this->splitPackets[$packet->splitID]));
 			return null;
 		}
 
@@ -488,7 +488,7 @@ class Session{
 
 		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= self::CHANNEL_COUNT)){
 			//TODO: this should result in peer banning
-			$this->sessionManager->getLogger()->debug("Invalid packet from " . $this->address . ", bad order channel ($packet->orderChannel)");
+			$this->logger->debug("Invalid packet, bad order channel ($packet->orderChannel)");
 			return;
 		}
 
