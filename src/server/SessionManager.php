@@ -56,6 +56,14 @@ class SessionManager{
 	/** @var Socket */
 	protected $socket;
 
+	/** @var \ThreadedLogger */
+	protected $logger;
+
+	/** @var int */
+	protected $serverId;
+	/** @var int */
+	protected $protocolVersion;
+
 	/** @var int */
 	protected $receiveBytes = 0;
 	/** @var int */
@@ -114,6 +122,9 @@ class SessionManager{
 	public function __construct(RakLibServer $server, Socket $socket, int $maxMtuSize, InterThreadChannelReader $recvChan, InterThreadChannelWriter $sendChan){
 		$this->server = $server;
 		$this->socket = $socket;
+		$this->logger = $server->getLogger();
+		$this->serverId = $server->getServerId();
+		$this->protocolVersion = $server->getProtocolVersion();
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
 		$this->maxMtuSize = $maxMtuSize;
@@ -143,11 +154,11 @@ class SessionManager{
 	}
 
 	public function getProtocolVersion() : int{
-		return $this->server->getProtocolVersion();
+		return $this->protocolVersion;
 	}
 
 	public function getLogger() : \ThreadedLogger{
-		return $this->server->getLogger();
+		return $this->logger;
 	}
 
 	public function run() : void{
@@ -233,7 +244,7 @@ class SessionManager{
 				return true;
 			}
 
-			$this->getLogger()->debug($e->getMessage());
+			$this->logger->debug($e->getMessage());
 			return false;
 		}
 		if($buffer === null){
@@ -272,7 +283,7 @@ class SessionManager{
 						$session->handlePacket(new Datagram($buffer));
 					}
 				}else{
-					$this->server->getLogger()->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
+					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
 				$handled = false;
@@ -285,18 +296,17 @@ class SessionManager{
 				}
 
 				if(!$handled){
-					$this->server->getLogger()->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
+					$this->logger->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}
 		}catch(BinaryDataException $e){
-			$logger = $this->getLogger();
-			$logger->synchronized(function() use($logger, $address, $e, $buffer): void{
-				$logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
-				$logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+			$this->logger->synchronized(function() use($address, $e, $buffer): void{
+				$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+				$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
 				foreach($this->server->getTrace(0, $e->getTrace()) as $line){
-					$logger->debug($line);
+					$this->logger->debug($line);
 				}
-				$logger->error("Bad packet from $address: " . $e->getMessage());
+				$this->logger->error("Bad packet from $address: " . $e->getMessage());
 			});
 			$this->blockAddress($address->ip, 5);
 		}
@@ -309,7 +319,7 @@ class SessionManager{
 		try{
 			$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
 		}catch(SocketException $e){
-			$this->getLogger()->debug($e->getMessage());
+			$this->logger->debug($e->getMessage());
 		}
 	}
 
@@ -383,7 +393,7 @@ class SessionManager{
 				try{
 					$this->socket->writePacket($payload, $address, $port);
 				}catch(SocketException $e){
-					$this->getLogger()->debug($e->getMessage());
+					$this->logger->debug($e->getMessage());
 				}
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
@@ -436,7 +446,7 @@ class SessionManager{
 			}elseif($id === ITCProtocol::PACKET_EMERGENCY_SHUTDOWN){
 				$this->shutdown = true;
 			}else{
-				$this->getLogger()->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
+				$this->logger->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
 			}
 
 			return true;
@@ -451,7 +461,7 @@ class SessionManager{
 			if($timeout === -1){
 				$final = PHP_INT_MAX;
 			}else{
-				$this->getLogger()->notice("Blocked $address for $timeout seconds");
+				$this->logger->notice("Blocked $address for $timeout seconds");
 			}
 			$this->block[$address] = $final;
 		}elseif($this->block[$address] < $final){
@@ -461,7 +471,7 @@ class SessionManager{
 
 	public function unblockAddress(string $address) : void{
 		unset($this->block[$address]);
-		$this->getLogger()->debug("Unblocked $address");
+		$this->logger->debug("Unblocked $address");
 	}
 
 	/**
@@ -485,10 +495,10 @@ class SessionManager{
 			$this->nextSessionId &= 0x7fffffff; //we don't expect more than 2 billion simultaneous connections, and this fits in 4 bytes
 		}
 
-		$session = new Session($this, $this->server->getLogger(), clone $address, $clientId, $mtuSize, $this->nextSessionId);
+		$session = new Session($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
 		$this->sessionsByAddress[$address->toString()] = $session;
 		$this->sessions[$this->nextSessionId] = $session;
-		$this->getLogger()->debug("Created session for $address with MTU size $mtuSize");
+		$this->logger->debug("Created session for $address with MTU size $mtuSize");
 
 		return $session;
 	}
@@ -532,6 +542,6 @@ class SessionManager{
 	}
 
 	public function getID() : int{
-		return $this->server->getServerId();
+		return $this->serverId;
 	}
 }
