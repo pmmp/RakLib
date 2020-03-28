@@ -179,7 +179,7 @@ class Session{
 		}
 
 		if($this->state === self::STATE_DISCONNECTING and (
-			(!$this->recvLayer->needsUpdate() and count($this->packetToSend) === 0 and count($this->recoveryQueue) === 0) or
+			(count($this->sendQueue->packets) === 0 and !$this->recvLayer->needsUpdate() and count($this->packetToSend) === 0 and count($this->recoveryQueue) === 0) or
 			$this->disconnectionTime + 10 < $time)
 		){
 			$this->close();
