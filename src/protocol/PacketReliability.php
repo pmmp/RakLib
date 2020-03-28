@@ -34,6 +34,8 @@ abstract class PacketReliability{
 	public const RELIABLE_WITH_ACK_RECEIPT = 6;
 	public const RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
 
+	public const MAX_ORDER_CHANNELS = 32;
+
 	public static function isReliable(int $reliability) : bool{
 		return (
 			$reliability === self::RELIABLE or
