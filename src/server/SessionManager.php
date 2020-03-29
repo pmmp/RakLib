@@ -27,6 +27,7 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
+use raklib\server\UserToRakLibThreadMessageProtocol as ITCProtocol;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -366,11 +367,6 @@ class SessionManager{
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				if(isset($this->sessions[$identifier])){
 					$this->sessions[$identifier]->flagForDisconnection();
-				}
-			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
-				if(isset($this->sessions[$identifier])){
-					$this->removeSession($this->sessions[$identifier]);
 				}
 			}elseif($id === ITCProtocol::PACKET_SET_OPTION){
 				$len = ord($packet[$offset++]);

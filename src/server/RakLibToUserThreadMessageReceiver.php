@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\Binary;
+use raklib\server\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use function ord;
 use function substr;
 
@@ -76,9 +77,6 @@ final class RakLibToUserThreadMessageReceiver{
 				$len = ord($packet[$offset++]);
 				$reason = substr($packet, $offset, $len);
 				$this->instance->closeSession($identifier, $reason);
-			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
-				$this->instance->closeSession($identifier, "Invalid session");
 			}elseif($id === ITCProtocol::PACKET_ACK_NOTIFICATION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;

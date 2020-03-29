@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\Binary;
+use raklib\server\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use function chr;
 use function strlen;
 

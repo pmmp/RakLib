@@ -25,14 +25,15 @@ namespace raklib\server;
 
 /**
  * @internal
- * This interface contains descriptions of ITC packets used to transmit data into RakLib from the main thread.
+ * This interface contains descriptions of ITC packets used to transmit data from RakLib to the main thread.
  */
-interface ITCProtocol{
+final class RakLibToUserThreadMessageProtocol{
+
+	private function __construct(){
+		//NOOP
+	}
 
 	/*
-	 * These internal "packets" DO NOT exist in the RakNet protocol. They are used by the RakLib API to communicate
-	 * messages between the RakLib thread and the implementation's thread.
-	 *
 	 * Internal Packet:
 	 * byte (packet ID)
 	 * byte[] (payload)
@@ -41,8 +42,7 @@ interface ITCProtocol{
 	/*
 	 * ENCAPSULATED payload:
 	 * int32 (internal session ID)
-	 * byte (flags, last 3 bits, priority)
-	 * payload (binary internal EncapsulatedPacket)
+	 * byte[] (user packet payload)
 	 */
 	public const PACKET_ENCAPSULATED = 0x01;
 
@@ -64,23 +64,11 @@ interface ITCProtocol{
 	public const PACKET_CLOSE_SESSION = 0x03;
 
 	/*
-	 * INVALID_SESSION payload:
-	 * int32 (internal session ID)
-	 */
-	public const PACKET_INVALID_SESSION = 0x04;
-
-	/* TODO: implement this
-	 * SEND_QUEUE payload:
-	 * int32 (internal session ID)
-	 */
-	public const PACKET_SEND_QUEUE = 0x05;
-
-	/*
 	 * ACK_NOTIFICATION payload:
 	 * int32 (internal session ID)
 	 * int32 (identifierACK)
 	 */
-	public const PACKET_ACK_NOTIFICATION = 0x06;
+	public const PACKET_ACK_NOTIFICATION = 0x04;
 
 	/*
 	 * SET_OPTION payload:
@@ -88,7 +76,7 @@ interface ITCProtocol{
 	 * byte[] (option name)
 	 * byte[] (option value)
 	 */
-	public const PACKET_SET_OPTION = 0x07;
+	public const PACKET_SET_OPTION = 0x05;
 
 	/*
 	 * RAW payload:
@@ -97,47 +85,13 @@ interface ITCProtocol{
 	 * short (port)
 	 * byte[] (payload)
 	 */
-	public const PACKET_RAW = 0x08;
-
-	/*
-	 * BLOCK_ADDRESS payload:
-	 * byte (address length)
-	 * byte[] (address)
-	 * int (timeout)
-	 */
-	public const PACKET_BLOCK_ADDRESS = 0x09;
-
-	/*
-	 * UNBLOCK_ADDRESS payload:
-	 * byte (address length)
-	 * byte[] (address)
-	 */
-	public const PACKET_UNBLOCK_ADDRESS = 0x10;
+	public const PACKET_RAW = 0x06;
 
 	/*
 	 * REPORT_PING payload:
 	 * int32 (internal session ID)
 	 * int32 (measured latency in MS)
 	 */
-	public const PACKET_REPORT_PING = 0x11;
+	public const PACKET_REPORT_PING = 0x07;
 
-	/*
-	 * RAW_FILTER payload:
-	 * byte[] (pattern)
-	 */
-	public const PACKET_RAW_FILTER = 0x12;
-
-	/*
-	 * No payload
-	 *
-	 * Sends the disconnect message, removes sessions correctly, closes sockets.
-	 */
-	public const PACKET_SHUTDOWN = 0x7e;
-
-	/*
-	 * No payload
-	 *
-	 * Leaves everything as-is and halts, other Threads can be in a post-crash condition.
-	 */
-	public const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
 }

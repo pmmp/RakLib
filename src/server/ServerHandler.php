@@ -21,6 +21,7 @@ use pocketmine\utils\Binary;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\PacketReliability;
 use raklib\RakLib;
+use raklib\server\UserToRakLibThreadMessageProtocol as ITCProtocol;
 use function chr;
 use function strlen;
 
