@@ -23,14 +23,14 @@ use function ord;
 use function substr;
 
 final class RakLibToUserThreadMessageReceiver{
-	/** @var ServerInstance */
-	protected $instance;
+	/** @var ServerEventListener */
+	protected $eventListener;
 
 	/** @var InterThreadChannelReader */
 	private $channel;
 
-	public function __construct(ServerInstance $instance, InterThreadChannelReader $channel){
-		$this->instance = $instance;
+	public function __construct(ServerEventListener $eventListener, InterThreadChannelReader $channel){
+		$this->eventListener = $eventListener;
 
 		$this->channel = $channel;
 	}
@@ -46,7 +46,7 @@ final class RakLibToUserThreadMessageReceiver{
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$buffer = substr($packet, $offset);
-				$this->instance->handleEncapsulated($identifier, $buffer);
+				$this->eventListener->handleEncapsulated($identifier, $buffer);
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
@@ -54,13 +54,13 @@ final class RakLibToUserThreadMessageReceiver{
 				$port = Binary::readShort(substr($packet, $offset, 2));
 				$offset += 2;
 				$payload = substr($packet, $offset);
-				$this->instance->handleRaw($address, $port, $payload);
+				$this->eventListener->handleRaw($address, $port, $payload);
 			}elseif($id === ITCProtocol::PACKET_SET_OPTION){
 				$len = ord($packet[$offset++]);
 				$name = substr($packet, $offset, $len);
 				$offset += $len;
 				$value = substr($packet, $offset);
-				$this->instance->handleOption($name, $value);
+				$this->eventListener->handleOption($name, $value);
 			}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
@@ -70,23 +70,23 @@ final class RakLibToUserThreadMessageReceiver{
 				$port = Binary::readShort(substr($packet, $offset, 2));
 				$offset += 2;
 				$clientID = Binary::readLong(substr($packet, $offset, 8));
-				$this->instance->openSession($identifier, $address, $port, $clientID);
+				$this->eventListener->openSession($identifier, $address, $port, $clientID);
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$len = ord($packet[$offset++]);
 				$reason = substr($packet, $offset, $len);
-				$this->instance->closeSession($identifier, $reason);
+				$this->eventListener->closeSession($identifier, $reason);
 			}elseif($id === ITCProtocol::PACKET_ACK_NOTIFICATION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
-				$this->instance->notifyACK($identifier, $identifierACK);
+				$this->eventListener->notifyACK($identifier, $identifierACK);
 			}elseif($id === ITCProtocol::PACKET_REPORT_PING){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$pingMS = Binary::readInt(substr($packet, $offset, 4));
-				$this->instance->updatePing($identifier, $pingMS);
+				$this->eventListener->updatePing($identifier, $pingMS);
 			}
 
 			return true;

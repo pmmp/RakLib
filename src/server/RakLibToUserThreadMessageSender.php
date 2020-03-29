@@ -22,7 +22,7 @@ use raklib\server\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use function chr;
 use function strlen;
 
-final class RakLibToUserThreadMessageSender implements ServerInstance{
+final class RakLibToUserThreadMessageSender implements ServerEventListener{
 
 	/** @var InterThreadChannelWriter */
 	private $channel;

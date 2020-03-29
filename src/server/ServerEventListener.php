@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-interface ServerInstance{
+interface ServerEventListener{
 
 	/**
 	 * @param int    $sessionId

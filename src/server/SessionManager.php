@@ -112,7 +112,7 @@ class SessionManager{
 	/** @var int */
 	protected $nextSessionId = 0;
 
-	/** @var ServerInstance */
+	/** @var ServerEventListener */
 	private $eventListener;
 
 	/** @var InterThreadChannelReader */
@@ -121,7 +121,7 @@ class SessionManager{
 	/** @var ExceptionTraceCleaner */
 	private $traceCleaner;
 
-	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, InterThreadChannelReader $recvChan, ServerInstance $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, InterThreadChannelReader $recvChan, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
@@ -324,7 +324,7 @@ class SessionManager{
 		}
 	}
 
-	public function getEventListener() : ServerInstance{
+	public function getEventListener() : ServerEventListener{
 		return $this->eventListener;
 	}
 
