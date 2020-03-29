@@ -15,13 +15,15 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\server\ipc;
 
 use pocketmine\utils\Binary;
 use raklib\protocol\ACK;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\PacketReliability;
-use raklib\server\UserToRakLibThreadMessageProtocol as ITCProtocol;
+use raklib\server\ipc\UserToRakLibThreadMessageProtocol as ITCProtocol;
+use raklib\server\ServerEventSource;
+use raklib\server\ServerInterface;
 use function ord;
 use function substr;
 

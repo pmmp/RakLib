@@ -15,10 +15,11 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\server\ipc;
 
 use pocketmine\utils\Binary;
-use raklib\server\RakLibToUserThreadMessageProtocol as ITCProtocol;
+use raklib\server\ipc\RakLibToUserThreadMessageProtocol as ITCProtocol;
+use raklib\server\ServerEventListener;
 use function ord;
 use function substr;
 
