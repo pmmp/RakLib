@@ -404,8 +404,6 @@ class SessionManager{
 
 				$this->socket->close();
 				$this->shutdown = true;
-			}elseif($id === ITCProtocol::PACKET_EMERGENCY_SHUTDOWN){
-				$this->shutdown = true;
 			}else{
 				$this->logger->debug("Unknown RakLib internal packet (ID 0x" . dechex($id) . ") received from main thread");
 			}

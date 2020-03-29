@@ -81,8 +81,4 @@ class ServerHandler{
 		$buffer = chr(ITCProtocol::PACKET_SHUTDOWN);
 		$this->sendInternalChannel->write($buffer);
 	}
-
-	public function emergencyShutdown() : void{
-		$this->sendInternalChannel->write(chr(ITCProtocol::PACKET_EMERGENCY_SHUTDOWN));
-	}
 }

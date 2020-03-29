@@ -101,11 +101,4 @@ final class UserToRakLibThreadMessageProtocol{
 	 * Sends the disconnect message, removes sessions correctly, closes sockets.
 	 */
 	public const PACKET_SHUTDOWN = 0x7e;
-
-	/*
-	 * No payload
-	 *
-	 * Leaves everything as-is and halts, other Threads can be in a post-crash condition.
-	 */
-	public const PACKET_EMERGENCY_SHUTDOWN = 0x7f;
 }
