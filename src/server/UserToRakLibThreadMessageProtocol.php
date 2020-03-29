@@ -53,7 +53,6 @@ final class UserToRakLibThreadMessageProtocol{
 	/*
 	 * CLOSE_SESSION payload:
 	 * int32 (internal session ID)
-	 * string (reason)
 	 */
 	public const PACKET_CLOSE_SESSION = 0x02;
 
