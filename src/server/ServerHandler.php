@@ -27,9 +27,6 @@ use function strlen;
 use function substr;
 
 class ServerHandler{
-
-	/** @var RakLibServer */
-	protected $server;
 	/** @var ServerInstance */
 	protected $instance;
 
@@ -39,13 +36,11 @@ class ServerHandler{
 	/** @var InterThreadChannelWriter */
 	private $sendInternalChannel;
 
-	public function __construct(RakLibServer $server, ServerInstance $instance){
-		$this->server = $server;
+	public function __construct(ServerInstance $instance, InterThreadChannelReader $recvChannel, InterThreadChannelWriter $sendChannel){
 		$this->instance = $instance;
 
-		//TODO: allow these to be injected?
-		$this->recvInternalChannel = new InterThreadChannelReader($server->getExternalQueue());
-		$this->sendInternalChannel = new InterThreadChannelWriter($server->getInternalQueue());
+		$this->recvInternalChannel = $recvChannel;
+		$this->sendInternalChannel = $sendChannel;
 	}
 
 	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
@@ -95,12 +90,9 @@ class ServerHandler{
 	public function shutdown() : void{
 		$buffer = chr(ITCProtocol::PACKET_SHUTDOWN);
 		$this->sendInternalChannel->write($buffer);
-		$this->server->shutdown();
-		$this->server->join();
 	}
 
 	public function emergencyShutdown() : void{
-		$this->server->shutdown();
 		$this->sendInternalChannel->write(chr(ITCProtocol::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
