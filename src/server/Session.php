@@ -120,7 +120,7 @@ class Session{
 				$this->sendPacket($datagram);
 			},
 			function(int $identifierACK) : void{
-				$this->sessionManager->notifyACK($this, $identifierACK);
+				$this->sessionManager->getEventListener()->notifyACK($this->internalId, $identifierACK);
 			}
 		);
 	}
@@ -256,7 +256,7 @@ class Session{
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
 			}
 		}elseif($this->state === self::STATE_CONNECTED){
-			$this->sessionManager->streamEncapsulated($this, $packet);
+			$this->sessionManager->getEventListener()->handleEncapsulated($this->internalId, $packet->buffer);
 		}else{
 			//$this->logger->notice("Received packet before connection: " . bin2hex($packet->buffer));
 		}
@@ -268,7 +268,7 @@ class Session{
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{
 		$this->lastPingMeasure = $this->sessionManager->getRakNetTimeMS() - $sendPingTime;
-		$this->sessionManager->streamPingMeasure($this, $this->lastPingMeasure);
+		$this->sessionManager->getEventListener()->notifyACK($this->internalId, $this->lastPingMeasure);
 	}
 
 	public function handlePacket(Packet $packet) : void{

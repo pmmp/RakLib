@@ -31,7 +31,6 @@ use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
 use function bin2hex;
-use function chr;
 use function count;
 use function dechex;
 use function get_class;
@@ -112,23 +111,23 @@ class SessionManager{
 	/** @var int */
 	protected $nextSessionId = 0;
 
+	/** @var ServerInstance */
+	private $eventListener;
+
 	/** @var InterThreadChannelReader */
 	private $recvInternalChannel;
-
-	/** @var InterThreadChannelWriter */
-	private $sendInternalChannel;
 
 	/** @var ExceptionTraceCleaner */
 	private $traceCleaner;
 
-	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, InterThreadChannelReader $recvChan, InterThreadChannelWriter $sendChan, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, InterThreadChannelReader $recvChan, ServerInstance $eventListener, ExceptionTraceCleaner $traceCleaner){
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
 		$this->maxMtuSize = $maxMtuSize;
 		$this->protocolVersion = $protocolVersion;
 		$this->recvInternalChannel = $recvChan;
-		$this->sendInternalChannel = $sendChan;
+		$this->eventListener = $eventListener;
 		$this->traceCleaner = $traceCleaner;
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
@@ -208,7 +207,7 @@ class SessionManager{
 		if(($this->ticks % self::RAKLIB_TPS) === 0){
 			if($this->sendBytes > 0 or $this->receiveBytes > 0){
 				$diff = max(0.005, $time - $this->lastMeasure);
-				$this->streamOption("bandwidth", serialize([
+				$this->eventListener->handleOption("bandwidth", serialize([
 					"up" => $this->sendBytes / $diff,
 					"down" => $this->receiveBytes / $diff
 				]));
@@ -291,7 +290,7 @@ class SessionManager{
 				foreach($this->rawPacketFilters as $pattern){
 					if(preg_match($pattern, $buffer) > 0){
 						$handled = true;
-						$this->streamRaw($address, $buffer);
+						$this->eventListener->handleRaw($address->ip, $address->port, $buffer);
 						break;
 					}
 				}
@@ -324,49 +323,8 @@ class SessionManager{
 		}
 	}
 
-	public function streamEncapsulated(Session $session, EncapsulatedPacket $packet) : void{
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($session->getInternalId()) . $packet->buffer;
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	public function streamRaw(InternetAddress $source, string $payload) : void{
-		$buffer = chr(ITCProtocol::PACKET_RAW) . chr(strlen($source->ip)) . $source->ip . Binary::writeShort($source->port) . $payload;
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	protected function streamClose(int $identifier, string $reason) : void{
-		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier) . chr(strlen($reason)) . $reason;
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	protected function streamInvalid(int $identifier) : void{
-		$buffer = chr(ITCProtocol::PACKET_INVALID_SESSION) . Binary::writeInt($identifier);
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	protected function streamOpen(Session $session) : void{
-		$address = $session->getAddress();
-		$buffer = chr(ITCProtocol::PACKET_OPEN_SESSION) . Binary::writeInt($session->getInternalId()) . chr(strlen($address->ip)) . $address->ip . Binary::writeShort($address->port) . Binary::writeLong($session->getID());
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	protected function streamACK(int $identifier, int $identifierACK) : void{
-		$buffer = chr(ITCProtocol::PACKET_ACK_NOTIFICATION) . Binary::writeInt($identifier) . Binary::writeInt($identifierACK);
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	/**
-	 * @param string $name
-	 * @param mixed  $value
-	 */
-	protected function streamOption(string $name, $value) : void{
-		$buffer = chr(ITCProtocol::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		$this->sendInternalChannel->write($buffer);
-	}
-
-	public function streamPingMeasure(Session $session, int $pingMS) : void{
-		$buffer = chr(ITCProtocol::PACKET_REPORT_PING) . Binary::writeInt($session->getInternalId()) . Binary::writeInt($pingMS);
-		$this->sendInternalChannel->write($buffer);
+	public function getEventListener() : ServerInstance{
+		return $this->eventListener;
 	}
 
 	public function receiveStream() : bool{
@@ -391,8 +349,6 @@ class SessionManager{
 
 					$encapsulated->buffer = substr($packet, $offset);
 					$session->addEncapsulatedToQueue($encapsulated, $flags);
-				}else{
-					$this->streamInvalid($identifier);
 				}
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
@@ -410,8 +366,6 @@ class SessionManager{
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				if(isset($this->sessions[$identifier])){
 					$this->sessions[$identifier]->flagForDisconnection();
-				}else{
-					$this->streamInvalid($identifier);
 				}
 			}elseif($id === ITCProtocol::PACKET_INVALID_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
@@ -519,7 +473,7 @@ class SessionManager{
 		if(isset($this->sessions[$id])){
 			$this->sessions[$id]->close();
 			$this->removeSessionInternal($session);
-			$this->streamClose($id, $reason);
+			$this->eventListener->closeSession($id, $reason);
 		}
 	}
 
@@ -528,7 +482,8 @@ class SessionManager{
 	}
 
 	public function openSession(Session $session) : void{
-		$this->streamOpen($session);
+		$address = $session->getAddress();
+		$this->eventListener->openSession($session->getInternalId(), $address->ip, $address->port, $session->getID());
 	}
 
 	private function checkSessions() : void{
@@ -545,7 +500,7 @@ class SessionManager{
 	}
 
 	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->streamACK($session->getInternalId(), $identifierACK);
+		$this->eventListener->notifyACK($session->getInternalId(), $identifierACK);
 	}
 
 	public function getName() : string{
