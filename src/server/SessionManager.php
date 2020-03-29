@@ -26,7 +26,7 @@ use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
-use raklib\RakLib;
+use raklib\protocol\PacketReliability;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -379,8 +379,18 @@ class SessionManager{
 				$session = $this->sessions[$identifier] ?? null;
 				if($session !== null and $session->isConnected()){
 					$flags = ord($packet[$offset++]);
-					$buffer = substr($packet, $offset);
-					$session->addEncapsulatedToQueue(EncapsulatedPacket::fromInternalBinary($buffer), $flags);
+
+					$encapsulated = new EncapsulatedPacket();
+					$encapsulated->reliability = ord($packet[$offset++]);
+					$encapsulated->identifierACK = Binary::readInt(substr($packet, $offset, 4)); //TODO: don't read this for non-ack-receipt reliabilities
+					$offset += 4;
+
+					if(PacketReliability::isSequencedOrOrdered($encapsulated->reliability)){
+						$encapsulated->orderChannel = ord($packet[$offset++]);
+					}
+
+					$encapsulated->buffer = substr($packet, $offset);
+					$session->addEncapsulatedToQueue($encapsulated, $flags);
 				}else{
 					$this->streamInvalid($identifier);
 				}

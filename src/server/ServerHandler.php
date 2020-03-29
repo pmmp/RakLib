@@ -19,6 +19,7 @@ namespace raklib\server;
 
 use pocketmine\utils\Binary;
 use raklib\protocol\EncapsulatedPacket;
+use raklib\protocol\PacketReliability;
 use raklib\RakLib;
 use function chr;
 use function ord;
@@ -48,7 +49,13 @@ class ServerHandler{
 	}
 
 	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) . Binary::writeInt($identifier) . chr($flags) . $packet->toInternalBinary();
+		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) .
+			Binary::writeInt($identifier) .
+			chr($flags) .
+			chr($packet->reliability) .
+			Binary::writeInt($packet->identifierACK ?? -1) . //TODO: don't write this for non-ack-receipt reliabilities
+			(PacketReliability::isSequencedOrOrdered($packet->reliability) ? chr($packet->orderChannel) : "") .
+			$packet->buffer;
 		$this->sendInternalChannel->write($buffer);
 	}
 
