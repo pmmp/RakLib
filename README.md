@@ -1,4 +1,5 @@
 # RakLib
+[![Build Status](https://travis-ci.com/pmmp/RakLib.svg?branch=master)](https://travis-ci.com/pmmp/RakLib)
 
 __UDP network library that follows the RakNet protocol for PHP__
 
