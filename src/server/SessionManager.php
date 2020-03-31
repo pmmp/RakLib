@@ -51,7 +51,7 @@ class SessionManager implements ServerInterface{
 	/** @var Socket */
 	protected $socket;
 
-	/** @var \ThreadedLogger */
+	/** @var \Logger */
 	protected $logger;
 
 	/** @var int */
@@ -116,7 +116,7 @@ class SessionManager implements ServerInterface{
 	/** @var ExceptionTraceCleaner */
 	private $traceCleaner;
 
-	public function __construct(int $serverId, \ThreadedLogger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
@@ -153,7 +153,7 @@ class SessionManager implements ServerInterface{
 		return $this->protocolVersion;
 	}
 
-	public function getLogger() : \ThreadedLogger{
+	public function getLogger() : \Logger{
 		return $this->logger;
 	}
 
@@ -296,14 +296,19 @@ class SessionManager implements ServerInterface{
 				}
 			}
 		}catch(BinaryDataException $e){
-			$this->logger->synchronized(function() use($address, $e, $buffer): void{
+			$logFn = function() use($address, $e, $buffer): void{
 				$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
 				$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
 				foreach($this->traceCleaner->getTrace(0, $e->getTrace()) as $line){
 					$this->logger->debug($line);
 				}
 				$this->logger->error("Bad packet from $address: " . $e->getMessage());
-			});
+			};
+			if($this->logger instanceof \BufferedLogger){
+				$this->logger->buffer($logFn);
+			}else{
+				$logFn();
+			}
 			$this->blockAddress($address->ip, 5);
 		}
 
