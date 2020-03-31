@@ -21,7 +21,8 @@ script:
 
 cache:
  directories:
-  - vendor
+  - $HOME/.composer/cache/files
+  - $HOME/.composer/cache/vcs
 
 notifications:
  email: false
