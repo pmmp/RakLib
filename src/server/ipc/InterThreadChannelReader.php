@@ -17,15 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\server\ipc;
 
-final class InterThreadChannelReader{
-	/** @var \Threaded */
-	private $buffer;
-
-	public function __construct(\Threaded $buffer){
-		$this->buffer = $buffer;
-	}
-
-	public function read() : ?string{
-		return $this->buffer->shift();
-	}
+interface InterThreadChannelReader{
+	public function read() : ?string;
 }

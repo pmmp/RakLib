@@ -17,23 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\server\ipc;
 
-use pocketmine\snooze\SleeperNotifier;
-
-final class InterThreadChannelWriter{
-	/** @var \Threaded */
-	private $buffer;
-	/** @var SleeperNotifier|null */
-	private $notifier;
-
-	public function __construct(\Threaded $buffer, ?SleeperNotifier $notifier = null){
-		$this->buffer = $buffer;
-		$this->notifier = $notifier;
-	}
-
-	public function write(string $str) : void{
-		$this->buffer[] = $str;
-		if($this->notifier !== null){
-			$this->notifier->wakeupSleeper();
-		}
-	}
+interface InterThreadChannelWriter{
+	public function write(string $str) : void;
 }
