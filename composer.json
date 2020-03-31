@@ -9,7 +9,6 @@
 		"php-64bit": "*",
 		"ext-sockets": "*",
 		"pocketmine/log": "dev-master",
-		"pocketmine/spl": "dev-master",
 		"pocketmine/binaryutils": "dev-master"
 	},
 	"require-dev": {
