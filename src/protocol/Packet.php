@@ -20,14 +20,13 @@ namespace raklib\protocol;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
+use function assert;
+use function count;
+use function explode;
 use function inet_ntop;
 use function inet_pton;
 use function strlen;
 use const AF_INET6;
-
-#ifndef COMPILE
-use pocketmine\utils\Binary;
-#endif
 
 #include <rules/RakLibPacket.h>
 
@@ -53,10 +52,7 @@ abstract class Packet extends BinaryStream{
 	protected function getAddress() : InternetAddress{
 		$version = $this->getByte();
 		if($version === 4){
-			$addr = inet_ntop(Binary::writeLInt((int) ~$this->getLInt()));
-			if($addr === false){
-				throw new BinaryDataException("Failed to parse IPv4 address");
-			}
+			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
 			$port = $this->getShort();
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
@@ -83,11 +79,11 @@ abstract class Packet extends BinaryStream{
 	protected function putAddress(InternetAddress $address) : void{
 		$this->putByte($address->version);
 		if($address->version === 4){
-			$rawIp = inet_pton($address->ip);
-			if($rawIp === false){
-				throw new \InvalidArgumentException("Invalid IPv4 address could not be encoded");
+			$parts = explode(".", $address->ip);
+			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
+			foreach($parts as $b){
+				$this->putByte((~((int) $b)) & 0xff);
 			}
-			$this->putLInt(Binary::readLInt($rawIp));
 			$this->putShort($address->port);
 		}elseif($address->version === 6){
 			$this->putLShort(AF_INET6);
