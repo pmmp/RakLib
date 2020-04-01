@@ -28,6 +28,10 @@ use function inet_pton;
 use function strlen;
 use const AF_INET6;
 
+#ifndef COMPILE
+use pocketmine\utils\Binary;
+#endif
+
 #include <rules/RakLibPacket.h>
 
 abstract class Packet extends BinaryStream{
@@ -52,7 +56,10 @@ abstract class Packet extends BinaryStream{
 	protected function getAddress() : InternetAddress{
 		$version = $this->getByte();
 		if($version === 4){
-			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
+			$addr = inet_ntop(Binary::writeLInt((int) ~$this->getLInt()));
+			if($addr === false){
+				throw new BinaryDataException("Failed to parse IPv4 address");
+			}
 			$port = $this->getShort();
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
