@@ -21,6 +21,7 @@ use pocketmine\utils\Binary;
 use raklib\server\ipc\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use raklib\server\ServerEventListener;
 use function chr;
+use function inet_pton;
 use function strlen;
 
 final class RakLibToUserThreadMessageSender implements ServerEventListener{
@@ -33,10 +34,14 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 	}
 
 	public function openSession(int $sessionId, string $address, int $port, int $clientId) : void{
+		$rawAddr = inet_pton($address);
+		if($rawAddr === false){
+			throw new \InvalidArgumentException("Invalid IP address");
+		}
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_OPEN_SESSION) .
 			Binary::writeInt($sessionId) .
-			chr(strlen($address)) . $address .
+			chr(strlen($rawAddr)) . $rawAddr .
 			Binary::writeShort($port) .
 			Binary::writeLong($clientId)
 		);

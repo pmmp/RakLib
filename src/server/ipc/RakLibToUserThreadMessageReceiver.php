@@ -20,6 +20,7 @@ namespace raklib\server\ipc;
 use pocketmine\utils\Binary;
 use raklib\server\ipc\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use raklib\server\ServerEventListener;
+use function inet_ntop;
 use function ord;
 use function substr;
 
@@ -66,8 +67,12 @@ final class RakLibToUserThreadMessageReceiver{
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$len = ord($packet[$offset++]);
-				$address = substr($packet, $offset, $len);
+				$rawAddr = substr($packet, $offset, $len);
 				$offset += $len;
+				$address = inet_ntop($rawAddr);
+				if($address === false){
+					throw new \RuntimeException("Unexpected invalid IP address in inter-thread message");
+				}
 				$port = Binary::readShort(substr($packet, $offset, 2));
 				$offset += 2;
 				$clientID = Binary::readLong(substr($packet, $offset, 8));
