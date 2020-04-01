@@ -14,9 +14,4 @@ parameters:
 			count: 1
 			path: src/generic/ReceiveReliabilityLayer.php
 
-		-
-			#bad assumption that having return type = no side effects
-			message: "#^Negated boolean expression is always true\\.$#"
-			count: 3
-			path: src/server/SessionManager.php
 
