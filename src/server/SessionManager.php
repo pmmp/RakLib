@@ -164,7 +164,7 @@ class SessionManager implements ServerInterface{
 	private function tickProcessor() : void{
 		$this->lastMeasure = microtime(true);
 
-		while(!$this->shutdown){
+		while(!$this->shutdown or count($this->sessions) > 0){
 			$start = microtime(true);
 
 			/*
@@ -172,16 +172,16 @@ class SessionManager implements ServerInterface{
 			 * when high traffic is coming either way. Yielding will occur after 100 messages.
 			 */
 			do{
-				$stream = true;
-				for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){
+				$stream = !$this->shutdown;
+				for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){ //if we received a shutdown event, we don't care about any more messages from the event source
 					$stream = $this->eventSource->process($this);
 				}
 
 				$socket = true;
-				for($i = 0; $i < 100 && $socket && !$this->shutdown; ++$i){
+				for($i = 0; $i < 100 && $socket; ++$i){
 					$socket = $this->receivePacket();
 				}
-			}while(!$this->shutdown && ($stream || $socket));
+			}while($stream || $socket);
 
 			$this->tick();
 
@@ -190,17 +190,22 @@ class SessionManager implements ServerInterface{
 				@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
 			}
 		}
+
+		$this->socket->close();
 	}
 
 	private function tick() : void{
 		$time = microtime(true);
 		foreach($this->sessions as $session){
 			$session->update($time);
+			if($session->isFullyDisconnected()){
+				$this->removeSessionInternal($session);
+			}
 		}
 
 		$this->ipSec = [];
 
-		if(($this->ticks % self::RAKLIB_TPS) === 0){
+		if(!$this->shutdown and ($this->ticks % self::RAKLIB_TPS) === 0){
 			if($this->sendBytes > 0 or $this->receiveBytes > 0){
 				$diff = max(0.005, $time - $this->lastMeasure);
 				$this->eventListener->handleOption("bandwidth", serialize([
@@ -281,13 +286,14 @@ class SessionManager implements ServerInterface{
 				}else{
 					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
-			}elseif(!$this->offlineMessageHandler->handleRaw($buffer, $address)){
-				$handled = false;
-				foreach($this->rawPacketFilters as $pattern){
-					if(preg_match($pattern, $buffer) > 0){
-						$handled = true;
-						$this->eventListener->handleRaw($address->ip, $address->port, $buffer);
-						break;
+			}elseif(!$this->shutdown){
+				if(!($handled = $this->offlineMessageHandler->handleRaw($buffer, $address))){
+					foreach($this->rawPacketFilters as $pattern){
+						if(preg_match($pattern, $buffer) > 0){
+							$handled = true;
+							$this->eventListener->handleRaw($address->ip, $address->port, $buffer);
+							break;
+						}
 					}
 				}
 
@@ -345,7 +351,7 @@ class SessionManager implements ServerInterface{
 
 	public function closeSession(int $sessionId) : void{
 		if(isset($this->sessions[$sessionId])){
-			$this->sessions[$sessionId]->flagForDisconnection();
+			$this->sessions[$sessionId]->flagForDisconnection("server disconnect");
 		}
 	}
 
@@ -390,12 +396,10 @@ class SessionManager implements ServerInterface{
 	}
 
 	public function shutdown() : void{
-		//TODO: this won't flush packets, might result in lost disconnection messages
 		foreach($this->sessions as $session){
-			$this->removeSession($session);
+			$session->flagForDisconnection("server shutdown");
 		}
 
-		$this->socket->close();
 		$this->shutdown = true;
 	}
 
@@ -428,16 +432,7 @@ class SessionManager implements ServerInterface{
 		return $session;
 	}
 
-	public function removeSession(Session $session, string $reason = "unknown") : void{
-		$id = $session->getInternalId();
-		if(isset($this->sessions[$id])){
-			$this->sessions[$id]->close();
-			$this->removeSessionInternal($session);
-			$this->eventListener->closeSession($id, $reason);
-		}
-	}
-
-	public function removeSessionInternal(Session $session) : void{
+	private function removeSessionInternal(Session $session) : void{
 		unset($this->sessionsByAddress[$session->getAddress()->toString()], $this->sessions[$session->getInternalId()]);
 	}
 
