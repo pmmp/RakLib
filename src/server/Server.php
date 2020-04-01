@@ -43,7 +43,7 @@ use function time_sleep_until;
 use const PHP_INT_MAX;
 use const SOCKET_ECONNRESET;
 
-class SessionManager implements ServerInterface{
+class Server implements ServerInterface{
 
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;

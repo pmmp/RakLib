@@ -35,14 +35,14 @@ use function strlen;
 use function substr;
 
 class OfflineMessageHandler{
-	/** @var SessionManager */
-	private $sessionManager;
+	/** @var Server */
+	private $server;
 	/** @var OfflineMessage[]|\SplFixedArray<OfflineMessage> */
 	private $packetPool;
 
-	public function __construct(SessionManager $manager){
+	public function __construct(Server $server){
 		$this->registerPackets();
-		$this->sessionManager = $manager;
+		$this->server = $server;
 	}
 
 	/**
@@ -66,7 +66,7 @@ class OfflineMessageHandler{
 		}
 		if(!$pk->feof()){
 			$remains = substr($pk->getBuffer(), $pk->getOffset());
-			$this->sessionManager->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
+			$this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
 		}
 		return $this->handle($pk, $address);
 	}
@@ -74,39 +74,39 @@ class OfflineMessageHandler{
 	public function handle(OfflineMessage $packet, InternetAddress $address) : bool{
 		if($packet instanceof UnconnectedPing){
 			$pk = new UnconnectedPong();
-			$pk->serverId = $this->sessionManager->getID();
+			$pk->serverId = $this->server->getID();
 			$pk->sendPingTime = $packet->sendPingTime;
-			$pk->serverName = $this->sessionManager->getName();
-			$this->sessionManager->sendPacket($pk, $address);
+			$pk->serverName = $this->server->getName();
+			$this->server->sendPacket($pk, $address);
 		}elseif($packet instanceof OpenConnectionRequest1){
-			$serverProtocol = $this->sessionManager->getProtocolVersion();
+			$serverProtocol = $this->server->getProtocolVersion();
 			if($packet->protocol !== $serverProtocol){
 				$pk = new IncompatibleProtocolVersion();
 				$pk->protocolVersion = $serverProtocol;
-				$pk->serverId = $this->sessionManager->getID();
-				$this->sessionManager->sendPacket($pk, $address);
-				$this->sessionManager->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (expected $serverProtocol, got $packet->protocol)");
+				$pk->serverId = $this->server->getID();
+				$this->server->sendPacket($pk, $address);
+				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (expected $serverProtocol, got $packet->protocol)");
 			}else{
 				$pk = new OpenConnectionReply1();
 				$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)
-				$pk->serverID = $this->sessionManager->getID();
-				$this->sessionManager->sendPacket($pk, $address);
+				$pk->serverID = $this->server->getID();
+				$this->server->sendPacket($pk, $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
-			if($packet->serverAddress->port === $this->sessionManager->getPort() or !$this->sessionManager->portChecking){
+			if($packet->serverAddress->port === $this->server->getPort() or !$this->server->portChecking){
 				if($packet->mtuSize < Session::MIN_MTU_SIZE){
-					$this->sessionManager->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");
+					$this->server->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");
 					return true;
 				}
-				$mtuSize = min($packet->mtuSize, $this->sessionManager->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
+				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
 				$pk = new OpenConnectionReply2();
 				$pk->mtuSize = $mtuSize;
-				$pk->serverID = $this->sessionManager->getID();
+				$pk->serverID = $this->server->getID();
 				$pk->clientAddress = $address;
-				$this->sessionManager->sendPacket($pk, $address);
-				$this->sessionManager->createSession($address, $packet->clientID, $mtuSize);
+				$this->server->sendPacket($pk, $address);
+				$this->server->createSession($address, $packet->clientID, $mtuSize);
 			}else{
-				$this->sessionManager->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->sessionManager->getPort() . ", got " . $packet->serverAddress->port);
+				$this->server->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->server->getPort() . ", got " . $packet->serverAddress->port);
 			}
 		}else{
 			return false;
