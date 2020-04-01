@@ -18,18 +18,11 @@ declare(strict_types=1);
 namespace raklib\utils;
 
 class InternetAddress{
-
-	/**
-	 * @var string
-	 */
+	/** @var string */
 	public $ip;
-	/**
-	 * @var int
-	 */
+	/** @var int */
 	public $port;
-	/**
-	 * @var int
-	 */
+	/** @var int */
 	public $version;
 
 	public function __construct(string $address, int $port, int $version){
