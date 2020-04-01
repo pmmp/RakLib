@@ -290,7 +290,7 @@ class Session{
 	public function flagForDisconnection(string $reason) : void{
 		$this->state = self::STATE_DISCONNECTING;
 		$this->disconnectionTime = microtime(true);
-		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);	
+		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
 		$this->server->getEventListener()->closeSession($this->internalId, $reason);
 		$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
 	}

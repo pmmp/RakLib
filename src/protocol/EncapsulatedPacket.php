@@ -21,9 +21,7 @@ use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use function ceil;
 use function chr;
-use function ord;
 use function strlen;
-use function substr;
 
 #ifndef COMPILE
 use pocketmine\utils\Binary;

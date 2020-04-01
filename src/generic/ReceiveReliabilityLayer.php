@@ -26,7 +26,6 @@ use raklib\protocol\PacketReliability;
 use function array_fill;
 use function assert;
 use function count;
-use function strlen;
 
 final class ReceiveReliabilityLayer{
 
