@@ -20,9 +20,6 @@ namespace raklib\protocol;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
-use function assert;
-use function count;
-use function explode;
 use function inet_ntop;
 use function inet_pton;
 use function strlen;
@@ -86,11 +83,11 @@ abstract class Packet extends BinaryStream{
 	protected function putAddress(InternetAddress $address) : void{
 		$this->putByte($address->version);
 		if($address->version === 4){
-			$parts = explode(".", $address->ip);
-			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
-			foreach($parts as $b){
-				$this->putByte((~((int) $b)) & 0xff);
+			$rawIp = inet_pton($address->ip);
+			if($rawIp === false){
+				throw new \InvalidArgumentException("Invalid IPv4 address could not be encoded");
 			}
+			$this->putLInt(Binary::readLInt($rawIp));
 			$this->putShort($address->port);
 		}elseif($address->version === 6){
 			$this->putLShort(AF_INET6);
