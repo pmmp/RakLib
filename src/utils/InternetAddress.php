@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace raklib\utils;
 
+use function inet_pton;
+
 class InternetAddress{
 	/** @var string */
 	public $ip;
@@ -26,6 +28,9 @@ class InternetAddress{
 	public $version;
 
 	public function __construct(string $address, int $port, int $version){
+		if(inet_pton($address) === false){
+			throw new \InvalidArgumentException("Failed to parse internet address");
+		}
 		$this->ip = $address;
 		if($port < 0 or $port > 65535){
 			throw new \InvalidArgumentException("Invalid port range");
