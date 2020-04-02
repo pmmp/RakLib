@@ -41,7 +41,7 @@ class InternetAddress{
 		$this->port = $port;
 
 		$addressLength = strlen($encodedAddress);
-		if(($version === 4 and $addressLength === 4) or ($version === 6 and $addressLength === 16)){
+		if(!(($version === 4 and $addressLength === 4) or ($version === 6 and $addressLength === 16))){
 			throw new \InvalidArgumentException("Given address does not match with version");
 		}
 		$this->version = $version;
