@@ -268,7 +268,7 @@ class Session{
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{
 		$this->lastPingMeasure = $this->server->getRakNetTimeMS() - $sendPingTime;
-		$this->server->getEventListener()->notifyACK($this->internalId, $this->lastPingMeasure);
+		$this->server->getEventListener()->updatePing($this->internalId, $this->lastPingMeasure);
 	}
 
 	public function handlePacket(Packet $packet) : void{
