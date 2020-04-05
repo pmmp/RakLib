@@ -240,7 +240,7 @@ class Session{
 					}
 				}
 			}elseif($id === DisconnectionNotification::$ID){
-				$this->flagForDisconnection("client disconnect");
+				$this->initiateDisconnect("client disconnect");
 			}elseif($id === ConnectedPing::$ID){
 				$dataPacket = new ConnectedPing($packet->buffer);
 				$dataPacket->decode();
@@ -287,7 +287,7 @@ class Session{
 	/**
 	 * Initiates a graceful asynchronous disconnect which ensures both parties got all packets.
 	 */
-	public function flagForDisconnection(string $reason) : void{
+	public function initiateDisconnect(string $reason) : void{
 		$this->state = self::STATE_DISCONNECTING;
 		$this->disconnectionTime = microtime(true);
 		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);

@@ -351,7 +351,7 @@ class Server implements ServerInterface{
 
 	public function closeSession(int $sessionId) : void{
 		if(isset($this->sessions[$sessionId])){
-			$this->sessions[$sessionId]->flagForDisconnection("server disconnect");
+			$this->sessions[$sessionId]->initiateDisconnect("server disconnect");
 		}
 	}
 
@@ -397,7 +397,7 @@ class Server implements ServerInterface{
 
 	public function shutdown() : void{
 		foreach($this->sessions as $session){
-			$session->flagForDisconnection("server shutdown");
+			$session->initiateDisconnect("server shutdown");
 		}
 
 		$this->shutdown = true;
