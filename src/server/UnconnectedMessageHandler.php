@@ -34,7 +34,7 @@ use function ord;
 use function strlen;
 use function substr;
 
-class OfflineMessageHandler{
+class UnconnectedMessageHandler{
 	/** @var Server */
 	private $server;
 	/** @var OfflineMessage[]|\SplFixedArray<OfflineMessage> */

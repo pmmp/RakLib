@@ -69,8 +69,8 @@ class Server implements ServerInterface{
 	/** @var Session[] */
 	protected $sessions = [];
 
-	/** @var OfflineMessageHandler */
-	protected $offlineMessageHandler;
+	/** @var UnconnectedMessageHandler */
+	protected $unconnectedMessageHandler;
 	/** @var string */
 	protected $name = "";
 
@@ -128,7 +128,7 @@ class Server implements ServerInterface{
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
 
-		$this->offlineMessageHandler = new OfflineMessageHandler($this);
+		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this);
 
 		$this->reusableAddress = clone $this->socket->getBindAddress();
 	}
@@ -287,7 +287,7 @@ class Server implements ServerInterface{
 					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}elseif(!$this->shutdown){
-				if(!($handled = $this->offlineMessageHandler->handleRaw($buffer, $address))){
+				if(!($handled = $this->unconnectedMessageHandler->handleRaw($buffer, $address))){
 					foreach($this->rawPacketFilters as $pattern){
 						if(preg_match($pattern, $buffer) > 0){
 							$handled = true;
