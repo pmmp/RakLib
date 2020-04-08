@@ -33,7 +33,6 @@ use raklib\protocol\NACK;
 use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
-use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function count;
 use function microtime;
@@ -184,7 +183,7 @@ class Session{
 		}
 	}
 
-	private function queueConnectedPacket(Packet $packet, int $reliability, int $orderChannel, int $flags = RakLib::PRIORITY_NORMAL) : void{
+	private function queueConnectedPacket(Packet $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
 		$packet->encode();
 
 		$encapsulated = new EncapsulatedPacket();
@@ -192,11 +191,11 @@ class Session{
 		$encapsulated->orderChannel = $orderChannel;
 		$encapsulated->buffer = $packet->getBuffer();
 
-		$this->sendLayer->addEncapsulatedToQueue($encapsulated, $flags);
+		$this->sendLayer->addEncapsulatedToQueue($encapsulated, $immediate);
 	}
 
-	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, int $flags) : void{
-		$this->sendLayer->addEncapsulatedToQueue($packet, $flags);
+	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, bool $immediate) : void{
+		$this->sendLayer->addEncapsulatedToQueue($packet, $immediate);
 	}
 
 	private function sendPacket(Packet $packet) : void{
@@ -206,7 +205,7 @@ class Session{
 	private function sendPing(int $reliability = PacketReliability::UNRELIABLE) : void{
 		$pk = new ConnectedPing();
 		$pk->sendPingTime = $this->server->getRakNetTimeMS();
-		$this->queueConnectedPacket($pk, $reliability, 0, RakLib::PRIORITY_IMMEDIATE);
+		$this->queueConnectedPacket($pk, $reliability, 0, true);
 	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet) : void{
@@ -225,7 +224,7 @@ class Session{
 					$pk->address = $this->address;
 					$pk->sendPingTime = $dataPacket->sendPingTime;
 					$pk->sendPongTime = $this->server->getRakNetTimeMS();
-					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, RakLib::PRIORITY_IMMEDIATE);
+					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, true);
 				}elseif($id === NewIncomingConnection::$ID){
 					$dataPacket = new NewIncomingConnection($packet->buffer);
 					$dataPacket->decode();
@@ -290,7 +289,7 @@ class Session{
 	public function initiateDisconnect(string $reason) : void{
 		$this->state = self::STATE_DISCONNECTING;
 		$this->disconnectionTime = microtime(true);
-		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, RakLib::PRIORITY_IMMEDIATE);
+		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
 		$this->server->getEventListener()->closeSession($this->internalId, $reason);
 		$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
 	}

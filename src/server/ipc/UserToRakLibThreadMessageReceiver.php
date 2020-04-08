@@ -43,18 +43,23 @@ final class UserToRakLibThreadMessageReceiver implements ServerEventSource{
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$flags = ord($packet[$offset++]);
+				$immediate = ($flags & ITCProtocol::ENCAPSULATED_FLAG_IMMEDIATE) !== 0;
+				$needACK = ($flags & ITCProtocol::ENCAPSULATED_FLAG_NEED_ACK) !== 0;
 
 				$encapsulated = new EncapsulatedPacket();
 				$encapsulated->reliability = ord($packet[$offset++]);
-				$encapsulated->identifierACK = Binary::readInt(substr($packet, $offset, 4)); //TODO: don't read this for non-ack-receipt reliabilities
-				$offset += 4;
+
+				if($needACK){
+					$encapsulated->identifierACK = Binary::readInt(substr($packet, $offset, 4));
+					$offset += 4;
+				}
 
 				if(PacketReliability::isSequencedOrOrdered($encapsulated->reliability)){
 					$encapsulated->orderChannel = ord($packet[$offset++]);
 				}
 
 				$encapsulated->buffer = substr($packet, $offset);
-				$server->sendEncapsulated($identifier, $encapsulated, $flags);
+				$server->sendEncapsulated($identifier, $encapsulated, $immediate);
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);

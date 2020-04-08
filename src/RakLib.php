@@ -28,11 +28,6 @@ abstract class RakLib{
 	 */
 	public const DEFAULT_PROTOCOL_VERSION = 6;
 
-	public const PRIORITY_NORMAL = 0;
-	public const PRIORITY_IMMEDIATE = 1;
-
-	public const FLAG_NEED_ACK = 0b00001000;
-
 	/**
 	 * Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate.
 	 * @var int

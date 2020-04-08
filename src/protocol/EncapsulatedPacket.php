@@ -49,10 +49,8 @@ class EncapsulatedPacket{
 	public $splitInfo = null;
 	/** @var string */
 	public $buffer = "";
-	/** @var bool */
-	public $needACK = false;
 	/** @var int|null */
-	public $identifierACK;
+	public $identifierACK = null;
 
 	/**
 	 * @param BinaryStream $stream

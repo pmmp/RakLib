@@ -23,7 +23,6 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\SplitPacketInfo;
-use raklib\RakLib;
 use function array_fill;
 use function assert;
 use function count;
@@ -106,13 +105,8 @@ final class SendReliabilityLayer{
 		}
 	}
 
-	/**
-	 * @param EncapsulatedPacket $pk
-	 * @param int                $flags
-	 */
-	private function addToQueue(EncapsulatedPacket $pk, int $flags = RakLib::PRIORITY_NORMAL) : void{
-		$priority = $flags & 0b00000111;
-		if($pk->needACK and $pk->messageIndex !== null){
+	private function addToQueue(EncapsulatedPacket $pk, bool $immediate) : void{
+		if($pk->identifierACK !== null and $pk->messageIndex !== null){
 			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
 		}
 
@@ -121,26 +115,22 @@ final class SendReliabilityLayer{
 			$this->sendQueue();
 		}
 
-		if($pk->needACK){
+		if($pk->identifierACK !== null){
 			$this->sendQueue->packets[] = clone $pk;
-			$pk->needACK = false;
+			$pk->identifierACK = null;
 		}else{
 			$this->sendQueue->packets[] = $pk;
 		}
 
-		if($priority === RakLib::PRIORITY_IMMEDIATE){
+		if($immediate){
 			// Forces pending sends to go out now, rather than waiting to the next update interval
 			$this->sendQueue();
 		}
 	}
 
-	/**
-	 * @param EncapsulatedPacket $packet
-	 * @param int                $flags
-	 */
-	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
+	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, bool $immediate = false) : void{
 
-		if(($packet->needACK = ($flags & RakLib::FLAG_NEED_ACK) > 0) === true){
+		if($packet->identifierACK !== null){
 			$this->needACK[$packet->identifierACK] = [];
 		}
 
@@ -174,13 +164,13 @@ final class SendReliabilityLayer{
 				$pk->orderChannel = $packet->orderChannel;
 				$pk->orderIndex = $packet->orderIndex;
 
-				$this->addToQueue($pk, $flags | RakLib::PRIORITY_IMMEDIATE);
+				$this->addToQueue($pk, true);
 			}
 		}else{
 			if(PacketReliability::isReliable($packet->reliability)){
 				$packet->messageIndex = $this->messageIndex++;
 			}
-			$this->addToQueue($packet, $flags);
+			$this->addToQueue($packet, false);
 		}
 	}
 
@@ -189,7 +179,7 @@ final class SendReliabilityLayer{
 		foreach($packet->packets as $seq){
 			if(isset($this->recoveryQueue[$seq])){
 				foreach($this->recoveryQueue[$seq]->packets as $pk){
-					if($pk->needACK and $pk->messageIndex !== null){
+					if($pk->identifierACK !== null and $pk->messageIndex !== null){
 						unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
 						if(count($this->needACK[$pk->identifierACK]) === 0){
 							unset($this->needACK[$pk->identifierACK]);

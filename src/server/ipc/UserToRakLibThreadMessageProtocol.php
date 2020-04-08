@@ -50,6 +50,9 @@ final class UserToRakLibThreadMessageProtocol{
 	 */
 	public const PACKET_ENCAPSULATED = 0x01;
 
+	public const ENCAPSULATED_FLAG_NEED_ACK = 1 << 0;
+	public const ENCAPSULATED_FLAG_IMMEDIATE = 1 << 1;
+
 	/*
 	 * CLOSE_SESSION payload:
 	 * int32 (internal session ID)

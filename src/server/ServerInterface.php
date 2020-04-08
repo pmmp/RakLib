@@ -18,11 +18,10 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use raklib\protocol\EncapsulatedPacket;
-use raklib\RakLib;
 
 interface ServerInterface{
 
-	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void;
+	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, bool $immediate = false) : void;
 
 	public function sendRaw(string $address, int $port, string $payload) : void;
 

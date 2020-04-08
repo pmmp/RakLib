@@ -25,7 +25,6 @@ use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
-use raklib\RakLib;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -334,10 +333,10 @@ class Server implements ServerInterface{
 		return $this->eventListener;
 	}
 
-	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
+	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void{
 		$session = $this->sessions[$sessionId] ?? null;
 		if($session !== null and $session->isConnected()){
-			$session->addEncapsulatedToQueue($packet, $flags);
+			$session->addEncapsulatedToQueue($packet, $immediate);
 		}
 	}
 

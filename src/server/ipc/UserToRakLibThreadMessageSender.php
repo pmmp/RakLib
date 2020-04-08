@@ -20,7 +20,6 @@ namespace raklib\server\ipc;
 use pocketmine\utils\Binary;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\PacketReliability;
-use raklib\RakLib;
 use raklib\server\ipc\UserToRakLibThreadMessageProtocol as ITCProtocol;
 use raklib\server\ServerInterface;
 use function chr;
@@ -34,12 +33,16 @@ class UserToRakLibThreadMessageSender implements ServerInterface{
 		$this->channel = $channel;
 	}
 
-	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, int $flags = RakLib::PRIORITY_NORMAL) : void{
+	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, bool $immediate = false) : void{
+		$flags =
+			($immediate ? ITCProtocol::ENCAPSULATED_FLAG_IMMEDIATE : 0) |
+			($packet->identifierACK !== null ? ITCProtocol::ENCAPSULATED_FLAG_NEED_ACK : 0);
+
 		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) .
 			Binary::writeInt($identifier) .
 			chr($flags) .
 			chr($packet->reliability) .
-			Binary::writeInt($packet->identifierACK ?? -1) . //TODO: don't write this for non-ack-receipt reliabilities
+			($packet->identifierACK !== null ? Binary::writeInt($packet->identifierACK) : "") .
 			(PacketReliability::isSequencedOrOrdered($packet->reliability) ? chr($packet->orderChannel) : "") .
 			$packet->buffer;
 		$this->channel->write($buffer);
