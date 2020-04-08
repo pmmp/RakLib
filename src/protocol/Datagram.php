@@ -34,6 +34,8 @@ class Datagram extends Packet{
 	public const BITFLAG_CONTINUOUS_SEND = 0x08;
 	public const BITFLAG_NEEDS_B_AND_AS = 0x04;
 
+	public const HEADER_SIZE = 1 + 3; //header flags (1) + sequence number (3)
+
 	/** @var int */
 	public $headerFlags = 0;
 
@@ -58,7 +60,7 @@ class Datagram extends Packet{
 	 * @return int
 	 */
 	public function length(){
-		$length = 4;
+		$length = self::HEADER_SIZE;
 		foreach($this->packets as $packet){
 			$length += $packet->getTotalLength();
 		}

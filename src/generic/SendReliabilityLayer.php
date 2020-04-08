@@ -46,8 +46,8 @@ final class SendReliabilityLayer{
 	/** @var int */
 	private $mtuSize;
 
-	/** @var Datagram */
-	private $sendQueue;
+	/** @var EncapsulatedPacket[] */
+	private $sendQueue = [];
 
 	/** @var int */
 	private $splitID = 0;
@@ -81,8 +81,6 @@ final class SendReliabilityLayer{
 		$this->sendDatagramCallback = $sendDatagram;
 		$this->onACK = $onACK;
 
-		$this->sendQueue = new Datagram();
-
 		$this->sendOrderedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 		$this->sendSequencedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 	}
@@ -106,9 +104,11 @@ final class SendReliabilityLayer{
 	}
 
 	public function sendQueue() : void{
-		if(count($this->sendQueue->packets) > 0){
-			$this->sendDatagram($this->sendQueue);
-			$this->sendQueue = new Datagram();
+		if(count($this->sendQueue) > 0){
+			$datagram = new Datagram();
+			$datagram->packets = $this->sendQueue;
+			$this->sendDatagram($datagram);
+			$this->sendQueue = [];
 		}
 	}
 
@@ -117,16 +117,20 @@ final class SendReliabilityLayer{
 			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
 		}
 
-		$length = $this->sendQueue->length();
+		$length = Datagram::HEADER_SIZE;
+		foreach($this->sendQueue as $queued){
+			$length += $queued->getTotalLength();
+		}
+
 		if($length + $pk->getTotalLength() > $this->mtuSize - 36){ //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36 bytes
 			$this->sendQueue();
 		}
 
 		if($pk->identifierACK !== null){
-			$this->sendQueue->packets[] = clone $pk;
+			$this->sendQueue[] = clone $pk;
 			$pk->identifierACK = null;
 		}else{
-			$this->sendQueue->packets[] = $pk;
+			$this->sendQueue[] = $pk;
 		}
 
 		if($immediate){
@@ -214,7 +218,7 @@ final class SendReliabilityLayer{
 
 	public function needsUpdate() : bool{
 		return (
-			count($this->sendQueue->packets) !== 0 or
+			count($this->sendQueue) !== 0 or
 			count($this->packetToSend) !== 0 or
 			count($this->recoveryQueue) !== 0
 		);
