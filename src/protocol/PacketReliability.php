@@ -30,6 +30,8 @@ abstract class PacketReliability{
 	public const RELIABLE = 2;
 	public const RELIABLE_ORDERED = 3;
 	public const RELIABLE_SEQUENCED = 4;
+
+	/* The following reliabilities are used in RakNet internals, but never sent on the wire. */
 	public const UNRELIABLE_WITH_ACK_RECEIPT = 5;
 	public const RELIABLE_WITH_ACK_RECEIPT = 6;
 	public const RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
