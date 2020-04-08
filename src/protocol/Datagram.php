@@ -37,7 +37,7 @@ class Datagram extends Packet{
 	/** @var int */
 	public $headerFlags = 0;
 
-	/** @var (EncapsulatedPacket|string)[] */
+	/** @var EncapsulatedPacket[] */
 	public $packets = [];
 
 	/** @var int|null */
@@ -50,7 +50,7 @@ class Datagram extends Packet{
 	protected function encodePayload() : void{
 		$this->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
-			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : $packet);
+			$this->put($packet->toBinary());
 		}
 	}
 
@@ -60,7 +60,7 @@ class Datagram extends Packet{
 	public function length(){
 		$length = 4;
 		foreach($this->packets as $packet){
-			$length += $packet instanceof EncapsulatedPacket ? $packet->getTotalLength() : strlen($packet);
+			$length += $packet->getTotalLength();
 		}
 
 		return $length;

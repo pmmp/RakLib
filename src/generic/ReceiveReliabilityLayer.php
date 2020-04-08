@@ -264,7 +264,6 @@ final class ReceiveReliabilityLayer{
 		}
 
 		foreach($packet->packets as $pk){
-			assert($pk instanceof EncapsulatedPacket);
 			$this->handleEncapsulatedPacket($pk);
 		}
 	}

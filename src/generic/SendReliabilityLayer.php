@@ -125,7 +125,7 @@ final class SendReliabilityLayer{
 			$this->sendQueue->packets[] = clone $pk;
 			$pk->needACK = false;
 		}else{
-			$this->sendQueue->packets[] = $pk->toBinary();
+			$this->sendQueue->packets[] = $pk;
 		}
 
 		if($priority === RakLib::PRIORITY_IMMEDIATE){
@@ -189,7 +189,7 @@ final class SendReliabilityLayer{
 		foreach($packet->packets as $seq){
 			if(isset($this->recoveryQueue[$seq])){
 				foreach($this->recoveryQueue[$seq]->packets as $pk){
-					if($pk instanceof EncapsulatedPacket and $pk->needACK and $pk->messageIndex !== null){
+					if($pk->needACK and $pk->messageIndex !== null){
 						unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
 						if(count($this->needACK[$pk->identifierACK]) === 0){
 							unset($this->needACK[$pk->identifierACK]);
