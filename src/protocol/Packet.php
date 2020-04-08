@@ -34,9 +34,6 @@ abstract class Packet extends BinaryStream{
 	/** @var int */
 	public static $ID = -1;
 
-	/** @var float|null */
-	public $sendTime;
-
 	/**
 	 * @return string
 	 * @throws BinaryDataException

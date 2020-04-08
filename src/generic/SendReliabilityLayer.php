@@ -26,7 +26,6 @@ use raklib\protocol\SplitPacketInfo;
 use function array_fill;
 use function assert;
 use function count;
-use function microtime;
 use function str_split;
 use function strlen;
 use function time;
@@ -67,7 +66,7 @@ final class SendReliabilityLayer{
 	/** @var Datagram[] */
 	private $packetToSend = [];
 
-	/** @var Datagram[] */
+	/** @var ResendQueueEntry[] */
 	private $recoveryQueue = [];
 
 	/** @var int[][] */
@@ -93,9 +92,17 @@ final class SendReliabilityLayer{
 			unset($this->recoveryQueue[$datagram->seqNumber]);
 		}
 		$datagram->seqNumber = $this->sendSeqNumber++;
-		$datagram->sendTime = microtime(true);
-		$this->recoveryQueue[$datagram->seqNumber] = $datagram;
 		($this->sendDatagramCallback)($datagram);
+
+		$resendable = [];
+		foreach($datagram->packets as $pk){
+			if(PacketReliability::isReliable($pk->reliability)){
+				$resendable[] = $pk;
+			}
+		}
+		if(count($resendable) !== 0){
+			$this->recoveryQueue[$datagram->seqNumber] = new ResendQueueEntry($resendable);
+		}
 	}
 
 	public function sendQueue() : void{
@@ -178,7 +185,7 @@ final class SendReliabilityLayer{
 		$packet->decode();
 		foreach($packet->packets as $seq){
 			if(isset($this->recoveryQueue[$seq])){
-				foreach($this->recoveryQueue[$seq]->packets as $pk){
+				foreach($this->recoveryQueue[$seq]->getPackets() as $pk){
 					if($pk->identifierACK !== null and $pk->messageIndex !== null){
 						unset($this->needACK[$pk->identifierACK][$pk->messageIndex]);
 						if(count($this->needACK[$pk->identifierACK]) === 0){
@@ -196,7 +203,10 @@ final class SendReliabilityLayer{
 		$packet->decode();
 		foreach($packet->packets as $seq){
 			if(isset($this->recoveryQueue[$seq])){
-				$this->packetToSend[] = $this->recoveryQueue[$seq];
+				//TODO: group resends if the resulting datagram is below the MTU
+				$resend = new Datagram();
+				$resend->packets = $this->recoveryQueue[$seq]->getPackets();
+				$this->packetToSend[] = $resend;
 				unset($this->recoveryQueue[$seq]);
 			}
 		}
@@ -228,8 +238,10 @@ final class SendReliabilityLayer{
 		}
 
 		foreach($this->recoveryQueue as $seq => $pk){
-			if($pk->sendTime < (time() - 8)){
-				$this->packetToSend[] = $pk;
+			if($pk->getTimestamp() < (time() - 8)){
+				$resend = new Datagram();
+				$resend->packets = $pk->getPackets();
+				$this->packetToSend[] = $resend;
 				unset($this->recoveryQueue[$seq]);
 			}else{
 				break;
