@@ -20,7 +20,7 @@ namespace raklib\generic;
 use raklib\protocol\EncapsulatedPacket;
 use function microtime;
 
-final class ResendQueueEntry{
+final class ReliableCacheEntry{
 
 	/** @var EncapsulatedPacket[] */
 	private $packets;
