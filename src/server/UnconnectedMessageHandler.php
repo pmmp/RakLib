@@ -39,10 +39,13 @@ class UnconnectedMessageHandler{
 	private $server;
 	/** @var OfflineMessage[]|\SplFixedArray<OfflineMessage> */
 	private $packetPool;
+	/** @var ProtocolAcceptor */
+	private $protocolAcceptor;
 
-	public function __construct(Server $server){
+	public function __construct(Server $server, ProtocolAcceptor $protocolAcceptor){
 		$this->registerPackets();
 		$this->server = $server;
+		$this->protocolAcceptor = $protocolAcceptor;
 	}
 
 	/**
@@ -79,13 +82,12 @@ class UnconnectedMessageHandler{
 			$pk->serverName = $this->server->getName();
 			$this->server->sendPacket($pk, $address);
 		}elseif($packet instanceof OpenConnectionRequest1){
-			$serverProtocol = $this->server->getProtocolVersion();
-			if($packet->protocol !== $serverProtocol){
+			if(!$this->protocolAcceptor->accepts($packet->protocol)){
 				$pk = new IncompatibleProtocolVersion();
-				$pk->protocolVersion = $serverProtocol;
+				$pk->protocolVersion = $this->protocolAcceptor->getPrimaryVersion();
 				$pk->serverId = $this->server->getID();
 				$this->server->sendPacket($pk, $address);
-				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (expected $serverProtocol, got $packet->protocol)");
+				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
 				$pk = new OpenConnectionReply1();
 				$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)

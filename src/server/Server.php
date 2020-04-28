@@ -55,8 +55,6 @@ class Server implements ServerInterface{
 
 	/** @var int */
 	protected $serverId;
-	/** @var int */
-	protected $protocolVersion;
 
 	/** @var int */
 	protected $receiveBytes = 0;
@@ -115,19 +113,18 @@ class Server implements ServerInterface{
 	/** @var ExceptionTraceCleaner */
 	private $traceCleaner;
 
-	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, int $protocolVersion, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
 		$this->maxMtuSize = $maxMtuSize;
-		$this->protocolVersion = $protocolVersion;
 		$this->eventSource = $eventSource;
 		$this->eventListener = $eventListener;
 		$this->traceCleaner = $traceCleaner;
 
 		$this->startTimeMS = (int) (microtime(true) * 1000);
 
-		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this);
+		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 
 		$this->reusableAddress = clone $this->socket->getBindAddress();
 	}
@@ -146,10 +143,6 @@ class Server implements ServerInterface{
 
 	public function getMaxMtuSize() : int{
 		return $this->maxMtuSize;
-	}
-
-	public function getProtocolVersion() : int{
-		return $this->protocolVersion;
 	}
 
 	public function getLogger() : \Logger{
