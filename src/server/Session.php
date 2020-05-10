@@ -287,11 +287,13 @@ class Session{
 	 * Initiates a graceful asynchronous disconnect which ensures both parties got all packets.
 	 */
 	public function initiateDisconnect(string $reason) : void{
-		$this->state = self::STATE_DISCONNECTING;
-		$this->disconnectionTime = microtime(true);
-		$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
-		$this->server->getEventListener()->closeSession($this->internalId, $reason);
-		$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
+		if($this->isConnected()){
+			$this->state = self::STATE_DISCONNECTING;
+			$this->disconnectionTime = microtime(true);
+			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
+			$this->server->getEventListener()->closeSession($this->internalId, $reason);
+			$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
+		}
 	}
 
 	/**
