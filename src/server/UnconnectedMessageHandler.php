@@ -76,23 +76,14 @@ class UnconnectedMessageHandler{
 
 	private function handle(OfflineMessage $packet, InternetAddress $address) : bool{
 		if($packet instanceof UnconnectedPing){
-			$pk = new UnconnectedPong();
-			$pk->serverId = $this->server->getID();
-			$pk->sendPingTime = $packet->sendPingTime;
-			$pk->serverName = $this->server->getName();
-			$this->server->sendPacket($pk, $address);
+			$this->server->sendPacket(UnconnectedPong::create($packet->sendPingTime, $this->server->getID(), $this->server->getName()), $address);
 		}elseif($packet instanceof OpenConnectionRequest1){
 			if(!$this->protocolAcceptor->accepts($packet->protocol)){
-				$pk = new IncompatibleProtocolVersion();
-				$pk->protocolVersion = $this->protocolAcceptor->getPrimaryVersion();
-				$pk->serverId = $this->server->getID();
-				$this->server->sendPacket($pk, $address);
+				$this->server->sendPacket(IncompatibleProtocolVersion::create($this->protocolAcceptor->getPrimaryVersion(), $this->server->getID()), $address);
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
-				$pk = new OpenConnectionReply1();
-				$pk->mtuSize = $packet->mtuSize + 28; //IP header size (20 bytes) + UDP header size (8 bytes)
-				$pk->serverID = $this->server->getID();
-				$this->server->sendPacket($pk, $address);
+				//IP header size (20 bytes) + UDP header size (8 bytes)
+				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), false, $packet->mtuSize + 28), $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
 			if($packet->serverAddress->port === $this->server->getPort() or !$this->server->portChecking){
@@ -101,11 +92,7 @@ class UnconnectedMessageHandler{
 					return true;
 				}
 				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
-				$pk = new OpenConnectionReply2();
-				$pk->mtuSize = $mtuSize;
-				$pk->serverID = $this->server->getID();
-				$pk->clientAddress = $address;
-				$this->server->sendPacket($pk, $address);
+				$this->server->sendPacket(OpenConnectionReply2::create($this->server->getID(), $address, $mtuSize, false), $address);
 				$this->server->createSession($address, $packet->clientID, $mtuSize);
 			}else{
 				$this->server->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->server->getPort() . ", got " . $packet->serverAddress->port);

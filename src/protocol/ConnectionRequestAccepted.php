@@ -36,6 +36,18 @@ class ConnectionRequestAccepted extends Packet{
 	/** @var int */
 	public $sendPongTime;
 
+	/**
+	 * @param InternetAddress[] $systemAddresses
+	 */
+	public static function create(InternetAddress $clientAddress, array $systemAddresses, int $sendPingTime, int $sendPongTime) : self{
+		$result = new self;
+		$result->address = $clientAddress;
+		$result->systemAddresses = $systemAddresses;
+		$result->sendPingTime = $sendPingTime;
+		$result->sendPongTime = $sendPongTime;
+		return $result;
+	}
+
 	public function __construct(string $buffer = "", int $offset = 0){
 		parent::__construct($buffer, $offset);
 		$this->systemAddresses[] = new InternetAddress("127.0.0.1", 0, 4);

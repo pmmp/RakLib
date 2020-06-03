@@ -203,9 +203,7 @@ class Session{
 	}
 
 	private function sendPing(int $reliability = PacketReliability::UNRELIABLE) : void{
-		$pk = new ConnectedPing();
-		$pk->sendPingTime = $this->server->getRakNetTimeMS();
-		$this->queueConnectedPacket($pk, $reliability, 0, true);
+		$this->queueConnectedPacket(ConnectedPing::create($this->server->getRakNetTimeMS()), $reliability, 0, true);
 	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet) : void{
@@ -219,12 +217,12 @@ class Session{
 				if($id === ConnectionRequest::$ID){
 					$dataPacket = new ConnectionRequest($packet->buffer);
 					$dataPacket->decode();
-
-					$pk = new ConnectionRequestAccepted;
-					$pk->address = $this->address;
-					$pk->sendPingTime = $dataPacket->sendPingTime;
-					$pk->sendPongTime = $this->server->getRakNetTimeMS();
-					$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0, true);
+					$this->queueConnectedPacket(ConnectionRequestAccepted::create(
+						$this->address,
+						[],
+						$dataPacket->sendPingTime,
+						$this->server->getRakNetTimeMS()
+					), PacketReliability::UNRELIABLE, 0, true);
 				}elseif($id === NewIncomingConnection::$ID){
 					$dataPacket = new NewIncomingConnection($packet->buffer);
 					$dataPacket->decode();
@@ -243,11 +241,10 @@ class Session{
 			}elseif($id === ConnectedPing::$ID){
 				$dataPacket = new ConnectedPing($packet->buffer);
 				$dataPacket->decode();
-
-				$pk = new ConnectedPong;
-				$pk->sendPingTime = $dataPacket->sendPingTime;
-				$pk->sendPongTime = $this->server->getRakNetTimeMS();
-				$this->queueConnectedPacket($pk, PacketReliability::UNRELIABLE, 0);
+				$this->queueConnectedPacket(ConnectedPong::create(
+					$dataPacket->sendPingTime,
+					$this->server->getRakNetTimeMS()
+				), PacketReliability::UNRELIABLE, 0);
 			}elseif($id === ConnectedPong::$ID){
 				$dataPacket = new ConnectedPong($packet->buffer);
 				$dataPacket->decode();

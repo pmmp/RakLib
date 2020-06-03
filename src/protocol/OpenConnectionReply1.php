@@ -29,6 +29,14 @@ class OpenConnectionReply1 extends OfflineMessage{
 	/** @var int */
 	public $mtuSize;
 
+	public static function create(int $serverId, bool $serverSecurity, int $mtuSize) : self{
+		$result = new self;
+		$result->serverID = $serverId;
+		$result->serverSecurity = $serverSecurity;
+		$result->mtuSize = $mtuSize;
+		return $result;
+	}
+
 	protected function encodePayload() : void{
 		$this->writeMagic();
 		$this->putLong($this->serverID);

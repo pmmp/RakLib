@@ -29,6 +29,14 @@ class UnconnectedPong extends OfflineMessage{
 	/** @var string */
 	public $serverName;
 
+	public static function create(int $sendPingTime, int $serverId, string $serverName) : self{
+		$result = new self;
+		$result->sendPingTime = $sendPingTime;
+		$result->serverId = $serverId;
+		$result->serverName = $serverName;
+		return $result;
+	}
+
 	protected function encodePayload() : void{
 		$this->putLong($this->sendPingTime);
 		$this->putLong($this->serverId);

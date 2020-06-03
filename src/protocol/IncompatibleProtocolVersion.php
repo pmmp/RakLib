@@ -25,6 +25,13 @@ class IncompatibleProtocolVersion extends OfflineMessage{
 	/** @var int */
 	public $serverId;
 
+	public static function create(int $protocolVersion, int $serverId) : self{
+		$result = new self;
+		$result->protocolVersion = $protocolVersion;
+		$result->serverId = $serverId;
+		return $result;
+	}
+
 	protected function encodePayload() : void{
 		$this->putByte($this->protocolVersion);
 		$this->writeMagic();
