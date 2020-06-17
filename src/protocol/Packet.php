@@ -102,7 +102,6 @@ abstract class Packet{
 	}
 
 	public function encode(BinaryStream $out) : void{
-		$out->reset();
 		$this->encodeHeader($out);
 		$this->encodePayload($out);
 	}
@@ -119,7 +118,6 @@ abstract class Packet{
 	 * @throws BinaryDataException
 	 */
 	public function decode(BinaryStream $in) : void{
-		$in->rewind();
 		$this->decodeHeader($in);
 		$this->decodePayload($in);
 	}
