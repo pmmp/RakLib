@@ -17,17 +17,19 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\BinaryStream;
+
 class AdvertiseSystem extends Packet{
 	public static $ID = MessageIdentifiers::ID_ADVERTISE_SYSTEM;
 
 	/** @var string */
 	public $serverName;
 
-	protected function encodePayload() : void{
-		$this->putString($this->serverName);
+	protected function encodePayload(BinaryStream $out) : void{
+		$this->putString($this->serverName, $out);
 	}
 
-	protected function decodePayload() : void{
-		$this->serverName = $this->getString();
+	protected function decodePayload(BinaryStream $in) : void{
+		$this->serverName = $this->getString($in);
 	}
 }

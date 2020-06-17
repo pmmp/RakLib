@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\BinaryStream;
 use raklib\generic\Socket;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
@@ -269,12 +270,14 @@ class Server implements ServerInterface{
 				$header = ord($buffer[0]);
 				if(($header & Datagram::BITFLAG_VALID) !== 0){
 					if(($header & Datagram::BITFLAG_ACK) !== 0){
-						$session->handlePacket(new ACK($buffer));
+						$packet = new ACK();
 					}elseif(($header & Datagram::BITFLAG_NAK) !== 0){
-						$session->handlePacket(new NACK($buffer));
+						$packet = new NACK();
 					}else{
-						$session->handlePacket(new Datagram($buffer));
+						$packet = new Datagram();
 					}
+					$packet->decode(new BinaryStream($buffer));
+					$session->handlePacket($packet);
 				}else{
 					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
 				}
@@ -314,9 +317,10 @@ class Server implements ServerInterface{
 	}
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
-		$packet->encode();
+		$out = new BinaryStream(); //TODO: reuse streams to reduce allocations
+		$packet->encode($out);
 		try{
-			$this->sendBytes += $this->socket->writePacket($packet->getBuffer(), $address->ip, $address->port);
+			$this->sendBytes += $this->socket->writePacket($out->getBuffer(), $address->ip, $address->port);
 		}catch(SocketException $e){
 			$this->logger->debug($e->getMessage());
 		}

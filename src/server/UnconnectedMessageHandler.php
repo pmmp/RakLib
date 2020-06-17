@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\BinaryStream;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OfflineMessage;
 use raklib\protocol\OpenConnectionReply1;
@@ -63,12 +64,13 @@ class UnconnectedMessageHandler{
 		if($pk === null){
 			return false;
 		}
-		$pk->decode();
+		$reader = new BinaryStream($payload);
+		$pk->decode($reader);
 		if(!$pk->isValid()){
 			return false;
 		}
-		if(!$pk->feof()){
-			$remains = substr($pk->getBuffer(), $pk->getOffset());
+		if(!$reader->feof()){
+			$remains = substr($reader->getBuffer(), $reader->getOffset());
 			$this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
 		}
 		return $this->handle($pk, $address);
@@ -120,9 +122,7 @@ class UnconnectedMessageHandler{
 	public function getPacketFromPool(string $buffer) : ?OfflineMessage{
 		$pk = $this->packetPool[ord($buffer[0])];
 		if($pk !== null){
-			$pk = clone $pk;
-			$pk->setBuffer($buffer);
-			return $pk;
+			return clone $pk;
 		}
 
 		return null;

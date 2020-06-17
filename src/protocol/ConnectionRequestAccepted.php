@@ -19,6 +19,7 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use pocketmine\utils\BinaryStream;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
@@ -48,36 +49,35 @@ class ConnectionRequestAccepted extends Packet{
 		return $result;
 	}
 
-	public function __construct(string $buffer = "", int $offset = 0){
-		parent::__construct($buffer, $offset);
+	public function __construct(){
 		$this->systemAddresses[] = new InternetAddress("127.0.0.1", 0, 4);
 	}
 
-	protected function encodePayload() : void{
-		$this->putAddress($this->address);
-		$this->putShort(0);
+	protected function encodePayload(BinaryStream $out) : void{
+		$this->putAddress($this->address, $out);
+		$out->putShort(0);
 
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->putAddress($this->systemAddresses[$i] ?? $dummy);
+			$this->putAddress($this->systemAddresses[$i] ?? $dummy, $out);
 		}
 
-		$this->putLong($this->sendPingTime);
-		$this->putLong($this->sendPongTime);
+		$out->putLong($this->sendPingTime);
+		$out->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload() : void{
-		$this->address = $this->getAddress();
-		$this->getShort(); //TODO: check this
+	protected function decodePayload(BinaryStream $in) : void{
+		$this->address = $this->getAddress($in);
+		$in->getShort(); //TODO: check this
 
-		$len = strlen($this->buffer);
+		$len = strlen($in->getBuffer());
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->systemAddresses[$i] = $this->offset + 16 < $len ? $this->getAddress() : $dummy; //HACK: avoids trying to read too many addresses on bad data
+			$this->systemAddresses[$i] = $in->getOffset() + 16 < $len ? $this->getAddress($in) : $dummy; //HACK: avoids trying to read too many addresses on bad data
 		}
 
-		$this->sendPingTime = $this->getLong();
-		$this->sendPongTime = $this->getLong();
+		$this->sendPingTime = $in->getLong();
+		$this->sendPongTime = $in->getLong();
 	}
 }

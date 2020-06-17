@@ -230,8 +230,6 @@ final class ReceiveReliabilityLayer{
 	}
 
 	public function onDatagram(Datagram $packet) : void{
-		$packet->decode();
-
 		if($packet->seqNumber < $this->windowStart or $packet->seqNumber > $this->windowEnd or isset($this->ACKQueue[$packet->seqNumber])){
 			$this->logger->debug("Received duplicate or out-of-window packet (sequence number $packet->seqNumber, window " . $this->windowStart . "-" . $this->windowEnd . ")");
 			return;

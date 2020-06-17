@@ -19,6 +19,8 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
+use pocketmine\utils\BinaryStream;
+
 class ConnectedPong extends Packet{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PONG;
 
@@ -34,13 +36,13 @@ class ConnectedPong extends Packet{
 		return $result;
 	}
 
-	protected function encodePayload() : void{
-		$this->putLong($this->sendPingTime);
-		$this->putLong($this->sendPongTime);
+	protected function encodePayload(BinaryStream $out) : void{
+		$out->putLong($this->sendPingTime);
+		$out->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload() : void{
-		$this->sendPingTime = $this->getLong();
-		$this->sendPongTime = $this->getLong();
+	protected function decodePayload(BinaryStream $in) : void{
+		$this->sendPingTime = $in->getLong();
+		$this->sendPongTime = $in->getLong();
 	}
 }

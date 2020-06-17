@@ -30,103 +30,109 @@ use const AF_INET6;
 
 #include <rules/RakLibPacket.h>
 
-abstract class Packet extends BinaryStream{
+abstract class Packet{
 	/** @var int */
 	public static $ID = -1;
 
 	/**
+	 * @param BinaryStream $in
+	 *
 	 * @return string
 	 * @throws BinaryDataException
 	 */
-	protected function getString() : string{
-		return $this->get($this->getShort());
+	protected function getString(BinaryStream $in) : string{
+		return $in->get($in->getShort());
 	}
 
 	/**
+	 * @param BinaryStream $in
+	 *
 	 * @return InternetAddress
 	 * @throws BinaryDataException
 	 */
-	protected function getAddress() : InternetAddress{
-		$version = $this->getByte();
+	protected function getAddress(BinaryStream $in) : InternetAddress{
+		$version = $in->getByte();
 		if($version === 4){
-			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
-			$port = $this->getShort();
+			$addr = ((~$in->getByte()) & 0xff) . "." . ((~$in->getByte()) & 0xff) . "." . ((~$in->getByte()) & 0xff) . "." . ((~$in->getByte()) & 0xff);
+			$port = $in->getShort();
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
-			$this->getLShort(); //Family, AF_INET6
-			$port = $this->getShort();
-			$this->getInt(); //flow info
-			$addr = inet_ntop($this->get(16));
+			$in->getLShort(); //Family, AF_INET6
+			$port = $in->getShort();
+			$in->getInt(); //flow info
+			$addr = inet_ntop($in->get(16));
 			if($addr === false){
 				throw new BinaryDataException("Failed to parse IPv6 address");
 			}
-			$this->getInt(); //scope ID
+			$in->getInt(); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
 			throw new BinaryDataException("Unknown IP address version $version");
 		}
 	}
 
-	protected function putString(string $v) : void{
-		$this->putShort(strlen($v));
-		$this->put($v);
+	protected function putString(string $v, BinaryStream $out) : void{
+		$out->putShort(strlen($v));
+		$out->put($v);
 	}
 
-	protected function putAddress(InternetAddress $address) : void{
-		$this->putByte($address->version);
+	protected function putAddress(InternetAddress $address, BinaryStream $out) : void{
+		$out->putByte($address->version);
 		if($address->version === 4){
 			$parts = explode(".", $address->ip);
 			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
 			foreach($parts as $b){
-				$this->putByte((~((int) $b)) & 0xff);
+				$out->putByte((~((int) $b)) & 0xff);
 			}
-			$this->putShort($address->port);
+			$out->putShort($address->port);
 		}elseif($address->version === 6){
-			$this->putLShort(AF_INET6);
-			$this->putShort($address->port);
-			$this->putInt(0);
+			$out->putLShort(AF_INET6);
+			$out->putShort($address->port);
+			$out->putInt(0);
 			$rawIp = inet_pton($address->ip);
 			if($rawIp === false){
 				throw new \InvalidArgumentException("Invalid IPv6 address could not be encoded");
 			}
-			$this->put($rawIp);
-			$this->putInt(0);
+			$out->put($rawIp);
+			$out->putInt(0);
 		}else{
 			throw new \InvalidArgumentException("IP version $address->version is not supported");
 		}
 	}
 
-	public function encode() : void{
-		$this->reset();
-		$this->encodeHeader();
-		$this->encodePayload();
+	public function encode(BinaryStream $out) : void{
+		$out->reset();
+		$this->encodeHeader($out);
+		$this->encodePayload($out);
 	}
 
-	protected function encodeHeader() : void{
-		$this->putByte(static::$ID);
+	protected function encodeHeader(BinaryStream $out) : void{
+		$out->putByte(static::$ID);
 	}
 
-	abstract protected function encodePayload() : void;
+	abstract protected function encodePayload(BinaryStream $out) : void;
 
 	/**
+	 * @param BinaryStream $in
+	 *
 	 * @throws BinaryDataException
 	 */
-	public function decode() : void{
-		$this->offset = 0;
-		$this->decodeHeader();
-		$this->decodePayload();
-	}
-
-	/**
-	 * @throws BinaryDataException
-	 */
-	protected function decodeHeader() : void{
-		$this->getByte(); //PID
+	public function decode(BinaryStream $in) : void{
+		$in->rewind();
+		$this->decodeHeader($in);
+		$this->decodePayload($in);
 	}
 
 	/**
 	 * @throws BinaryDataException
 	 */
-	abstract protected function decodePayload() : void;
+	protected function decodeHeader(BinaryStream $in) : void{
+		$in->getByte(); //PID
+	}
+
+	/**
+	 * @throws BinaryDataException
+	 */
+	abstract protected function decodePayload(BinaryStream $in) : void;
 }

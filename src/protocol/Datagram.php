@@ -19,7 +19,7 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use function strlen;
+use pocketmine\utils\BinaryStream;
 
 class Datagram extends Packet{
 	public const BITFLAG_VALID = 0x80;
@@ -45,14 +45,14 @@ class Datagram extends Packet{
 	/** @var int|null */
 	public $seqNumber = null;
 
-	protected function encodeHeader() : void{
-		$this->putByte(self::BITFLAG_VALID | $this->headerFlags);
+	protected function encodeHeader(BinaryStream $out) : void{
+		$out->putByte(self::BITFLAG_VALID | $this->headerFlags);
 	}
 
-	protected function encodePayload() : void{
-		$this->putLTriad($this->seqNumber);
+	protected function encodePayload(BinaryStream $out) : void{
+		$out->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
-			$this->put($packet->toBinary());
+			$out->put($packet->toBinary());
 		}
 	}
 
@@ -68,15 +68,15 @@ class Datagram extends Packet{
 		return $length;
 	}
 
-	protected function decodeHeader() : void{
-		$this->headerFlags = $this->getByte();
+	protected function decodeHeader(BinaryStream $in) : void{
+		$this->headerFlags = $in->getByte();
 	}
 
-	protected function decodePayload() : void{
-		$this->seqNumber = $this->getLTriad();
+	protected function decodePayload(BinaryStream $in) : void{
+		$this->seqNumber = $in->getLTriad();
 
-		while(!$this->feof()){
-			$this->packets[] = EncapsulatedPacket::fromBinary($this);
+		while(!$in->feof()){
+			$this->packets[] = EncapsulatedPacket::fromBinary($in);
 		}
 	}
 }
