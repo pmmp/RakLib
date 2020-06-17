@@ -17,16 +17,14 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\BinaryStream;
-
 class DisconnectionNotification extends Packet{
 	public static $ID = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
 
-	protected function encodePayload(BinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 
 	}
 }

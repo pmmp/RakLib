@@ -19,7 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use pocketmine\utils\BinaryStream;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
@@ -53,28 +52,28 @@ class ConnectionRequestAccepted extends Packet{
 		$this->systemAddresses[] = new InternetAddress("127.0.0.1", 0, 4);
 	}
 
-	protected function encodePayload(BinaryStream $out) : void{
-		$this->putAddress($this->address, $out);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putAddress($this->address);
 		$out->putShort(0);
 
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->putAddress($this->systemAddresses[$i] ?? $dummy, $out);
+			$out->putAddress($this->systemAddresses[$i] ?? $dummy);
 		}
 
 		$out->putLong($this->sendPingTime);
 		$out->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
-		$this->address = $this->getAddress($in);
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->address = $in->getAddress();
 		$in->getShort(); //TODO: check this
 
 		$len = strlen($in->getBuffer());
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->systemAddresses[$i] = $in->getOffset() + 16 < $len ? $this->getAddress($in) : $dummy; //HACK: avoids trying to read too many addresses on bad data
+			$this->systemAddresses[$i] = $in->getOffset() + 16 < $len ? $in->getAddress() : $dummy; //HACK: avoids trying to read too many addresses on bad data
 		}
 
 		$this->sendPingTime = $in->getLong();

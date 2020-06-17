@@ -18,13 +18,13 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\BinaryStream;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OfflineMessage;
 use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
 use raklib\protocol\OpenConnectionRequest1;
 use raklib\protocol\OpenConnectionRequest2;
+use raklib\protocol\PacketSerializer;
 use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
@@ -64,7 +64,7 @@ class UnconnectedMessageHandler{
 		if($pk === null){
 			return false;
 		}
-		$reader = new BinaryStream($payload);
+		$reader = new PacketSerializer($payload);
 		$pk->decode($reader);
 		if(!$pk->isValid()){
 			return false;

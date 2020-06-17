@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\BinaryStream;
-
 class IncompatibleProtocolVersion extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_INCOMPATIBLE_PROTOCOL_VERSION;
 
@@ -34,13 +32,13 @@ class IncompatibleProtocolVersion extends OfflineMessage{
 		return $result;
 	}
 
-	protected function encodePayload(BinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putByte($this->protocolVersion);
 		$this->writeMagic($out);
 		$out->putLong($this->serverId);
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 		$this->protocolVersion = $in->getByte();
 		$this->readMagic($in);
 		$this->serverId = $in->getLong();

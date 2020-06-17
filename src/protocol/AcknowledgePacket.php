@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\BinaryStream;
 use function chr;
 use function count;
 use function sort;
@@ -35,7 +34,7 @@ abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
 	public $packets = [];
 
-	protected function encodePayload(BinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$payload = "";
 		sort($this->packets, SORT_NUMERIC);
 		$count = count($this->packets);
@@ -81,7 +80,7 @@ abstract class AcknowledgePacket extends Packet{
 		$out->put($payload);
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 		$count = $in->getShort();
 		$this->packets = [];
 		$cnt = 0;

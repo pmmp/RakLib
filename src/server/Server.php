@@ -18,7 +18,6 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\BinaryStream;
 use raklib\generic\Socket;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
@@ -26,6 +25,7 @@ use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
+use raklib\protocol\PacketSerializer;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -275,7 +275,7 @@ class Server implements ServerInterface{
 					}else{
 						$packet = new Datagram();
 					}
-					$packet->decode(new BinaryStream($buffer));
+					$packet->decode(new PacketSerializer($buffer));
 					$session->handlePacket($packet);
 				}else{
 					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
@@ -316,7 +316,7 @@ class Server implements ServerInterface{
 	}
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
-		$out = new BinaryStream(); //TODO: reuse streams to reduce allocations
+		$out = new PacketSerializer(); //TODO: reusable streams to reduce allocations
 		$packet->encode($out);
 		try{
 			$this->sendBytes += $this->socket->writePacket($out->getBuffer(), $address->ip, $address->port);

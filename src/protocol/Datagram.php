@@ -19,8 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use pocketmine\utils\BinaryStream;
-
 class Datagram extends Packet{
 	public const BITFLAG_VALID = 0x80;
 	public const BITFLAG_ACK = 0x40;
@@ -45,11 +43,11 @@ class Datagram extends Packet{
 	/** @var int|null */
 	public $seqNumber = null;
 
-	protected function encodeHeader(BinaryStream $out) : void{
+	protected function encodeHeader(PacketSerializer $out) : void{
 		$out->putByte(self::BITFLAG_VALID | $this->headerFlags);
 	}
 
-	protected function encodePayload(BinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
 			$out->put($packet->toBinary());
@@ -68,11 +66,11 @@ class Datagram extends Packet{
 		return $length;
 	}
 
-	protected function decodeHeader(BinaryStream $in) : void{
+	protected function decodeHeader(PacketSerializer $in) : void{
 		$this->headerFlags = $in->getByte();
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 		$this->seqNumber = $in->getLTriad();
 
 		while(!$in->feof()){

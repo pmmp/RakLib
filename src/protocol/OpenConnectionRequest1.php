@@ -19,7 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use pocketmine\utils\BinaryStream;
 use raklib\RakLib;
 use function str_repeat;
 use function strlen;
@@ -32,13 +31,13 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	/** @var int */
 	public $mtuSize;
 
-	protected function encodePayload(BinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
 		$out->putByte($this->protocol);
 		$out->put(str_repeat("\x00", $this->mtuSize - strlen($out->getBuffer())));
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
 		$this->protocol = $in->getByte();
 		$this->mtuSize = strlen($in->getBuffer());

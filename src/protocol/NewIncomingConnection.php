@@ -19,7 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use pocketmine\utils\BinaryStream;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
@@ -38,17 +37,17 @@ class NewIncomingConnection extends Packet{
 	/** @var int */
 	public $sendPongTime;
 
-	protected function encodePayload(BinaryStream $out) : void{
-		$this->putAddress($this->address, $out);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putAddress($this->address);
 		foreach($this->systemAddresses as $address){
-			$this->putAddress($address, $out);
+			$out->putAddress($address);
 		}
 		$out->putLong($this->sendPingTime);
 		$out->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload(BinaryStream $in) : void{
-		$this->address = $this->getAddress($in);
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->address = $in->getAddress();
 
 		//TODO: HACK!
 		$stopOffset = strlen($in->getBuffer()) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
@@ -57,7 +56,7 @@ class NewIncomingConnection extends Packet{
 			if($in->getOffset() >= $stopOffset){
 				$this->systemAddresses[$i] = clone $dummy;
 			}else{
-				$this->systemAddresses[$i] = $this->getAddress($in);
+				$this->systemAddresses[$i] = $in->getAddress();
 			}
 		}
 

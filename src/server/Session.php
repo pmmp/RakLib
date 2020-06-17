@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use pocketmine\utils\BinaryStream;
 use raklib\generic\ReceiveReliabilityLayer;
 use raklib\generic\SendReliabilityLayer;
 use raklib\protocol\ACK;
@@ -34,6 +33,7 @@ use raklib\protocol\NACK;
 use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
+use raklib\protocol\PacketSerializer;
 use raklib\utils\InternetAddress;
 use function microtime;
 use function ord;
@@ -184,7 +184,7 @@ class Session{
 	}
 
 	private function queueConnectedPacket(Packet $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
-		$out = new BinaryStream();  //TODO: reuse streams to reduce allocations
+		$out = new PacketSerializer();  //TODO: reuse streams to reduce allocations
 		$packet->encode($out);
 
 		$encapsulated = new EncapsulatedPacket();
@@ -217,7 +217,7 @@ class Session{
 			if($this->state === self::STATE_CONNECTING){
 				if($id === ConnectionRequest::$ID){
 					$dataPacket = new ConnectionRequest();
-					$dataPacket->decode(new BinaryStream($packet->buffer));
+					$dataPacket->decode(new PacketSerializer($packet->buffer));
 					$this->queueConnectedPacket(ConnectionRequestAccepted::create(
 						$this->address,
 						[],
@@ -226,7 +226,7 @@ class Session{
 					), PacketReliability::UNRELIABLE, 0, true);
 				}elseif($id === NewIncomingConnection::$ID){
 					$dataPacket = new NewIncomingConnection();
-					$dataPacket->decode(new BinaryStream($packet->buffer));
+					$dataPacket->decode(new PacketSerializer($packet->buffer));
 
 					if($dataPacket->address->port === $this->server->getPort() or !$this->server->portChecking){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
@@ -241,14 +241,14 @@ class Session{
 				$this->initiateDisconnect("client disconnect");
 			}elseif($id === ConnectedPing::$ID){
 				$dataPacket = new ConnectedPing();
-				$dataPacket->decode(new BinaryStream($packet->buffer));
+				$dataPacket->decode(new PacketSerializer($packet->buffer));
 				$this->queueConnectedPacket(ConnectedPong::create(
 					$dataPacket->sendPingTime,
 					$this->server->getRakNetTimeMS()
 				), PacketReliability::UNRELIABLE, 0);
 			}elseif($id === ConnectedPong::$ID){
 				$dataPacket = new ConnectedPong();
-				$dataPacket->decode(new BinaryStream($packet->buffer));
+				$dataPacket->decode(new PacketSerializer($packet->buffer));
 
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
 			}
