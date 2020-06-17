@@ -18,7 +18,6 @@ declare(strict_types=1);
 namespace raklib\server\ipc;
 
 use pocketmine\utils\Binary;
-use raklib\protocol\ACK;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\PacketReliability;
 use raklib\server\ipc\UserToRakLibThreadMessageProtocol as ITCProtocol;

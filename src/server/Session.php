@@ -35,7 +35,6 @@ use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
 use raklib\utils\InternetAddress;
-use function count;
 use function microtime;
 use function ord;
 

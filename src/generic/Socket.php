@@ -156,5 +156,4 @@ class Socket{
 
 		return $this;
 	}
-
 }

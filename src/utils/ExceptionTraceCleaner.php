@@ -36,7 +36,7 @@ final class ExceptionTraceCleaner{
 	}
 
 	/**
-	 * @param int $start
+	 * @param int                             $start
 	 * @param list<array<string, mixed>>|null $trace
 	 *
 	 * @return list<string>

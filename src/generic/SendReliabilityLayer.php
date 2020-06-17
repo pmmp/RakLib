@@ -140,7 +140,6 @@ final class SendReliabilityLayer{
 	}
 
 	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, bool $immediate = false) : void{
-
 		if($packet->identifierACK !== null){
 			$this->needACK[$packet->identifierACK] = [];
 		}
