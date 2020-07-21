@@ -60,14 +60,6 @@ final class UserToRakLibThreadMessageProtocol{
 	public const PACKET_CLOSE_SESSION = 0x02;
 
 	/*
-	 * SET_OPTION payload:
-	 * byte (option name length)
-	 * byte[] (option name)
-	 * byte[] (option value)
-	 */
-	public const PACKET_SET_OPTION = 0x03;
-
-	/*
 	 * RAW payload:
 	 * byte (address length)
 	 * byte[] (address from/to)
@@ -96,6 +88,24 @@ final class UserToRakLibThreadMessageProtocol{
 	 * byte[] (pattern)
 	 */
 	public const PACKET_RAW_FILTER = 0x07;
+
+	/*
+	 * SET_NAME payload:
+	 * byte[] (name)
+	 */
+	public const PACKET_SET_NAME = 0x08;
+
+	/* No payload */
+	public const PACKET_ENABLE_PORT_CHECK = 0x09;
+
+	/* No payload */
+	public const PACKET_DISABLE_PORT_CHECK = 0x10;
+
+	/*
+	 * PACKETS_PER_TICK_LIMIT payload:
+	 * int64 (limit)
+	 */
+	public const PACKET_SET_PACKETS_PER_TICK_LIMIT = 0x11;
 
 	/*
 	 * No payload

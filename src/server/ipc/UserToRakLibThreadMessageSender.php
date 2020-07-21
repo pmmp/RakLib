@@ -58,13 +58,16 @@ class UserToRakLibThreadMessageSender implements ServerInterface{
 		$this->channel->write($buffer);
 	}
 
-	/**
-	 * @param string $name
-	 * @param mixed  $value Must be castable to string
-	 */
-	public function setOption(string $name, $value) : void{
-		$buffer = chr(ITCProtocol::PACKET_SET_OPTION) . chr(strlen($name)) . $name . $value;
-		$this->channel->write($buffer);
+	public function setName(string $name) : void{
+		$this->channel->write(chr(ITCProtocol::PACKET_SET_NAME) . $name);
+	}
+
+	public function setPortCheck(bool $value) : void{
+		$this->channel->write(chr($value ? ITCProtocol::PACKET_ENABLE_PORT_CHECK : ITCProtocol::PACKET_DISABLE_PORT_CHECK));
+	}
+
+	public function setPacketsPerTickLimit(int $limit) : void{
+		$this->channel->write(chr(ITCProtocol::PACKET_SET_PACKETS_PER_TICK_LIMIT) . Binary::writeLong($limit));
 	}
 
 	public function blockAddress(string $address, int $timeout) : void{

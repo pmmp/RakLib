@@ -27,7 +27,11 @@ interface ServerInterface{
 
 	public function closeSession(int $identifier) : void;
 
-	public function setOption(string $name, string $value) : void;
+	public function setName(string $name) : void;
+
+	public function setPortCheck(bool $value) : void;
+
+	public function setPacketsPerTickLimit(int $limit) : void;
 
 	public function blockAddress(string $address, int $timeout) : void;
 

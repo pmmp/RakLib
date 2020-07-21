@@ -341,21 +341,16 @@ class Server implements ServerInterface{
 		}
 	}
 
-	/**
-	 * TODO: replace this crap with a proper API
-	 */
-	public function setOption(string $name, string $value) : void{
-		switch($name){
-			case "name":
-				$this->name = $value;
-				break;
-			case "portChecking":
-				$this->portChecking = (bool) $value;
-				break;
-			case "packetLimit":
-				$this->packetLimit = (int) $value;
-				break;
-		}
+	public function setName(string $name) : void{
+		$this->name = $name;
+	}
+
+	public function setPortCheck(bool $value) : void{
+		$this->portChecking = $value;
+	}
+
+	public function setPacketsPerTickLimit(int $limit) : void{
+		$this->packetLimit = $limit;
 	}
 
 	public function blockAddress(string $address, int $timeout = 300) : void{
