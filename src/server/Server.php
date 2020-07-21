@@ -80,8 +80,6 @@ class Server implements ServerInterface{
 
 	/** @var int */
 	protected $ticks = 0;
-	/** @var float */
-	protected $lastMeasure;
 
 	/** @var int[] string (address) => int (unblock time) */
 	protected $block = [];
@@ -155,8 +153,6 @@ class Server implements ServerInterface{
 	}
 
 	private function tickProcessor() : void{
-		$this->lastMeasure = microtime(true);
-
 		while(!$this->shutdown or count($this->sessions) > 0){
 			$start = microtime(true);
 
@@ -200,15 +196,13 @@ class Server implements ServerInterface{
 
 		if(!$this->shutdown and ($this->ticks % self::RAKLIB_TPS) === 0){
 			if($this->sendBytes > 0 or $this->receiveBytes > 0){
-				$diff = max(0.005, $time - $this->lastMeasure);
 				$this->eventListener->handleOption("bandwidth", serialize([
-					"up" => $this->sendBytes / $diff,
-					"down" => $this->receiveBytes / $diff
+					"up" => $this->sendBytes,
+					"down" => $this->receiveBytes
 				]));
 				$this->sendBytes = 0;
 				$this->receiveBytes = 0;
 			}
-			$this->lastMeasure = $time;
 
 			if(count($this->block) > 0){
 				asort($this->block);
