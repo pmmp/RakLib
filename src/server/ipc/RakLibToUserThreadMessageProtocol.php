@@ -71,12 +71,11 @@ final class RakLibToUserThreadMessageProtocol{
 	public const PACKET_ACK_NOTIFICATION = 0x04;
 
 	/*
-	 * SET_OPTION payload:
-	 * byte (option name length)
-	 * byte[] (option name)
-	 * byte[] (option value)
+	 * REPORT_BANDWIDTH_STATS payload:
+	 * int64 (sent bytes diff)
+	 * int64 (received bytes diff)
 	 */
-	public const PACKET_SET_OPTION = 0x05;
+	public const PACKET_REPORT_BANDWIDTH_STATS = 0x05;
 
 	/*
 	 * RAW payload:

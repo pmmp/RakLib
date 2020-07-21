@@ -80,11 +80,11 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function handleOption(string $name, string $value) : void{
+	public function handleBandwidthStats(int $bytesSentDiff, int $bytesReceivedDiff) : void{
 		$this->channel->write(
-			chr(ITCProtocol::PACKET_SET_OPTION) .
-			chr(strlen($name)) . $name .
-			$value
+			chr(ITCProtocol::PACKET_REPORT_BANDWIDTH_STATS) .
+			Binary::writeLong($bytesSentDiff) .
+			Binary::writeLong($bytesReceivedDiff)
 		);
 	}
 

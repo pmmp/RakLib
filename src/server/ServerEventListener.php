@@ -52,11 +52,7 @@ interface ServerEventListener{
 	 */
 	public function notifyACK(int $sessionId, int $identifierACK) : void;
 
-	/**
-	 * @param string $option
-	 * @param string $value
-	 */
-	public function handleOption(string $option, string $value) : void;
+	public function handleBandwidthStats(int $bytesSentDiff, int $bytesReceivedDiff) : void;
 
 	/**
 	 * @param int $sessionId

@@ -49,12 +49,11 @@ final class RakLibToUserThreadMessageReceiver{
 				$offset += 2;
 				$payload = substr($packet, $offset);
 				$listener->handleRaw($address, $port, $payload);
-			}elseif($id === ITCProtocol::PACKET_SET_OPTION){
-				$len = ord($packet[$offset++]);
-				$name = substr($packet, $offset, $len);
-				$offset += $len;
-				$value = substr($packet, $offset);
-				$listener->handleOption($name, $value);
+			}elseif($id === ITCProtocol::PACKET_REPORT_BANDWIDTH_STATS){
+				$sentBytes = Binary::readLong(substr($packet, $offset, 8));
+				$offset += 8;
+				$receivedBytes = Binary::readLong(substr($packet, $offset, 8));
+				$listener->handleBandwidthStats($sentBytes, $receivedBytes);
 			}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
 				$identifier = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;

@@ -196,10 +196,7 @@ class Server implements ServerInterface{
 
 		if(!$this->shutdown and ($this->ticks % self::RAKLIB_TPS) === 0){
 			if($this->sendBytes > 0 or $this->receiveBytes > 0){
-				$this->eventListener->handleOption("bandwidth", serialize([
-					"up" => $this->sendBytes,
-					"down" => $this->receiveBytes
-				]));
+				$this->eventListener->handleBandwidthStats($this->sendBytes, $this->receiveBytes);
 				$this->sendBytes = 0;
 				$this->receiveBytes = 0;
 			}
