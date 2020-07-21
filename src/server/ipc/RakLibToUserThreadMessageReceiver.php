@@ -37,10 +37,10 @@ final class RakLibToUserThreadMessageReceiver{
 			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$buffer = substr($packet, $offset);
-				$listener->handleEncapsulated($identifier, $buffer);
+				$listener->handleEncapsulated($sessionId, $buffer);
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
@@ -55,7 +55,7 @@ final class RakLibToUserThreadMessageReceiver{
 				$receivedBytes = Binary::readLong(substr($packet, $offset, 8));
 				$listener->handleBandwidthStats($sentBytes, $receivedBytes);
 			}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$len = ord($packet[$offset++]);
 				$rawAddr = substr($packet, $offset, $len);
@@ -67,23 +67,23 @@ final class RakLibToUserThreadMessageReceiver{
 				$port = Binary::readShort(substr($packet, $offset, 2));
 				$offset += 2;
 				$clientID = Binary::readLong(substr($packet, $offset, 8));
-				$listener->openSession($identifier, $address, $port, $clientID);
+				$listener->openSession($sessionId, $address, $port, $clientID);
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$len = ord($packet[$offset++]);
 				$reason = substr($packet, $offset, $len);
-				$listener->closeSession($identifier, $reason);
+				$listener->closeSession($sessionId, $reason);
 			}elseif($id === ITCProtocol::PACKET_ACK_NOTIFICATION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
-				$listener->notifyACK($identifier, $identifierACK);
+				$listener->notifyACK($sessionId, $identifierACK);
 			}elseif($id === ITCProtocol::PACKET_REPORT_PING){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$pingMS = Binary::readInt(substr($packet, $offset, 4));
-				$listener->updatePing($identifier, $pingMS);
+				$listener->updatePing($sessionId, $pingMS);
 			}
 
 			return true;

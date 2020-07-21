@@ -33,13 +33,13 @@ class UserToRakLibThreadMessageSender implements ServerInterface{
 		$this->channel = $channel;
 	}
 
-	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, bool $immediate = false) : void{
+	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void{
 		$flags =
 			($immediate ? ITCProtocol::ENCAPSULATED_FLAG_IMMEDIATE : 0) |
 			($packet->identifierACK !== null ? ITCProtocol::ENCAPSULATED_FLAG_NEED_ACK : 0);
 
 		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) .
-			Binary::writeInt($identifier) .
+			Binary::writeInt($sessionId) .
 			chr($flags) .
 			chr($packet->reliability) .
 			($packet->identifierACK !== null ? Binary::writeInt($packet->identifierACK) : "") .
@@ -53,8 +53,8 @@ class UserToRakLibThreadMessageSender implements ServerInterface{
 		$this->channel->write($buffer);
 	}
 
-	public function closeSession(int $identifier) : void{
-		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($identifier);
+	public function closeSession(int $sessionId) : void{
+		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($sessionId);
 		$this->channel->write($buffer);
 	}
 

@@ -39,7 +39,7 @@ final class UserToRakLibThreadMessageReceiver implements ServerEventSource{
 			$id = ord($packet[0]);
 			$offset = 1;
 			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
 				$offset += 4;
 				$flags = ord($packet[$offset++]);
 				$immediate = ($flags & ITCProtocol::ENCAPSULATED_FLAG_IMMEDIATE) !== 0;
@@ -58,7 +58,7 @@ final class UserToRakLibThreadMessageReceiver implements ServerEventSource{
 				}
 
 				$encapsulated->buffer = substr($packet, $offset);
-				$server->sendEncapsulated($identifier, $encapsulated, $immediate);
+				$server->sendEncapsulated($sessionId, $encapsulated, $immediate);
 			}elseif($id === ITCProtocol::PACKET_RAW){
 				$len = ord($packet[$offset++]);
 				$address = substr($packet, $offset, $len);
@@ -68,8 +68,8 @@ final class UserToRakLibThreadMessageReceiver implements ServerEventSource{
 				$payload = substr($packet, $offset);
 				$server->sendRaw($address, $port, $payload);
 			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
-				$identifier = Binary::readInt(substr($packet, $offset, 4));
-				$server->closeSession($identifier);
+				$sessionId = Binary::readInt(substr($packet, $offset, 4));
+				$server->closeSession($sessionId);
 			}elseif($id === ITCProtocol::PACKET_SET_NAME){
 				$server->setName(substr($packet, $offset));
 			}elseif($id === ITCProtocol::PACKET_ENABLE_PORT_CHECK){

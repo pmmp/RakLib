@@ -21,11 +21,11 @@ use raklib\protocol\EncapsulatedPacket;
 
 interface ServerInterface{
 
-	public function sendEncapsulated(int $identifier, EncapsulatedPacket $packet, bool $immediate = false) : void;
+	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void;
 
 	public function sendRaw(string $address, int $port, string $payload) : void;
 
-	public function closeSession(int $identifier) : void;
+	public function closeSession(int $sessionId) : void;
 
 	public function setName(string $name) : void;
 
