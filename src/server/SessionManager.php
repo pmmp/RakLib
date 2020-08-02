@@ -126,7 +126,6 @@ class SessionManager{
 
 	/**
 	 * Returns the time in milliseconds since server start.
-	 * @return int
 	 */
 	public function getRakNetTimeMS() : int{
 		return ((int) (microtime(true) * 1000)) - $this->startTimeMS;
@@ -350,7 +349,6 @@ class SessionManager{
 	}
 
 	/**
-	 * @param string $name
 	 * @param mixed  $value
 	 */
 	protected function streamOption(string $name, $value) : void{
@@ -466,11 +464,6 @@ class SessionManager{
 		$this->getLogger()->debug("Unblocked $address");
 	}
 
-	/**
-	 * @param InternetAddress $address
-	 *
-	 * @return Session|null
-	 */
 	public function getSession(InternetAddress $address) : ?Session{
 		return $this->sessions[$address->toString()] ?? null;
 	}
@@ -530,20 +523,10 @@ class SessionManager{
 		return $this->server->getServerId();
 	}
 
-	/**
-	 * @param int    $id
-	 * @param string $class
-	 */
 	private function registerPacket(int $id, string $class) : void{
 		$this->packetPool[$id] = new $class;
 	}
 
-	/**
-	 * @param int    $id
-	 * @param string $buffer
-	 *
-	 * @return Packet|null
-	 */
 	public function getPacketFromPool(int $id, string $buffer = "") : ?Packet{
 		$pk = $this->packetPool[$id];
 		if($pk !== null){

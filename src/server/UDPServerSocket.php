@@ -72,9 +72,6 @@ class UDPServerSocket{
 		socket_set_nonblock($this->socket);
 	}
 
-	/**
-	 * @return InternetAddress
-	 */
 	public function getBindAddress() : InternetAddress{
 		return $this->bindAddress;
 	}
@@ -106,10 +103,6 @@ class UDPServerSocket{
 	}
 
 	/**
-	 * @param string $buffer
-	 * @param string $dest
-	 * @param int    $port
-	 *
 	 * @return int|bool
 	 */
 	public function writePacket(string $buffer, string $dest, int $port){
@@ -117,8 +110,6 @@ class UDPServerSocket{
 	}
 
 	/**
-	 * @param int $size
-	 *
 	 * @return $this
 	 */
 	public function setSendBuffer(int $size){
@@ -128,8 +119,6 @@ class UDPServerSocket{
 	}
 
 	/**
-	 * @param int $size
-	 *
 	 * @return $this
 	 */
 	public function setRecvBuffer(int $size){

@@ -41,23 +41,14 @@ class InternetAddress{
 		$this->version = $version;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getIp() : string{
 		return $this->ip;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getPort() : int{
 		return $this->port;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getVersion() : int{
 		return $this->version;
 	}

@@ -53,7 +53,6 @@ class ServerHandler{
 	}
 
 	/**
-	 * @param string $name
 	 * @param mixed  $value Must be castable to string
 	 */
 	public function sendOption(string $name, $value) : void{
@@ -83,9 +82,6 @@ class ServerHandler{
 		$this->server->pushMainToThreadPacket(chr(RakLib::PACKET_EMERGENCY_SHUTDOWN));
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function handlePacket() : bool{
 		if(($packet = $this->server->readThreadToMainPacket()) !== null){
 			$id = ord($packet[0]);

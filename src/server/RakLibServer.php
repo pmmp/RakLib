@@ -92,12 +92,8 @@ class RakLibServer extends \Thread{
 	protected $mainThreadNotifier;
 
 	/**
-	 * @param \ThreadedLogger      $logger
 	 * @param string               $autoloaderPath Path to Composer autoloader
-	 * @param InternetAddress      $address
-	 * @param int                  $maxMtuSize
 	 * @param int|null             $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
-	 * @param SleeperNotifier|null $sleeper
 	 */
 	public function __construct(\ThreadedLogger $logger, string $autoloaderPath, InternetAddress $address, int $maxMtuSize = 1492, ?int $overrideProtocolVersion = null, ?SleeperNotifier $sleeper = null){
 		$this->address = $address;
@@ -135,7 +131,6 @@ class RakLibServer extends \Thread{
 
 	/**
 	 * Returns the RakNet server ID
-	 * @return int
 	 */
 	public function getServerId() : int{
 		return $this->serverId;
@@ -145,23 +140,14 @@ class RakLibServer extends \Thread{
 		return $this->protocolVersion;
 	}
 
-	/**
-	 * @return \ThreadedLogger
-	 */
 	public function getLogger() : \ThreadedLogger{
 		return $this->logger;
 	}
 
-	/**
-	 * @return \Threaded
-	 */
 	public function getExternalQueue() : \Threaded{
 		return $this->externalQueue;
 	}
 
-	/**
-	 * @return \Threaded
-	 */
 	public function getInternalQueue() : \Threaded{
 		return $this->internalQueue;
 	}
