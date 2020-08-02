@@ -33,7 +33,6 @@ use const AF_INET;
 use const AF_INET6;
 use const IPV6_V6ONLY;
 use const SO_RCVBUF;
-use const SO_REUSEADDR;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
 use const SOCKET_EADDRINUSE;

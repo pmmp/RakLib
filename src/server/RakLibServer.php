@@ -17,11 +17,11 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use function error_get_last;
 use pocketmine\snooze\SleeperNotifier;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function array_reverse;
+use function error_get_last;
 use function error_reporting;
 use function function_exists;
 use function gc_enable;
