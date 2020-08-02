@@ -252,7 +252,6 @@ class Session{
 			}
 		}
 
-
 		foreach($this->recoveryQueue as $seq => $pk){
 			if($pk->sendTime < (time() - 8)){
 				$this->packetToSend[] = $pk;
@@ -500,7 +499,6 @@ class Session{
 			$this->handleEncapsulatedPacketRoute($packet);
 		}
 	}
-
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet) : void{
 		if($this->sessionManager === null){

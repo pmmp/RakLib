@@ -19,7 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-
 use raklib\RakLib;
 use function str_pad;
 use function strlen;

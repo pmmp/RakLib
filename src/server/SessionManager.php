@@ -218,7 +218,6 @@ class SessionManager{
 		++$this->ticks;
 	}
 
-
 	private function receivePacket() : bool{
 		$address = $this->reusableAddress;
 

@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-
 interface MessageIdentifiers{
 	//From https://github.com/OculusVR/RakNet/blob/master/Source/MessageIdentifiers.h
 
@@ -72,7 +71,6 @@ interface MessageIdentifiers{
 	/// message did not arrive (it may or may not have been delivered, probably not). On disconnect or shutdown, you will not get
 	/// ID_SND_RECEIPT_LOSS for unsent messages, you should consider those messages as all lost.
 	public const ID_SND_RECEIPT_LOSS = 0x0f;
-
 
 	//
 	// USER TYPES - DO NOT CHANGE THESE
