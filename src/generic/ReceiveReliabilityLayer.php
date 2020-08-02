@@ -112,8 +112,6 @@ final class ReceiveReliabilityLayer{
 	/**
 	 * Processes a split part of an encapsulated packet.
 	 *
-	 * @param EncapsulatedPacket $packet
-	 *
 	 * @return null|EncapsulatedPacket Reassembled packet if we have all the parts, null otherwise.
 	 */
 	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{

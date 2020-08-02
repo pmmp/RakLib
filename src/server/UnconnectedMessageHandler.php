@@ -50,10 +50,6 @@ class UnconnectedMessageHandler{
 	}
 
 	/**
-	 * @param string          $payload
-	 * @param InternetAddress $address
-	 *
-	 * @return bool
 	 * @throws BinaryDataException
 	 */
 	public function handleRaw(string $payload, InternetAddress $address) : bool{
@@ -106,19 +102,10 @@ class UnconnectedMessageHandler{
 		return true;
 	}
 
-	/**
-	 * @param int    $id
-	 * @param string $class
-	 */
 	private function registerPacket(int $id, string $class) : void{
 		$this->packetPool[$id] = new $class;
 	}
 
-	/**
-	 * @param string $buffer
-	 *
-	 * @return OfflineMessage|null
-	 */
 	public function getPacketFromPool(string $buffer) : ?OfflineMessage{
 		$pk = $this->packetPool[ord($buffer[0])];
 		if($pk !== null){

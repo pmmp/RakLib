@@ -130,7 +130,6 @@ class Server implements ServerInterface{
 
 	/**
 	 * Returns the time in milliseconds since server start.
-	 * @return int
 	 */
 	public function getRakNetTimeMS() : int{
 		return ((int) (microtime(true) * 1000)) - $this->startTimeMS;
@@ -384,11 +383,6 @@ class Server implements ServerInterface{
 		$this->shutdown = true;
 	}
 
-	/**
-	 * @param InternetAddress $address
-	 *
-	 * @return Session|null
-	 */
 	public function getSessionByAddress(InternetAddress $address) : ?Session{
 		return $this->sessionsByAddress[$address->toString()] ?? null;
 	}

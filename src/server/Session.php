@@ -126,7 +126,6 @@ class Session{
 
 	/**
 	 * Returns an ID used to identify this session across threads.
-	 * @return int
 	 */
 	public function getInternalId() : int{
 		return $this->internalId;
@@ -260,7 +259,6 @@ class Session{
 	}
 
 	/**
-	 * @param int $sendPingTime
 	 * @param int $sendPongTime TODO: clock differential stuff
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{

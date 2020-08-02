@@ -53,9 +53,6 @@ class EncapsulatedPacket{
 	public $identifierACK = null;
 
 	/**
-	 * @param BinaryStream $stream
-	 *
-	 * @return EncapsulatedPacket
 	 * @throws BinaryDataException
 	 */
 	public static function fromBinary(BinaryStream $stream) : EncapsulatedPacket{
@@ -94,9 +91,6 @@ class EncapsulatedPacket{
 		return $packet;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function toBinary() : string{
 		return
 			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0)) .

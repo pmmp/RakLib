@@ -49,8 +49,6 @@ class Socket{
 	private $bindAddress;
 
 	/**
-	 * @param InternetAddress $bindAddress
-	 *
 	 * @throws SocketException
 	 */
 	public function __construct(InternetAddress $bindAddress){
@@ -77,9 +75,6 @@ class Socket{
 		socket_set_nonblock($this->socket);
 	}
 
-	/**
-	 * @return InternetAddress
-	 */
 	public function getBindAddress() : InternetAddress{
 		return $this->bindAddress;
 	}
@@ -103,7 +98,6 @@ class Socket{
 	 * @param string $source reference parameter
 	 * @param int    $port reference parameter
 	 *
-	 * @return string|null
 	 * @throws SocketException
 	 */
 	public function readPacket(?string &$source, ?int &$port) : ?string{
@@ -119,11 +113,6 @@ class Socket{
 	}
 
 	/**
-	 * @param string $buffer
-	 * @param string $dest
-	 * @param int    $port
-	 *
-	 * @return int
 	 * @throws SocketException
 	 */
 	public function writePacket(string $buffer, string $dest, int $port) : int{
@@ -136,8 +125,6 @@ class Socket{
 	}
 
 	/**
-	 * @param int $size
-	 *
 	 * @return $this
 	 */
 	public function setSendBuffer(int $size){
@@ -147,8 +134,6 @@ class Socket{
 	}
 
 	/**
-	 * @param int $size
-	 *
 	 * @return $this
 	 */
 	public function setRecvBuffer(int $size){
