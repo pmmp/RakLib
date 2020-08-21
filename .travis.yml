@@ -1,13 +1,17 @@
 language: php
 
-php:
- - 7.2
- - 7.3
+matrix:
+  - php: 7.2
+    env: PTHREADS_VERSION=46962cf9c2d30b6e1e1ea50ca36de3df5d6d4e58
+  - php: 7.3
+    env: PTHREADS_VERSION=bab25e513ac5445cd7d6d7d36b05a7a0a495f17a
+  - php: 7.4
+    env: PTHREADS_VERSION=bab25e513ac5445cd7d6d7d36b05a7a0a495f17a
 
 before_script:
  - git clone https://github.com/pmmp/pthreads.git
  - cd pthreads
- - git checkout 46962cf9c2d30b6e1e1ea50ca36de3df5d6d4e58
+ - git checkout $PTHREADS_VERSION
  - phpize
  - ./configure
  - make
