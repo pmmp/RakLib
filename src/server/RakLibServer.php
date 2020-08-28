@@ -88,7 +88,7 @@ class RakLibServer extends \Thread{
 	/** @var int */
 	private $protocolVersion;
 
-	/** @var SleeperNotifier */
+	/** @var SleeperNotifier|null */
 	protected $mainThreadNotifier;
 
 	/**
