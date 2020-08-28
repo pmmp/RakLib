@@ -454,8 +454,10 @@ class Session{
 			}
 		}
 
-		if($packet->hasSplit and ($packet = $this->handleSplit($packet)) === null){
-			return;
+		if($packet->hasSplit){
+			if(($packet = $this->handleSplit($packet)) === null){
+				return;
+			}
 		}
 
 		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= self::CHANNEL_COUNT)){
