@@ -181,8 +181,10 @@ final class ReceiveReliabilityLayer{
 			}
 		}
 
-		if($packet->splitInfo !== null and ($packet = $this->handleSplit($packet)) === null){
-			return;
+		if($packet->splitInfo !== null){
+			if(($packet = $this->handleSplit($packet)) === null){
+				return;
+			}
 		}
 
 		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= PacketReliability::MAX_ORDER_CHANNELS)){
