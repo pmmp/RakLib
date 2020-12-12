@@ -19,17 +19,17 @@ namespace raklib\server;
 
 interface ServerEventListener{
 
-	public function openSession(int $sessionId, string $address, int $port, int $clientID) : void;
+	public function onClientConnect(int $sessionId, string $address, int $port, int $clientID) : void;
 
-	public function closeSession(int $sessionId, string $reason) : void;
+	public function onClientDisconnect(int $sessionId, string $reason) : void;
 
-	public function handleEncapsulated(int $sessionId, string $packet) : void;
+	public function onPacketReceive(int $sessionId, string $packet) : void;
 
-	public function handleRaw(string $address, int $port, string $payload) : void;
+	public function onRawPacketReceive(string $address, int $port, string $payload) : void;
 
-	public function notifyACK(int $sessionId, int $identifierACK) : void;
+	public function onPacketAck(int $sessionId, int $identifierACK) : void;
 
-	public function handleBandwidthStats(int $bytesSentDiff, int $bytesReceivedDiff) : void;
+	public function onBandwidthStatsUpdate(int $bytesSentDiff, int $bytesReceivedDiff) : void;
 
-	public function updatePing(int $sessionId, int $pingMS) : void;
+	public function onPingMeasure(int $sessionId, int $pingMS) : void;
 }

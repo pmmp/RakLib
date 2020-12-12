@@ -202,7 +202,7 @@ class Server implements ServerInterface{
 
 		if(!$this->shutdown and ($this->ticks % self::RAKLIB_TPS) === 0){
 			if($this->sendBytes > 0 or $this->receiveBytes > 0){
-				$this->eventListener->handleBandwidthStats($this->sendBytes, $this->receiveBytes);
+				$this->eventListener->onBandwidthStatsUpdate($this->sendBytes, $this->receiveBytes);
 				$this->sendBytes = 0;
 				$this->receiveBytes = 0;
 			}
@@ -282,7 +282,7 @@ class Server implements ServerInterface{
 					foreach($this->rawPacketFilters as $pattern){
 						if(preg_match($pattern, $buffer) > 0){
 							$handled = true;
-							$this->eventListener->handleRaw($address->ip, $address->port, $buffer);
+							$this->eventListener->onRawPacketReceive($address->ip, $address->port, $buffer);
 							break;
 						}
 					}
@@ -412,7 +412,7 @@ class Server implements ServerInterface{
 
 	public function openSession(Session $session) : void{
 		$address = $session->getAddress();
-		$this->eventListener->openSession($session->getInternalId(), $address->ip, $address->port, $session->getID());
+		$this->eventListener->onClientConnect($session->getInternalId(), $address->ip, $address->port, $session->getID());
 	}
 
 	private function checkSessions() : void{
@@ -429,7 +429,7 @@ class Server implements ServerInterface{
 	}
 
 	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->eventListener->notifyACK($session->getInternalId(), $identifierACK);
+		$this->eventListener->onPacketAck($session->getInternalId(), $identifierACK);
 	}
 
 	public function getName() : string{

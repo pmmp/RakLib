@@ -33,7 +33,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		$this->channel = $channel;
 	}
 
-	public function openSession(int $sessionId, string $address, int $port, int $clientId) : void{
+	public function onClientConnect(int $sessionId, string $address, int $port, int $clientId) : void{
 		$rawAddr = inet_pton($address);
 		if($rawAddr === false){
 			throw new \InvalidArgumentException("Invalid IP address");
@@ -47,7 +47,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function closeSession(int $sessionId, string $reason) : void{
+	public function onClientDisconnect(int $sessionId, string $reason) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_CLOSE_SESSION) .
 			Binary::writeInt($sessionId) .
@@ -55,7 +55,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function handleEncapsulated(int $sessionId, string $packet) : void{
+	public function onPacketReceive(int $sessionId, string $packet) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_ENCAPSULATED) .
 			Binary::writeInt($sessionId) .
@@ -63,7 +63,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function handleRaw(string $address, int $port, string $payload) : void{
+	public function onRawPacketReceive(string $address, int $port, string $payload) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_RAW) .
 			chr(strlen($address)) . $address .
@@ -72,7 +72,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function notifyACK(int $sessionId, int $identifierACK) : void{
+	public function onPacketAck(int $sessionId, int $identifierACK) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_ACK_NOTIFICATION) .
 			Binary::writeInt($sessionId) .
@@ -80,7 +80,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function handleBandwidthStats(int $bytesSentDiff, int $bytesReceivedDiff) : void{
+	public function onBandwidthStatsUpdate(int $bytesSentDiff, int $bytesReceivedDiff) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_REPORT_BANDWIDTH_STATS) .
 			Binary::writeLong($bytesSentDiff) .
@@ -88,7 +88,7 @@ final class RakLibToUserThreadMessageSender implements ServerEventListener{
 		);
 	}
 
-	public function updatePing(int $sessionId, int $pingMS) : void{
+	public function onPingMeasure(int $sessionId, int $pingMS) : void{
 		$this->channel->write(
 			chr(ITCProtocol::PACKET_REPORT_PING) .
 			Binary::writeInt($sessionId) .
