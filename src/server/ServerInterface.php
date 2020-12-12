@@ -38,6 +38,4 @@ interface ServerInterface{
 	public function unblockAddress(string $address) : void;
 
 	public function addRawPacketFilter(string $regex) : void;
-
-	public function shutdown() : void;
 }

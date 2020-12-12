@@ -145,39 +145,48 @@ class Server implements ServerInterface{
 		return $this->logger;
 	}
 
-	public function run() : void{
-		$this->tickProcessor();
+	public function tickProcessor() : void{
+		$start = microtime(true);
+
+		/*
+		 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
+		 * when high traffic is coming either way. Yielding will occur after 100 messages.
+		 */
+		do{
+			$stream = !$this->shutdown;
+			for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){ //if we received a shutdown event, we don't care about any more messages from the event source
+				$stream = $this->eventSource->process($this);
+			}
+
+			$socket = true;
+			for($i = 0; $i < 100 && $socket; ++$i){
+				$socket = $this->receivePacket();
+			}
+		}while($stream || $socket);
+
+		$this->tick();
+
+		$time = microtime(true) - $start;
+		if($time < self::RAKLIB_TIME_PER_TICK){
+			@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
+		}
 	}
 
-	private function tickProcessor() : void{
-		while(!$this->shutdown or count($this->sessions) > 0){
-			$start = microtime(true);
+	/**
+	 * Disconnects all sessions and blocks until everything has been shut down properly.
+	 */
+	public function waitShutdown() : void{
+		$this->shutdown = true;
+		foreach($this->sessions as $session){
+			$session->initiateDisconnect("server shutdown");
+		}
 
-			/*
-			 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
-			 * when high traffic is coming either way. Yielding will occur after 100 messages.
-			 */
-			do{
-				$stream = !$this->shutdown;
-				for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){ //if we received a shutdown event, we don't care about any more messages from the event source
-					$stream = $this->eventSource->process($this);
-				}
-
-				$socket = true;
-				for($i = 0; $i < 100 && $socket; ++$i){
-					$socket = $this->receivePacket();
-				}
-			}while($stream || $socket);
-
-			$this->tick();
-
-			$time = microtime(true) - $start;
-			if($time < self::RAKLIB_TIME_PER_TICK){
-				@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
-			}
+		while(count($this->sessions) > 0){
+			$this->tickProcessor();
 		}
 
 		$this->socket->close();
+		$this->logger->debug("Graceful shutdown complete");
 	}
 
 	private function tick() : void{
@@ -371,14 +380,6 @@ class Server implements ServerInterface{
 
 	public function addRawPacketFilter(string $regex) : void{
 		$this->rawPacketFilters[] = $regex;
-	}
-
-	public function shutdown() : void{
-		foreach($this->sessions as $session){
-			$session->initiateDisconnect("server shutdown");
-		}
-
-		$this->shutdown = true;
 	}
 
 	public function getSessionByAddress(InternetAddress $address) : ?Session{

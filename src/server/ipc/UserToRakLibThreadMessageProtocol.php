@@ -106,11 +106,4 @@ final class UserToRakLibThreadMessageProtocol{
 	 * int64 (limit)
 	 */
 	public const PACKET_SET_PACKETS_PER_TICK_LIMIT = 0x11;
-
-	/*
-	 * No payload
-	 *
-	 * Sends the disconnect message, removes sessions correctly, closes sockets.
-	 */
-	public const PACKET_SHUTDOWN = 0x7e;
 }
