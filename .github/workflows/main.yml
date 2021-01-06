@@ -22,7 +22,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ github.workspace }}/php
-          key: php-build-${{ matrix.php }}-pthreads-${{ matrix.pthreads-version }}
+          key: php-build-${{ matrix.php }}
 
       - name: Compile PHP
         if: steps.php-build-cache.outputs.cache-hit != 'true'
