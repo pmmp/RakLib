@@ -40,7 +40,10 @@ use const SOL_SOCKET;
 use const SOL_UDP;
 
 class UDPServerSocket{
-	/** @var resource */
+	/**
+	 * @var resource
+	 * @phpstan-var PhpSocket
+	 */
 	protected $socket;
 	/**
 	 * @var InternetAddress
@@ -77,6 +80,7 @@ class UDPServerSocket{
 
 	/**
 	 * @return resource
+	 * @phpstan-return PhpSocket
 	 */
 	public function getSocket(){
 		return $this->socket;

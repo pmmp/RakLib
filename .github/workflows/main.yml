@@ -13,10 +13,16 @@ jobs:
         include:
           - php: 7.2.34
             pthreads-version: 46962cf9c2d30b6e1e1ea50ca36de3df5d6d4e58
+            phpstan-config: php7
           - php: 7.3.25
             pthreads-version: 34d7e6b91ed92a625760fedd667e7cba2009e463
+            phpstan-config: php7
           - php: 7.4.13
             pthreads-version: 34d7e6b91ed92a625760fedd667e7cba2009e463
+            phpstan-config: php7
+          - php: 8.0.1
+            pthreads-version: bc16ee7b5a21faee9bd1743f830f7135b763fb56
+            phpstan-config: php8
 
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
@@ -56,4 +62,4 @@ jobs:
         run: composer install --prefer-dist --no-interaction
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyze --no-progress
+        run: ./vendor/bin/phpstan analyze --no-progress -c phpstan.${{ matrix.phpstan-config }}.neon
