@@ -10,7 +10,15 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
-        php: [7.2.34, 7.3.25, 7.4.13]
+        include:
+          - php: 7.2.34
+            phpstan-config: php7
+          - php: 7.3.25
+            phpstan-config: php7
+          - php: 7.4.13
+            phpstan-config: php7
+          - php: 8.0.1
+            phpstan-config: php8
 
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
@@ -49,4 +57,4 @@ jobs:
         run: composer install --prefer-dist --no-interaction
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyze --no-progress
+        run: ./vendor/bin/phpstan analyze --no-progress -c phpstan.${{ matrix.phpstan-config }}.neon

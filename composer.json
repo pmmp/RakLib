@@ -4,7 +4,7 @@
 	"type": "library",
 	"license": "GPL-3.0",
 	"require": {
-		"php": ">=7.2.0",
+		"php": "^7.2 || ^8.0",
 		"php-ipv6": "*",
 		"php-64bit": "*",
 		"ext-sockets": "*",
@@ -12,7 +12,7 @@
 		"pocketmine/binaryutils": "dev-master"
 	},
 	"require-dev": {
-		"phpstan/phpstan": "0.12.63",
+		"phpstan/phpstan": "0.12.67",
 		"phpstan/phpstan-strict-rules": "^0.12.2"
 	},
 	"autoload": {
