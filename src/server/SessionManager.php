@@ -218,6 +218,7 @@ class SessionManager{
 		++$this->ticks;
 	}
 
+	/** @phpstan-impure */
 	private function receivePacket() : bool{
 		$address = $this->reusableAddress;
 
@@ -361,6 +362,7 @@ class SessionManager{
 		$this->server->pushThreadToMainPacket($buffer);
 	}
 
+	/** @phpstan-impure */
 	public function receiveStream() : bool{
 		if(($packet = $this->server->readMainToThreadPacket()) !== null){
 			$id = ord($packet[0]);
