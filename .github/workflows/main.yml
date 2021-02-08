@@ -21,7 +21,7 @@ jobs:
             pthreads-version: bc16ee7b5a21faee9bd1743f830f7135b763fb56
 
     name: PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
 
