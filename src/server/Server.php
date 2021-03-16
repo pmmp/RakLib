@@ -223,6 +223,7 @@ class Server implements ServerInterface{
 		++$this->ticks;
 	}
 
+	/** @phpstan-impure */
 	private function receivePacket() : bool{
 		$address = $this->reusableAddress;
 
