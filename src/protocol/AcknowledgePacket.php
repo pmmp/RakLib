@@ -31,6 +31,7 @@ use pocketmine\utils\Binary;
 abstract class AcknowledgePacket extends Packet{
 	private const RECORD_TYPE_RANGE = 0;
 	private const RECORD_TYPE_SINGLE = 1;
+	private const MAX_SEQUENCE_NUMBERS = 4096;
 
 	/** @var int[] */
 	public $packets = [];
@@ -84,26 +85,25 @@ abstract class AcknowledgePacket extends Packet{
 	protected function decodePayload() : void{
 		$count = $this->getShort();
 		$this->packets = [];
-		$cnt = 0;
-		for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){
+		for($i = 0; $i < $count and !$this->feof(); ++$i){
 			if($this->getByte() === self::RECORD_TYPE_RANGE){
 				$start = $this->getLTriad();
 				$end = $this->getLTriad();
-				if(($end - $start) > 512){
-					$end = $start + 512;
-				}
-				for($c = $start; $c <= $end; ++$c){
-					$this->packets[$cnt++] = $c;
+				for($current = $start; $current <= $end; ++$current){
+					$this->packets[] = $current;
+					if(count($this->packets) > self::MAX_SEQUENCE_NUMBERS) {
+						return;
+					}
 				}
 			}else{
-				$this->packets[$cnt++] = $this->getLTriad();
+				$this->packets[] = $this->getLTriad();
 			}
 		}
 	}
 
 	public function clean(){
 		$this->packets = [];
-
+		
 		return parent::clean();
 	}
 }
