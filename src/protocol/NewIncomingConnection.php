@@ -23,7 +23,7 @@ use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
 
-class NewIncomingConnection extends Packet{
+class NewIncomingConnection extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
 	/** @var InternetAddress */

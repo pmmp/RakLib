@@ -21,6 +21,7 @@ use raklib\generic\ReceiveReliabilityLayer;
 use raklib\generic\SendReliabilityLayer;
 use raklib\protocol\ACK;
 use raklib\protocol\AcknowledgePacket;
+use raklib\protocol\ConnectedPacket;
 use raklib\protocol\ConnectedPing;
 use raklib\protocol\ConnectedPong;
 use raklib\protocol\ConnectionRequest;
@@ -182,7 +183,7 @@ class Session{
 		}
 	}
 
-	private function queueConnectedPacket(Packet $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
+	private function queueConnectedPacket(ConnectedPacket $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
 		$out = new PacketSerializer();  //TODO: reuse streams to reduce allocations
 		$packet->encode($out);
 

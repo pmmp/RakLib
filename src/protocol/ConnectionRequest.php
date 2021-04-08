@@ -19,7 +19,7 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class ConnectionRequest extends Packet{
+class ConnectionRequest extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST;
 
 	/** @var int */
