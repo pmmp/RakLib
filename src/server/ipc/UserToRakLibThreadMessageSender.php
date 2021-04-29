@@ -18,10 +18,9 @@ declare(strict_types=1);
 namespace raklib\server\ipc;
 
 use pocketmine\utils\Binary;
-use raklib\protocol\EncapsulatedPacket;
-use raklib\protocol\PacketReliability;
 use raklib\server\ipc\UserToRakLibThreadMessageProtocol as ITCProtocol;
 use raklib\server\ServerInterface;
+use raklib\server\SessionInterface;
 use function chr;
 use function strlen;
 
@@ -29,32 +28,32 @@ class UserToRakLibThreadMessageSender implements ServerInterface{
 	/** @var InterThreadChannelWriter */
 	private $channel;
 
-	public function __construct(InterThreadChannelWriter $channel){
+	private InterThreadChannelFactory $channelFactory;
+
+	public function __construct(InterThreadChannelWriter $channel, InterThreadChannelFactory $channelFactory){
 		$this->channel = $channel;
+		$this->channelFactory = $channelFactory;
 	}
 
-	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void{
-		$flags =
-			($immediate ? ITCProtocol::ENCAPSULATED_FLAG_IMMEDIATE : 0) |
-			($packet->identifierACK !== null ? ITCProtocol::ENCAPSULATED_FLAG_NEED_ACK : 0);
-
-		$buffer = chr(ITCProtocol::PACKET_ENCAPSULATED) .
+	/**
+	 * Opens an inter-thread channel to the RakLib thread for the given session.
+	 */
+	public function openSessionChannel(int $sessionId) : SessionInterface{
+		[$channelReaderInfo, $channelWriter] = $this->channelFactory->createChannel();
+		$this->channel->write(
+			chr(ITCProtocol::PACKET_OPEN_SESSION_RESPONSE) .
 			Binary::writeInt($sessionId) .
-			chr($flags) .
-			chr($packet->reliability) .
-			($packet->identifierACK !== null ? Binary::writeInt($packet->identifierACK) : "") .
-			(PacketReliability::isSequencedOrOrdered($packet->reliability) ? chr($packet->orderChannel) : "") .
-			$packet->buffer;
-		$this->channel->write($buffer);
+			$channelReaderInfo
+		);
+		return new UserToRakLibThreadSessionMessageSender($channelWriter);
+	}
+
+	public function getSession(int $id) : ?SessionInterface{
+		return null;
 	}
 
 	public function sendRaw(string $address, int $port, string $payload) : void{
 		$buffer = chr(ITCProtocol::PACKET_RAW) . chr(strlen($address)) . $address . Binary::writeShort($port) . $payload;
-		$this->channel->write($buffer);
-	}
-
-	public function closeSession(int $sessionId) : void{
-		$buffer = chr(ITCProtocol::PACKET_CLOSE_SESSION) . Binary::writeInt($sessionId);
 		$this->channel->write($buffer);
 	}
 

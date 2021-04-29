@@ -20,6 +20,7 @@ namespace raklib\server\ipc;
 use pocketmine\utils\Binary;
 use raklib\server\ipc\RakLibToUserThreadMessageProtocol as ITCProtocol;
 use raklib\server\ServerEventListener;
+use raklib\server\SessionEventListener;
 use function inet_ntop;
 use function ord;
 use function substr;
@@ -28,67 +29,81 @@ final class RakLibToUserThreadMessageReceiver{
 	/** @var InterThreadChannelReader */
 	private $channel;
 
-	public function __construct(InterThreadChannelReader $channel){
+	private InterThreadChannelReaderDeserializer $channelFactory;
+
+	/**
+	 * @var SessionEventListener[][]|RakLibToUserThreadSessionMessageReceiver[][]
+	 * @phpstan-var array<int, array{RakLibToUserThreadSessionMessageReceiver, SessionEventListener}>
+	 */
+	private array $sessionMap = [];
+
+	public function __construct(InterThreadChannelReader $channel, InterThreadChannelReaderDeserializer $channelFactory){
 		$this->channel = $channel;
+		$this->channelFactory = $channelFactory;
 	}
 
-	public function handle(ServerEventListener $listener) : bool{
-		if(($packet = $this->channel->read()) !== null){
-			$id = ord($packet[0]);
-			$offset = 1;
-			if($id === ITCProtocol::PACKET_ENCAPSULATED){
-				$sessionId = Binary::readInt(substr($packet, $offset, 4));
-				$offset += 4;
-				$buffer = substr($packet, $offset);
-				$listener->onPacketReceive($sessionId, $buffer);
-			}elseif($id === ITCProtocol::PACKET_RAW){
-				$len = ord($packet[$offset++]);
-				$address = substr($packet, $offset, $len);
-				$offset += $len;
-				$port = Binary::readShort(substr($packet, $offset, 2));
-				$offset += 2;
-				$payload = substr($packet, $offset);
-				$listener->onRawPacketReceive($address, $port, $payload);
-			}elseif($id === ITCProtocol::PACKET_REPORT_BANDWIDTH_STATS){
-				$sentBytes = Binary::readLong(substr($packet, $offset, 8));
-				$offset += 8;
-				$receivedBytes = Binary::readLong(substr($packet, $offset, 8));
-				$listener->onBandwidthStatsUpdate($sentBytes, $receivedBytes);
-			}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
-				$sessionId = Binary::readInt(substr($packet, $offset, 4));
-				$offset += 4;
-				$len = ord($packet[$offset++]);
-				$rawAddr = substr($packet, $offset, $len);
-				$offset += $len;
-				$address = inet_ntop($rawAddr);
-				if($address === false){
-					throw new \RuntimeException("Unexpected invalid IP address in inter-thread message");
+	/**
+	 * @phpstan-return \Generator<int, null, void, void>
+	 */
+	public function handle(ServerEventListener $listener) : \Generator{
+		do{
+			$processed = false;
+			if(($packet = $this->channel->read()) !== null){
+				$id = ord($packet[0]);
+				$offset = 1;
+				if($id === ITCProtocol::PACKET_RAW){
+					$len = ord($packet[$offset++]);
+					$address = substr($packet, $offset, $len);
+					$offset += $len;
+					$port = Binary::readShort(substr($packet, $offset, 2));
+					$offset += 2;
+					$payload = substr($packet, $offset);
+					$listener->onRawPacketReceive($address, $port, $payload);
+				}elseif($id === ITCProtocol::PACKET_REPORT_BANDWIDTH_STATS){
+					$sentBytes = Binary::readLong(substr($packet, $offset, 8));
+					$offset += 8;
+					$receivedBytes = Binary::readLong(substr($packet, $offset, 8));
+					$listener->onBandwidthStatsUpdate($sentBytes, $receivedBytes);
+				}elseif($id === ITCProtocol::PACKET_OPEN_SESSION){
+					$sessionId = Binary::readInt(substr($packet, $offset, 4));
+					$offset += 4;
+					$len = ord($packet[$offset++]);
+					$rawAddr = substr($packet, $offset, $len);
+					$offset += $len;
+					$address = inet_ntop($rawAddr);
+					if($address === false){
+						throw new \RuntimeException("Unexpected invalid IP address in inter-thread message");
+					}
+					$port = Binary::readShort(substr($packet, $offset, 2));
+					$offset += 2;
+					$clientID = Binary::readLong(substr($packet, $offset, 8));
+					$offset += 8;
+
+					$channelReaderInfo = substr($packet, $offset);
+					$channelReader = $this->channelFactory->deserialize($channelReaderInfo);
+					if($channelReader !== null){ //the channel may have been destroyed before we could deserialize it
+						$receiver = new RakLibToUserThreadSessionMessageReceiver($channelReader);
+						$sessionListener = $listener->onClientConnect($sessionId, $address, $port, $clientID);
+						$this->sessionMap[$sessionId] = [$receiver, $sessionListener];
+					}
 				}
-				$port = Binary::readShort(substr($packet, $offset, 2));
-				$offset += 2;
-				$clientID = Binary::readLong(substr($packet, $offset, 8));
-				$listener->onClientConnect($sessionId, $address, $port, $clientID);
-			}elseif($id === ITCProtocol::PACKET_CLOSE_SESSION){
-				$sessionId = Binary::readInt(substr($packet, $offset, 4));
-				$offset += 4;
-				$len = ord($packet[$offset++]);
-				$reason = substr($packet, $offset, $len);
-				$listener->onClientDisconnect($sessionId, $reason);
-			}elseif($id === ITCProtocol::PACKET_ACK_NOTIFICATION){
-				$sessionId = Binary::readInt(substr($packet, $offset, 4));
-				$offset += 4;
-				$identifierACK = Binary::readInt(substr($packet, $offset, 4));
-				$listener->onPacketAck($sessionId, $identifierACK);
-			}elseif($id === ITCProtocol::PACKET_REPORT_PING){
-				$sessionId = Binary::readInt(substr($packet, $offset, 4));
-				$offset += 4;
-				$pingMS = Binary::readInt(substr($packet, $offset, 4));
-				$listener->onPingMeasure($sessionId, $pingMS);
+
+				$processed = true;
+				yield;
 			}
 
-			return true;
-		}
-
-		return false;
+			foreach($this->sessionMap as $sessionId => [$receiver, $sessionListener]){
+				try{
+					if($receiver->process($sessionListener)){
+						$processed = true;
+						yield;
+					}
+				}finally{
+					if($receiver->isClosed()){
+						unset($this->sessionMap[$sessionId]);
+					}
+				}
+			}
+		}while($processed);
 	}
 }

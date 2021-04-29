@@ -39,7 +39,7 @@ use raklib\utils\InternetAddress;
 use function microtime;
 use function ord;
 
-class Session{
+class Session implements SessionInterface{
 	public const MAX_SPLIT_PART_COUNT = 128;
 	public const MAX_CONCURRENT_SPLIT_COUNT = 4;
 
@@ -90,6 +90,8 @@ class Session{
 	/** @var SendReliabilityLayer */
 	private $sendLayer;
 
+	private ?SessionEventListener $eventListener = null;
+
 	public function __construct(Server $server, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
 		if($mtuSize < self::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
@@ -120,7 +122,9 @@ class Session{
 				$this->sendPacket($datagram);
 			},
 			function(int $identifierACK) : void{
-				$this->server->getEventListener()->onPacketAck($this->internalId, $identifierACK);
+				if($this->eventListener !== null){
+					$this->eventListener->onPacketAck($identifierACK);
+				}
 			}
 		);
 	}
@@ -195,7 +199,7 @@ class Session{
 		$this->sendLayer->addEncapsulatedToQueue($encapsulated, $immediate);
 	}
 
-	public function addEncapsulatedToQueue(EncapsulatedPacket $packet, bool $immediate) : void{
+	public function sendEncapsulated(EncapsulatedPacket $packet, bool $immediate = false) : void{
 		$this->sendLayer->addEncapsulatedToQueue($packet, $immediate);
 	}
 
@@ -231,7 +235,7 @@ class Session{
 					if($dataPacket->address->port === $this->server->getPort() or !$this->server->portChecking){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
 						$this->isTemporal = false;
-						$this->server->openSession($this);
+						$this->eventListener = $this->server->openSession($this);
 
 						//$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime); //can't use this due to system-address count issues in MCPE >.<
 						$this->sendPing();
@@ -252,8 +256,8 @@ class Session{
 
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
 			}
-		}elseif($this->state === self::STATE_CONNECTED){
-			$this->server->getEventListener()->onPacketReceive($this->internalId, $packet->buffer);
+		}elseif($this->eventListener !== null){
+			$this->eventListener->onPacketReceive($packet->buffer);
 		}else{
 			//$this->logger->notice("Received packet before connection: " . bin2hex($packet->buffer));
 		}
@@ -264,7 +268,9 @@ class Session{
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{
 		$this->lastPingMeasure = $this->server->getRakNetTimeMS() - $sendPingTime;
-		$this->server->getEventListener()->onPingMeasure($this->internalId, $this->lastPingMeasure);
+		if($this->eventListener !== null){
+			$this->eventListener->onPingMeasure($this->lastPingMeasure);
+		}
 	}
 
 	public function handlePacket(Packet $packet) : void{
@@ -288,7 +294,10 @@ class Session{
 			$this->state = self::STATE_DISCONNECTING;
 			$this->disconnectionTime = microtime(true);
 			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
-			$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
+			if($this->eventListener !== null){
+				$this->eventListener->onDisconnect($reason);
+				$this->eventListener = null;
+			}
 			$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
 		}
 	}
@@ -298,7 +307,10 @@ class Session{
 	 */
 	public function forciblyDisconnect(string $reason) : void{
 		$this->state = self::STATE_DISCONNECTED;
-		$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
+		if($this->eventListener !== null){
+			$this->eventListener->onDisconnect($reason);
+			$this->eventListener = null;
+		}
 		$this->logger->debug("Forcibly disconnecting session due to \"$reason\"");
 	}
 

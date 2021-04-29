@@ -22,7 +22,6 @@ use raklib\generic\Socket;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
-use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketSerializer;
@@ -152,10 +151,12 @@ class Server implements ServerInterface{
 		 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
 		 * when high traffic is coming either way. Yielding will occur after 100 messages.
 		 */
+		$eventGenerator = $this->eventSource->process($this);
 		do{
 			$stream = !$this->shutdown;
 			for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){ //if we received a shutdown event, we don't care about any more messages from the event source
-				$stream = $this->eventSource->process($this);
+				$eventGenerator->next();
+				$stream = $eventGenerator->valid();
 			}
 
 			$socket = true;
@@ -327,24 +328,11 @@ class Server implements ServerInterface{
 		return $this->eventListener;
 	}
 
-	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void{
-		$session = $this->sessions[$sessionId] ?? null;
-		if($session !== null and $session->isConnected()){
-			$session->addEncapsulatedToQueue($packet, $immediate);
-		}
-	}
-
 	public function sendRaw(string $address, int $port, string $payload) : void{
 		try{
 			$this->socket->writePacket($payload, $address, $port);
 		}catch(SocketException $e){
 			$this->logger->debug($e->getMessage());
-		}
-	}
-
-	public function closeSession(int $sessionId) : void{
-		if(isset($this->sessions[$sessionId])){
-			$this->sessions[$sessionId]->initiateDisconnect("server disconnect");
 		}
 	}
 
@@ -383,6 +371,10 @@ class Server implements ServerInterface{
 		$this->rawPacketFilters[] = $regex;
 	}
 
+	public function getSession(int $id) : ?SessionInterface{
+		return $this->sessions[$id] ?? null;
+	}
+
 	public function getSessionByAddress(InternetAddress $address) : ?Session{
 		return $this->sessionsByAddress[$address->toString()] ?? null;
 	}
@@ -411,9 +403,9 @@ class Server implements ServerInterface{
 		unset($this->sessionsByAddress[$session->getAddress()->toString()], $this->sessions[$session->getInternalId()]);
 	}
 
-	public function openSession(Session $session) : void{
+	public function openSession(Session $session) : SessionEventListener{
 		$address = $session->getAddress();
-		$this->eventListener->onClientConnect($session->getInternalId(), $address->ip, $address->port, $session->getID());
+		return $this->eventListener->onClientConnect($session->getInternalId(), $address->ip, $address->port, $session->getID());
 	}
 
 	private function checkSessions() : void{
@@ -427,10 +419,6 @@ class Server implements ServerInterface{
 				}
 			}
 		}
-	}
-
-	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->eventListener->onPacketAck($session->getInternalId(), $identifierACK);
 	}
 
 	public function getName() : string{

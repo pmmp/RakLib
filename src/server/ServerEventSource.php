@@ -19,5 +19,8 @@ namespace raklib\server;
 
 interface ServerEventSource{
 
-	public function process(ServerInterface $server) : bool;
+	/**
+	 * @phpstan-return \Generator<int, null, void, void>
+	 */
+	public function process(ServerInterface $server) : \Generator;
 }
