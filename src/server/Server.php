@@ -324,10 +324,6 @@ class Server implements ServerInterface{
 		}
 	}
 
-	public function getEventListener() : ServerEventListener{
-		return $this->eventListener;
-	}
-
 	public function sendRaw(string $address, int $port, string $payload) : void{
 		try{
 			$this->socket->writePacket($payload, $address, $port);
