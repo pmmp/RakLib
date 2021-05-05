@@ -16,25 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Restore PHP build cache
-        id: php-build-cache
-        uses: actions/cache@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2.9.0
         with:
-          path: ${{ github.workspace }}/php
-          key: php-build-${{ matrix.php }}
-
-      - name: Compile PHP
-        if: steps.php-build-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/php-build/php-build.git
-          cd php-build
-          ./install-dependencies.sh
-          export CFLAGS="$CFLAGS -march=x86-64"
-          export CXXFLAGS="$CXXFLAGS -march=x86-64"
-          ./bin/php-build "${{ matrix.php }}" "$GITHUB_WORKSPACE/php"
-          
-      - name: Prefix PHP to PATH
-        run: echo $GITHUB_WORKSPACE/php/bin >> $GITHUB_PATH
+          php-version: ${{ matrix.php }}
 
       - name: Cache Composer packages
         id: composer-cache
