@@ -84,7 +84,7 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), false, $packet->mtuSize + 28), $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
-			if($packet->serverAddress->port === $this->server->getPort() or !$this->server->portChecking){
+			if($packet->serverAddress->getPort() === $this->server->getPort() or !$this->server->portChecking){
 				if($packet->mtuSize < Session::MIN_MTU_SIZE){
 					$this->server->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");
 					return true;
@@ -93,7 +93,7 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(OpenConnectionReply2::create($this->server->getID(), $address, $mtuSize, false), $address);
 				$this->server->createSession($address, $packet->clientID, $mtuSize);
 			}else{
-				$this->server->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->server->getPort() . ", got " . $packet->serverAddress->port);
+				$this->server->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->server->getPort() . ", got " . $packet->serverAddress->getPort());
 			}
 		}else{
 			return false;

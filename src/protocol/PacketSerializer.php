@@ -68,26 +68,27 @@ final class PacketSerializer extends BinaryStream{
 	}
 
 	public function putAddress(InternetAddress $address) : void{
-		$this->putByte($address->version);
-		if($address->version === 4){
-			$parts = explode(".", $address->ip);
+		$version = $address->getVersion();
+		$this->putByte($version);
+		if($version === 4){
+			$parts = explode(".", $address->getIp());
 			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
 			foreach($parts as $b){
 				$this->putByte((~((int) $b)) & 0xff);
 			}
-			$this->putShort($address->port);
-		}elseif($address->version === 6){
+			$this->putShort($address->getPort());
+		}elseif($version === 6){
 			$this->putLShort(AF_INET6);
-			$this->putShort($address->port);
+			$this->putShort($address->getPort());
 			$this->putInt(0);
-			$rawIp = inet_pton($address->ip);
+			$rawIp = inet_pton($address->getIp());
 			if($rawIp === false){
 				throw new \InvalidArgumentException("Invalid IPv6 address could not be encoded");
 			}
 			$this->put($rawIp);
 			$this->putInt(0);
 		}else{
-			throw new \InvalidArgumentException("IP version $address->version is not supported");
+			throw new \InvalidArgumentException("IP version $version is not supported");
 		}
 	}
 }
