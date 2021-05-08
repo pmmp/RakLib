@@ -17,10 +17,11 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-interface ServerEventSource{
+use raklib\protocol\EncapsulatedPacket;
 
-	/**
-	 * @phpstan-return \Generator<int, null, void, void>
-	 */
-	public function process(ServerInterface $server) : \Generator;
+interface SessionInterface{
+
+	public function sendEncapsulated(EncapsulatedPacket $packet, bool $immediate = false) : void;
+
+	public function initiateDisconnect(string $reason) : void;
 }

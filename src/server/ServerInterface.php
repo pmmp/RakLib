@@ -17,15 +17,11 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use raklib\protocol\EncapsulatedPacket;
-
 interface ServerInterface{
 
-	public function sendEncapsulated(int $sessionId, EncapsulatedPacket $packet, bool $immediate = false) : void;
+	public function getSession(int $id) : ?SessionInterface;
 
 	public function sendRaw(string $address, int $port, string $payload) : void;
-
-	public function closeSession(int $sessionId) : void;
 
 	public function setName(string $name) : void;
 
