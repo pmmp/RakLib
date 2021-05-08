@@ -228,7 +228,7 @@ class Session{
 					$dataPacket = new NewIncomingConnection();
 					$dataPacket->decode(new PacketSerializer($packet->buffer));
 
-					if($dataPacket->address->port === $this->server->getPort() or !$this->server->portChecking){
+					if($dataPacket->address->getPort() === $this->server->getPort() or !$this->server->portChecking){
 						$this->state = self::STATE_CONNECTED; //FINALLY!
 						$this->isTemporal = false;
 						$this->server->openSession($this);
