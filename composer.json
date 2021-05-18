@@ -8,8 +8,8 @@
 		"php-ipv6": "*",
 		"php-64bit": "*",
 		"ext-sockets": "*",
-		"pocketmine/log": "dev-master",
-		"pocketmine/binaryutils": "dev-master"
+		"pocketmine/log": "^0.3.0",
+		"pocketmine/binaryutils": "^0.2.0"
 	},
 	"require-dev": {
 		"phpstan/phpstan": "0.12.87",
