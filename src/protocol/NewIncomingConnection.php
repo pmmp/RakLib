@@ -23,7 +23,7 @@ use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
 
-class NewIncomingConnection extends Packet{
+class NewIncomingConnection extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
 	/** @var InternetAddress */
@@ -37,30 +37,30 @@ class NewIncomingConnection extends Packet{
 	/** @var int */
 	public $sendPongTime;
 
-	protected function encodePayload() : void{
-		$this->putAddress($this->address);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putAddress($this->address);
 		foreach($this->systemAddresses as $address){
-			$this->putAddress($address);
+			$out->putAddress($address);
 		}
-		$this->putLong($this->sendPingTime);
-		$this->putLong($this->sendPongTime);
+		$out->putLong($this->sendPingTime);
+		$out->putLong($this->sendPongTime);
 	}
 
-	protected function decodePayload() : void{
-		$this->address = $this->getAddress();
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->address = $in->getAddress();
 
 		//TODO: HACK!
-		$stopOffset = strlen($this->buffer) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
+		$stopOffset = strlen($in->getBuffer()) - 16; //buffer length - sizeof(sendPingTime) - sizeof(sendPongTime)
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			if($this->offset >= $stopOffset){
+			if($in->getOffset() >= $stopOffset){
 				$this->systemAddresses[$i] = clone $dummy;
 			}else{
-				$this->systemAddresses[$i] = $this->getAddress();
+				$this->systemAddresses[$i] = $in->getAddress();
 			}
 		}
 
-		$this->sendPingTime = $this->getLong();
-		$this->sendPongTime = $this->getLong();
+		$this->sendPingTime = $in->getLong();
+		$this->sendPongTime = $in->getLong();
 	}
 }

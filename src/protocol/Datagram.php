@@ -19,9 +19,6 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-use function strlen;
-use function substr;
-
 class Datagram extends Packet{
 	public const BITFLAG_VALID = 0x80;
 	public const BITFLAG_ACK = 0x40;
@@ -35,23 +32,25 @@ class Datagram extends Packet{
 	public const BITFLAG_CONTINUOUS_SEND = 0x08;
 	public const BITFLAG_NEEDS_B_AND_AS = 0x04;
 
+	public const HEADER_SIZE = 1 + 3; //header flags (1) + sequence number (3)
+
 	/** @var int */
 	public $headerFlags = 0;
 
-	/** @var (EncapsulatedPacket|string)[] */
+	/** @var EncapsulatedPacket[] */
 	public $packets = [];
 
 	/** @var int|null */
 	public $seqNumber = null;
 
-	protected function encodeHeader() : void{
-		$this->putByte(self::BITFLAG_VALID | $this->headerFlags);
+	protected function encodeHeader(PacketSerializer $out) : void{
+		$out->putByte(self::BITFLAG_VALID | $this->headerFlags);
 	}
 
-	protected function encodePayload() : void{
-		$this->putLTriad($this->seqNumber);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putLTriad($this->seqNumber);
 		foreach($this->packets as $packet){
-			$this->put($packet instanceof EncapsulatedPacket ? $packet->toBinary() : $packet);
+			$out->put($packet->toBinary());
 		}
 	}
 
@@ -59,37 +58,23 @@ class Datagram extends Packet{
 	 * @return int
 	 */
 	public function length(){
-		$length = 4;
+		$length = self::HEADER_SIZE;
 		foreach($this->packets as $packet){
-			$length += $packet instanceof EncapsulatedPacket ? $packet->getTotalLength() : strlen($packet);
+			$length += $packet->getTotalLength();
 		}
 
 		return $length;
 	}
 
-	protected function decodeHeader() : void{
-		$this->headerFlags = $this->getByte();
+	protected function decodeHeader(PacketSerializer $in) : void{
+		$this->headerFlags = $in->getByte();
 	}
 
-	protected function decodePayload() : void{
-		$this->seqNumber = $this->getLTriad();
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->seqNumber = $in->getLTriad();
 
-		while(!$this->feof()){
-			$offset = 0;
-			$data = substr($this->buffer, $this->offset);
-			$packet = EncapsulatedPacket::fromBinary($data, $offset);
-			$this->offset += $offset;
-			if($packet->buffer === ''){
-				break;
-			}
-			$this->packets[] = $packet;
+		while(!$in->feof()){
+			$this->packets[] = EncapsulatedPacket::fromBinary($in);
 		}
-	}
-
-	public function clean(){
-		$this->packets = [];
-		$this->seqNumber = null;
-
-		return parent::clean();
 	}
 }

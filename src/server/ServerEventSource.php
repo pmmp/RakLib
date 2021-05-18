@@ -15,16 +15,9 @@
 
 declare(strict_types=1);
 
-namespace raklib\protocol;
+namespace raklib\server;
 
-class DisconnectionNotification extends ConnectedPacket{
-	public static $ID = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
+interface ServerEventSource{
 
-	protected function encodePayload(PacketSerializer $out) : void{
-
-	}
-
-	protected function decodePayload(PacketSerializer $in) : void{
-
-	}
+	public function process(ServerInterface $server) : bool;
 }

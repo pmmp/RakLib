@@ -15,7 +15,7 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\generic;
 
 use raklib\utils\InternetAddress;
 use function socket_bind;
@@ -36,10 +36,11 @@ use const SO_RCVBUF;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
 use const SOCKET_EADDRINUSE;
+use const SOCKET_EWOULDBLOCK;
 use const SOL_SOCKET;
 use const SOL_UDP;
 
-class UDPServerSocket{
+class Socket{
 	/**
 	 * @var resource
 	 * @phpstan-var PhpSocket
@@ -50,26 +51,29 @@ class UDPServerSocket{
 	 */
 	private $bindAddress;
 
+	/**
+	 * @throws SocketException
+	 */
 	public function __construct(InternetAddress $bindAddress){
 		$this->bindAddress = $bindAddress;
-		$socket = @socket_create($bindAddress->version === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
+		$socket = @socket_create($bindAddress->getVersion() === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
 		if($socket === false){
 			throw new \RuntimeException("Failed to create socket: " . trim(socket_strerror(socket_last_error())));
 		}
 		$this->socket = $socket;
 
-		if($bindAddress->version === 6){
+		if($bindAddress->getVersion() === 6){
 			socket_set_option($this->socket, IPPROTO_IPV6, IPV6_V6ONLY, 1); //Don't map IPv4 to IPv6, the implementation can create another RakLib instance to handle IPv4
 		}
 
-		if(@socket_bind($this->socket, $bindAddress->ip, $bindAddress->port) === true){
+		if(@socket_bind($this->socket, $bindAddress->getIp(), $bindAddress->getPort()) === true){
 			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
 		}else{
 			$error = socket_last_error($this->socket);
 			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
-				throw new \RuntimeException("Failed to bind socket: Something else is already running on $bindAddress");
+				throw new SocketException("Failed to bind socket: Something else is already running on $bindAddress", $error);
 			}
-			throw new \RuntimeException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror(socket_last_error($this->socket))));
+			throw new SocketException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror($error)), $error);
 		}
 		socket_set_nonblock($this->socket);
 	}
@@ -95,21 +99,33 @@ class UDPServerSocket{
 	}
 
 	/**
-	 * @param string $buffer reference parameter
 	 * @param string $source reference parameter
 	 * @param int    $port reference parameter
 	 *
-	 * @return int|bool
+	 * @throws SocketException
 	 */
-	public function readPacket(?string &$buffer, ?string &$source, ?int &$port){
-		return @socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port);
+	public function readPacket(?string &$source, ?int &$port) : ?string{
+		$buffer = "";
+		if(@socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port) === false){
+			$errno = socket_last_error($this->socket);
+			if($errno === SOCKET_EWOULDBLOCK){
+				return null;
+			}
+			throw new SocketException("Failed to recv (errno $errno): " . trim(socket_strerror($errno)), $errno);
+		}
+		return $buffer;
 	}
 
 	/**
-	 * @return int|bool
+	 * @throws SocketException
 	 */
-	public function writePacket(string $buffer, string $dest, int $port){
-		return socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
+	public function writePacket(string $buffer, string $dest, int $port) : int{
+		$result = @socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
+		if($result === false){
+			$errno = socket_last_error($this->socket);
+			throw new SocketException("Failed to send to $dest $port (errno $errno): " . trim(socket_strerror($errno)), $errno);
+		}
+		return $result;
 	}
 
 	/**
@@ -129,5 +145,4 @@ class UDPServerSocket{
 
 		return $this;
 	}
-
 }

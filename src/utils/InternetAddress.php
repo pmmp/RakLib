@@ -17,20 +17,20 @@ declare(strict_types=1);
 
 namespace raklib\utils;
 
-class InternetAddress{
+final class InternetAddress{
 
 	/**
 	 * @var string
 	 */
-	public $ip;
+	private $ip;
 	/**
 	 * @var int
 	 */
-	public $port;
+	private $port;
 	/**
 	 * @var int
 	 */
-	public $version;
+	private $version;
 
 	public function __construct(string $address, int $port, int $version){
 		$this->ip = $address;

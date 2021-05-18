@@ -23,11 +23,11 @@ class AdvertiseSystem extends Packet{
 	/** @var string */
 	public $serverName;
 
-	protected function encodePayload() : void{
-		$this->putString($this->serverName);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putString($this->serverName);
 	}
 
-	protected function decodePayload() : void{
-		$this->serverName = $this->getString();
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->serverName = $in->getString();
 	}
 }

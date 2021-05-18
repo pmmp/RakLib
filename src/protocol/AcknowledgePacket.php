@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-
 use function chr;
 use function count;
 use function sort;
@@ -35,7 +34,7 @@ abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
 	public $packets = [];
 
-	protected function encodePayload() : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$payload = "";
 		sort($this->packets, SORT_NUMERIC);
 		$count = count($this->packets);
@@ -77,18 +76,18 @@ abstract class AcknowledgePacket extends Packet{
 			++$records;
 		}
 
-		$this->putShort($records);
-		$this->buffer .= $payload;
+		$out->putShort($records);
+		$out->put($payload);
 	}
 
-	protected function decodePayload() : void{
-		$count = $this->getShort();
+	protected function decodePayload(PacketSerializer $in) : void{
+		$count = $in->getShort();
 		$this->packets = [];
 		$cnt = 0;
-		for($i = 0; $i < $count and !$this->feof() and $cnt < 4096; ++$i){
-			if($this->getByte() === self::RECORD_TYPE_RANGE){
-				$start = $this->getLTriad();
-				$end = $this->getLTriad();
+		for($i = 0; $i < $count and !$in->feof() and $cnt < 4096; ++$i){
+			if($in->getByte() === self::RECORD_TYPE_RANGE){
+				$start = $in->getLTriad();
+				$end = $in->getLTriad();
 				if(($end - $start) > 512){
 					$end = $start + 512;
 				}
@@ -96,14 +95,8 @@ abstract class AcknowledgePacket extends Packet{
 					$this->packets[$cnt++] = $c;
 				}
 			}else{
-				$this->packets[$cnt++] = $this->getLTriad();
+				$this->packets[$cnt++] = $in->getLTriad();
 			}
 		}
-	}
-
-	public function clean(){
-		$this->packets = [];
-
-		return parent::clean();
 	}
 }

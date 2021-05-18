@@ -17,28 +17,35 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use raklib\RakLib;
+use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\BinaryStream;
 
 abstract class OfflineMessage extends Packet{
+
+	/**
+	 * Magic bytes used to distinguish offline messages from loose garbage.
+	 */
+	private const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
+
 	/** @var string */
 	protected $magic;
 
 	/**
 	 * @return void
+	 * @throws BinaryDataException
 	 */
-	protected function readMagic(){
-		$this->magic = $this->get(16);
+	protected function readMagic(BinaryStream $in){
+		$this->magic = $in->get(16);
 	}
 
 	/**
 	 * @return void
 	 */
-	protected function writeMagic(){
-		$this->put(RakLib::MAGIC);
+	protected function writeMagic(BinaryStream $out){
+		$out->put(self::MAGIC);
 	}
 
 	public function isValid() : bool{
-		return $this->magic === RakLib::MAGIC;
+		return $this->magic === self::MAGIC;
 	}
-
 }

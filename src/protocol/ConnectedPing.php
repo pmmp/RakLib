@@ -19,17 +19,23 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class ConnectedPing extends Packet{
+class ConnectedPing extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PING;
 
 	/** @var int */
 	public $sendPingTime;
 
-	protected function encodePayload() : void{
-		$this->putLong($this->sendPingTime);
+	public static function create(int $sendPingTime) : self{
+		$result = new self;
+		$result->sendPingTime = $sendPingTime;
+		return $result;
 	}
 
-	protected function decodePayload() : void{
-		$this->sendPingTime = $this->getLong();
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putLong($this->sendPingTime);
+	}
+
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->sendPingTime = $in->getLong();
 	}
 }

@@ -31,17 +31,17 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	/** @var int */
 	public $mtuSize;
 
-	protected function encodePayload() : void{
-		$this->writeMagic();
-		$this->putAddress($this->serverAddress);
-		$this->putShort($this->mtuSize);
-		$this->putLong($this->clientID);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$this->writeMagic($out);
+		$out->putAddress($this->serverAddress);
+		$out->putShort($this->mtuSize);
+		$out->putLong($this->clientID);
 	}
 
-	protected function decodePayload() : void{
-		$this->readMagic();
-		$this->serverAddress = $this->getAddress();
-		$this->mtuSize = $this->getShort();
-		$this->clientID = $this->getLong();
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->readMagic($in);
+		$this->serverAddress = $in->getAddress();
+		$this->mtuSize = $in->getShort();
+		$this->clientID = $in->getLong();
 	}
 }

@@ -19,7 +19,7 @@ namespace raklib\protocol;
 
 #include <rules/RakLibPacket.h>
 
-class ConnectionRequest extends Packet{
+class ConnectionRequest extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST;
 
 	/** @var int */
@@ -29,15 +29,15 @@ class ConnectionRequest extends Packet{
 	/** @var bool */
 	public $useSecurity = false;
 
-	protected function encodePayload() : void{
-		$this->putLong($this->clientID);
-		$this->putLong($this->sendPingTime);
-		$this->putByte($this->useSecurity ? 1 : 0);
+	protected function encodePayload(PacketSerializer $out) : void{
+		$out->putLong($this->clientID);
+		$out->putLong($this->sendPingTime);
+		$out->putByte($this->useSecurity ? 1 : 0);
 	}
 
-	protected function decodePayload() : void{
-		$this->clientID = $this->getLong();
-		$this->sendPingTime = $this->getLong();
-		$this->useSecurity = $this->getByte() !== 0;
+	protected function decodePayload(PacketSerializer $in) : void{
+		$this->clientID = $in->getLong();
+		$this->sendPingTime = $in->getLong();
+		$this->useSecurity = $in->getByte() !== 0;
 	}
 }

@@ -15,16 +15,8 @@
 
 declare(strict_types=1);
 
-namespace raklib\protocol;
+namespace raklib\generic;
 
-class DisconnectionNotification extends ConnectedPacket{
-	public static $ID = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
+class SocketException extends \RuntimeException{
 
-	protected function encodePayload(PacketSerializer $out) : void{
-
-	}
-
-	protected function decodePayload(PacketSerializer $in) : void{
-
-	}
 }
