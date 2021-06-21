@@ -8,7 +8,7 @@
 		"php-ipv6": "*",
 		"php-64bit": "*",
 		"ext-sockets": "*",
-		"pocketmine/log": "^0.3.0",
+		"pocketmine/log": "^0.3.0 || ^0.4.0",
 		"pocketmine/binaryutils": "^0.2.0"
 	},
 	"require-dev": {
