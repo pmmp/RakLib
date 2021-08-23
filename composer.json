@@ -12,7 +12,7 @@
 		"pocketmine/binaryutils": "^0.2.0"
 	},
 	"require-dev": {
-		"phpstan/phpstan": "0.12.94",
+		"phpstan/phpstan": "0.12.96",
 		"phpstan/phpstan-strict-rules": "^0.12.2"
 	},
 	"autoload": {
