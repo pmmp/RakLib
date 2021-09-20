@@ -172,6 +172,13 @@ class Server implements ServerInterface{
 	 */
 	public function waitShutdown() : void{
 		$this->shutdown = true;
+
+		while($this->eventSource->process($this)){
+			//Ensure that any late messages are processed before we start initiating server disconnects, so that if the
+			//server implementation used a custom disconnect mechanism (e.g. a server transfer), we don't break it in
+			//race conditions.
+		}
+
 		foreach($this->sessions as $session){
 			$session->initiateDisconnect("server shutdown");
 		}
