@@ -89,6 +89,13 @@ class UnconnectedMessageHandler{
 					$this->server->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");
 					return true;
 				}
+				$existingSession = $this->server->getSessionByAddress($address);
+				if($existingSession !== null && $existingSession->isConnected()){
+					//for redundancy, in case someone rips up Server - we really don't want connected sessions getting
+					//overwritten
+					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
+					return true;
+				}
 				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
 				$this->server->sendPacket(OpenConnectionReply2::create($this->server->getID(), $address, $mtuSize, false), $address);
 				$this->server->createSession($address, $packet->clientID, $mtuSize);
