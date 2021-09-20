@@ -42,8 +42,7 @@ use const SOL_UDP;
 
 class Socket{
 	/**
-	 * @var resource
-	 * @phpstan-var PhpSocket
+	 * @var \Socket
 	 */
 	protected $socket;
 	/**
@@ -83,8 +82,7 @@ class Socket{
 	}
 
 	/**
-	 * @return resource
-	 * @phpstan-return PhpSocket
+	 * @return \Socket
 	 */
 	public function getSocket(){
 		return $this->socket;

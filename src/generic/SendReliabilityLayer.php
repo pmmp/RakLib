@@ -156,7 +156,6 @@ final class SendReliabilityLayer{
 
 		if(strlen($packet->buffer) > $maxSize){
 			$buffers = str_split($packet->buffer, $maxSize);
-			assert($buffers !== false);
 			$bufferCount = count($buffers);
 
 			$splitID = ++$this->splitID % 65536;

@@ -10,7 +10,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
-        php: [7.4.22, 8.0.9]
+        php: [8.0.9]
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-18.04
     steps:
@@ -33,4 +33,4 @@ jobs:
         run: composer install --prefer-dist --no-interaction
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyze --no-progress -c phpstan.php$(php -r 'echo PHP_MAJOR_VERSION;').neon
+        run: ./vendor/bin/phpstan analyze --no-progress
