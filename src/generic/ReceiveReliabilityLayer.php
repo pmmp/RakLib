@@ -76,12 +76,16 @@ final class ReceiveReliabilityLayer{
 	/** @var (EncapsulatedPacket|null)[][] */
 	private $splitPackets = [];
 
-	/** @var int */
+	/**
+	 * @var int
+	 * @phpstan-var positive-int
+	 */
 	private $maxSplitPacketPartCount;
 	/** @var int */
 	private $maxConcurrentSplitPackets;
 
 	/**
+	 * @phpstan-param positive-int $maxSplitPacketPartCount
 	 * @phpstan-param \Closure(EncapsulatedPacket) : void $onRecv
 	 * @phpstan-param \Closure(AcknowledgePacket) : void  $sendPacket
 	 */

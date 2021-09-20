@@ -23,6 +23,7 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\SplitPacketInfo;
+use raklib\server\Session;
 use function array_fill;
 use function assert;
 use function count;
@@ -43,7 +44,10 @@ final class SendReliabilityLayer{
 	 */
 	private $onACK;
 
-	/** @var int */
+	/**
+	 * @var int
+	 * @phpstan-var int<Session::MIN_MTU_SIZE, max>
+	 */
 	private $mtuSize;
 
 	/** @var EncapsulatedPacket[] */
@@ -73,6 +77,7 @@ final class SendReliabilityLayer{
 	private $needACK = [];
 
 	/**
+	 * @phpstan-param int<Session::MIN_MTU_SIZE, max> $mtuSize
 	 * @phpstan-param \Closure(Datagram) : void $sendDatagram
 	 * @phpstan-param \Closure(int) : void      $onACK
 	 */
