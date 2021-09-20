@@ -263,8 +263,13 @@ class Session{
 	 * @param int $sendPongTime TODO: clock differential stuff
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{
-		$this->lastPingMeasure = $this->server->getRakNetTimeMS() - $sendPingTime;
-		$this->server->getEventListener()->onPingMeasure($this->internalId, $this->lastPingMeasure);
+		$currentTime = $this->server->getRakNetTimeMS();
+		if($currentTime < $sendPingTime){
+			$this->logger->debug("Received invalid pong: timestamp is in the future by " . ($sendPingTime - $currentTime) . " ms");
+		}else{
+			$this->lastPingMeasure = $currentTime - $sendPingTime;
+			$this->server->getEventListener()->onPingMeasure($this->internalId, $this->lastPingMeasure);
+		}
 	}
 
 	public function handlePacket(Packet $packet) : void{
