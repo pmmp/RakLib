@@ -25,7 +25,6 @@ use raklib\protocol\PacketReliability;
 use raklib\protocol\SplitPacketInfo;
 use raklib\server\Session;
 use function array_fill;
-use function assert;
 use function count;
 use function str_split;
 use function strlen;
