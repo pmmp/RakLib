@@ -263,10 +263,10 @@ class Server implements ServerInterface{
 
 		$address = new InternetAddress($addressIp, $addressPort, $this->socket->getBindAddress()->getVersion());
 		try{
-			$header = ord($buffer[0]);
-			if(($header & Datagram::BITFLAG_VALID) !== 0){
-				$session = $this->getSessionByAddress($address);
-				if($session !== null){
+			$session = $this->getSessionByAddress($address);
+			if($session !== null){
+				$header = ord($buffer[0]);
+				if(($header & Datagram::BITFLAG_VALID) !== 0){
 					if(($header & Datagram::BITFLAG_ACK) !== 0){
 						$packet = new ACK();
 					}elseif(($header & Datagram::BITFLAG_NAK) !== 0){
@@ -276,29 +276,28 @@ class Server implements ServerInterface{
 					}
 					$packet->decode(new PacketSerializer($buffer));
 					$session->handlePacket($packet);
-				}else{
-					$this->logger->debug("Ignored datagram from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
-				}
-			}elseif(!$this->shutdown){
-				$session = $this->getSessionByAddress($address);
-				if($session !== null && $session->isConnected()){
-					//this intentionally allows unconnected packets for sessions in DISCONNECTING state, in case this
-					//is a player quickly rejoining after a game crash or something similar.
+					return true;
+				}elseif($session->isConnected()){
+					//allows unconnected packets if the session is stuck in DISCONNECTING state, useful if the client
+					//didn't disconnect properly for some reason (e.g. crash)
 					$this->logger->debug("Ignored unconnected packet from $address due to session already opened (0x" . bin2hex($buffer[0]) . ")");
-				}else{
-					if(!($handled = $this->unconnectedMessageHandler->handleRaw($buffer, $address))){
-						foreach($this->rawPacketFilters as $pattern){
-							if(preg_match($pattern, $buffer) > 0){
-								$handled = true;
-								$this->eventListener->onRawPacketReceive($address->getIp(), $address->getPort(), $buffer);
-								break;
-							}
+					return true;
+				}
+			}
+
+			if(!$this->shutdown){
+				if(!($handled = $this->unconnectedMessageHandler->handleRaw($buffer, $address))){
+					foreach($this->rawPacketFilters as $pattern){
+						if(preg_match($pattern, $buffer) > 0){
+							$handled = true;
+							$this->eventListener->onRawPacketReceive($address->getIp(), $address->getPort(), $buffer);
+							break;
 						}
 					}
+				}
 
-					if(!$handled){
-						$this->logger->debug("Unhandled unconnected packet from $address (0x" . bin2hex($buffer[0]) . ")");
-					}
+				if(!$handled){
+					$this->logger->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}
 		}catch(BinaryDataException $e){
