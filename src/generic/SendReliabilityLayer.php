@@ -183,7 +183,7 @@ final class SendReliabilityLayer{
 			if(PacketReliability::isReliable($packet->reliability)){
 				$packet->messageIndex = $this->messageIndex++;
 			}
-			$this->addToQueue($packet, false);
+			$this->addToQueue($packet, $immediate);
 		}
 	}
 
