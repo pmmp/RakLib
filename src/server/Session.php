@@ -45,8 +45,9 @@ class Session{
 
 	public const STATE_CONNECTING = 0;
 	public const STATE_CONNECTED = 1;
-	public const STATE_DISCONNECTING = 2;
-	public const STATE_DISCONNECTED = 3;
+	public const STATE_DISCONNECT_PENDING = 2;
+	public const STATE_DISCONNECT_NOTIFIED = 3;
+	public const STATE_DISCONNECTED = 4;
 
 	public const MIN_MTU_SIZE = 400;
 
@@ -149,7 +150,10 @@ class Session{
 	}
 
 	public function isConnected() : bool{
-		return $this->state !== self::STATE_DISCONNECTING and $this->state !== self::STATE_DISCONNECTED;
+		return
+			$this->state !== self::STATE_DISCONNECT_PENDING and
+			$this->state !== self::STATE_DISCONNECT_NOTIFIED and
+			$this->state !== self::STATE_DISCONNECTED;
 	}
 
 	public function update(float $time) : void{
@@ -159,12 +163,18 @@ class Session{
 			return;
 		}
 
-		if($this->state === self::STATE_DISCONNECTING){
+		if($this->state === self::STATE_DISCONNECT_PENDING || $this->state === self::STATE_DISCONNECT_NOTIFIED){
 			//by this point we already told the event listener that the session is closing, so we don't need to do it again
 			if(!$this->sendLayer->needsUpdate() and !$this->recvLayer->needsUpdate()){
-				$this->state = self::STATE_DISCONNECTED;
-				$this->logger->debug("Client cleanly disconnected, marking session for destruction");
-				return;
+				if($this->state === self::STATE_DISCONNECT_PENDING){
+					$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
+					$this->state = self::STATE_DISCONNECT_NOTIFIED;
+					$this->logger->debug("All pending traffic flushed, sent disconnect notification");
+				}else{
+					$this->state = self::STATE_DISCONNECTED;
+					$this->logger->debug("Client cleanly disconnected, marking session for destruction");
+					return;
+				}
 			}elseif($this->disconnectionTime + 10 < $time){
 				$this->state = self::STATE_DISCONNECTED;
 				$this->logger->debug("Timeout during graceful disconnect, forcibly closing session");
@@ -238,7 +248,7 @@ class Session{
 					}
 				}
 			}elseif($id === DisconnectionNotification::$ID){
-				$this->initiateDisconnect("client disconnect");
+				$this->onClientDisconnect();
 			}elseif($id === ConnectedPing::$ID){
 				$dataPacket = new ConnectedPing();
 				$dataPacket->decode(new PacketSerializer($packet->buffer));
@@ -290,9 +300,8 @@ class Session{
 	 */
 	public function initiateDisconnect(string $reason) : void{
 		if($this->isConnected()){
-			$this->state = self::STATE_DISCONNECTING;
+			$this->state = self::STATE_DISCONNECT_PENDING;
 			$this->disconnectionTime = microtime(true);
-			$this->queueConnectedPacket(new DisconnectionNotification(), PacketReliability::RELIABLE_ORDERED, 0, true);
 			$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
 			$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
 		}
@@ -305,6 +314,20 @@ class Session{
 		$this->state = self::STATE_DISCONNECTED;
 		$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
 		$this->logger->debug("Forcibly disconnecting session due to \"$reason\"");
+	}
+
+	private function onClientDisconnect() : void{
+		//the client will expect an ACK for this; make sure it gets sent, because after forcible termination
+		//there won't be any session ticks to update it
+		$this->recvLayer->update();
+
+		if($this->isConnected()){
+			//the client might have disconnected after the server sent a disconnect notification, but before the client
+			//received it - in this case, we don't want to notify the event handler twice
+			$this->server->getEventListener()->onClientDisconnect($this->internalId, "client disconnect");
+		}
+		$this->state = self::STATE_DISCONNECTED;
+		$this->logger->debug("Terminating session due to client disconnect");
 	}
 
 	/**
