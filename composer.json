@@ -7,7 +7,7 @@
 		"php": "^7.2 || ^8.0",
 		"php-ipv6": "*",
 		"php-64bit": "*",
-		"ext-pthreads": "~3.2.0",
+		"ext-pthreads": "~3.2.0 || ^4.0",
 		"ext-sockets": "*",
 		"pocketmine/log": "^0.2.0",
 		"pocketmine/log-pthreads": "^0.1.0",
