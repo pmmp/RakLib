@@ -62,7 +62,7 @@ class EncapsulatedPacket{
 		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
 		$hasSplit = ($flags & self::SPLIT_FLAG) > 0;
 
-		$length = (int) ceil($stream->getShort() / 8);
+		$length = $stream->getShort() >> 3;
 		if($length === 0){
 			throw new BinaryDataException("Encapsulated payload length cannot be zero");
 		}
