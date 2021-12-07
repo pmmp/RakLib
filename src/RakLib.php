@@ -19,7 +19,7 @@ namespace raklib;
 
 abstract class RakLib{
 	/**
-	 * Default vanilla Raknet protocol version that this library implements. Things using RakNet can override this
+	 * Default vanilla RakNet protocol version that this library implements. Things using RakLib can override this
 	 * protocol version with something different.
 	 */
 	public const DEFAULT_PROTOCOL_VERSION = 6;
