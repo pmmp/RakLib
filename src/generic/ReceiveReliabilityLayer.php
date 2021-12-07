@@ -146,10 +146,12 @@ final class ReceiveReliabilityLayer{
 
 		$this->splitPackets[$splitId][$partIndex] = $packet;
 
+		$parts = [];
 		foreach($this->splitPackets[$splitId] as $splitIndex => $part){
 			if($part === null){
 				return null;
 			}
+			$parts[$splitIndex] = $part;
 		}
 
 		//got all parts, reassemble the packet
@@ -163,7 +165,7 @@ final class ReceiveReliabilityLayer{
 		$pk->orderChannel = $packet->orderChannel;
 
 		for($i = 0; $i < $totalParts; ++$i){
-			$pk->buffer .= $this->splitPackets[$splitId][$i]->buffer;
+			$pk->buffer .= $parts[$i]->buffer;
 		}
 
 		unset($this->splitPackets[$splitId]);
