@@ -66,7 +66,7 @@ final class SendReliabilityLayer{
 	/** @var int[] */
 	private $sendSequencedIndex;
 
-	/** @var Datagram[] */
+	/** @var ReliableCacheEntry[] */
 	private $resendQueue = [];
 
 	/** @var ReliableCacheEntry[] */
@@ -89,11 +89,13 @@ final class SendReliabilityLayer{
 		$this->sendSequencedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 	}
 
-	private function sendDatagram(Datagram $datagram) : void{
-		if($datagram->seqNumber !== null){
-			unset($this->reliableCache[$datagram->seqNumber]);
-		}
+	/**
+	 * @param EncapsulatedPacket[] $packets
+	 */
+	private function sendDatagram(array $packets) : void{
+		$datagram = new Datagram();
 		$datagram->seqNumber = $this->sendSeqNumber++;
+		$datagram->packets = $packets;
 		($this->sendDatagramCallback)($datagram);
 
 		$resendable = [];
@@ -109,9 +111,7 @@ final class SendReliabilityLayer{
 
 	public function sendQueue() : void{
 		if(count($this->sendQueue) > 0){
-			$datagram = new Datagram();
-			$datagram->packets = $this->sendQueue;
-			$this->sendDatagram($datagram);
+			$this->sendDatagram($this->sendQueue);
 			$this->sendQueue = [];
 		}
 	}
@@ -208,9 +208,7 @@ final class SendReliabilityLayer{
 		foreach($packet->packets as $seq){
 			if(isset($this->reliableCache[$seq])){
 				//TODO: group resends if the resulting datagram is below the MTU
-				$resend = new Datagram();
-				$resend->packets = $this->reliableCache[$seq]->getPackets();
-				$this->resendQueue[] = $resend;
+				$this->resendQueue[] = $this->reliableCache[$seq];
 				unset($this->reliableCache[$seq]);
 			}
 		}
@@ -228,7 +226,7 @@ final class SendReliabilityLayer{
 		if(count($this->resendQueue) > 0){
 			$limit = 16;
 			foreach($this->resendQueue as $k => $pk){
-				$this->sendDatagram($pk);
+				$this->sendDatagram($pk->getPackets());
 				unset($this->resendQueue[$k]);
 
 				if(--$limit <= 0){
@@ -243,9 +241,7 @@ final class SendReliabilityLayer{
 
 		foreach($this->reliableCache as $seq => $pk){
 			if($pk->getTimestamp() < (time() - 8)){
-				$resend = new Datagram();
-				$resend->packets = $pk->getPackets();
-				$this->resendQueue[] = $resend;
+				$this->resendQueue[] = $pk;
 				unset($this->reliableCache[$seq]);
 			}else{
 				break;

@@ -40,8 +40,8 @@ class Datagram extends Packet{
 	/** @var EncapsulatedPacket[] */
 	public $packets = [];
 
-	/** @var int|null */
-	public $seqNumber = null;
+	/** @var int */
+	public $seqNumber;
 
 	protected function encodeHeader(PacketSerializer $out) : void{
 		$out->putByte(self::BITFLAG_VALID | $this->headerFlags);
