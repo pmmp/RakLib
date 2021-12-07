@@ -68,8 +68,8 @@ class Session{
 
 	/** @var float */
 	private $lastUpdate;
-	/** @var float|null */
-	private $disconnectionTime;
+	/** @var float */
+	private $disconnectionTime = 0;
 
 	/** @var bool */
 	private $isTemporal = true;
