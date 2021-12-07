@@ -1,0 +1,17 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Only numeric types are allowed in \\+, int\\|null given on the left side\\.$#"
+			count: 1
+			path: ../../../src/generic/ReceiveReliabilityLayer.php
+
+		-
+			message: "#^Parameter \\#1 \\$codepoint of function chr expects int, int\\|null given\\.$#"
+			count: 1
+			path: ../../../src/protocol/EncapsulatedPacket.php
+
+		-
+			message: "#^Parameter \\#1 \\$value of static method pocketmine\\\\utils\\\\Binary\\:\\:writeLTriad\\(\\) expects int, int\\|null given\\.$#"
+			count: 3
+			path: ../../../src/protocol/EncapsulatedPacket.php
+
