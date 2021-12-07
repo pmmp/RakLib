@@ -10,7 +10,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
-        php: [8.0.9]
+        php: ["8.0", "8.1"]
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-18.04
     steps:
