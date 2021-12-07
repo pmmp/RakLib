@@ -119,6 +119,9 @@ final class ReceiveReliabilityLayer{
 	 * @return null|EncapsulatedPacket Reassembled packet if we have all the parts, null otherwise.
 	 */
 	private function handleSplit(EncapsulatedPacket $packet) : ?EncapsulatedPacket{
+		if($packet->splitInfo === null){
+			return $packet;
+		}
 		$totalParts = $packet->splitInfo->getTotalPartCount();
 		$partIndex = $packet->splitInfo->getPartIndex();
 		if(
@@ -185,10 +188,8 @@ final class ReceiveReliabilityLayer{
 			}
 		}
 
-		if($packet->splitInfo !== null){
-			if(($packet = $this->handleSplit($packet)) === null){
-				return;
-			}
+		if(($packet = $this->handleSplit($packet)) === null){
+			return;
 		}
 
 		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= PacketReliability::MAX_ORDER_CHANNELS)){
