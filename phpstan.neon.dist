@@ -1,5 +1,4 @@
 includes:
-	- tests/phpstan/baselines/phpstan-bugs.neon
 	- vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
