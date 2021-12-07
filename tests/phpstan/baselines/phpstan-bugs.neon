@@ -1,7 +1,0 @@
-parameters:
-	ignoreErrors:
-		-
-			message: "#^Default value of the parameter \\#4 \\$maxSplitPacketPartCount \\(int\\) of method raklib\\\\generic\\\\ReceiveReliabilityLayer\\:\\:__construct\\(\\) is incompatible with type int\\<1, max\\>\\.$#"
-			count: 1
-			path: ../../../src/generic/ReceiveReliabilityLayer.php
-
