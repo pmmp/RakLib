@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
-
 use raklib\utils\InternetAddress;
 
 class OpenConnectionRequest2 extends OfflineMessage{

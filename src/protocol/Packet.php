@@ -19,8 +19,6 @@ namespace raklib\protocol;
 
 use pocketmine\utils\BinaryDataException;
 
-#include <rules/RakLibPacket.h>
-
 abstract class Packet{
 	/** @var int */
 	public static $ID = -1;

@@ -17,17 +17,12 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\Binary;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use function ceil;
 use function chr;
 use function strlen;
-
-#ifndef COMPILE
-use pocketmine\utils\Binary;
-#endif
-
-#include <rules/RakLibPacket.h>
 
 class EncapsulatedPacket{
 	private const RELIABILITY_SHIFT = 5;

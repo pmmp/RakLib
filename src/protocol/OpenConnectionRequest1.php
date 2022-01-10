@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-#include <rules/RakLibPacket.h>
-
 use raklib\RakLib;
 use function str_repeat;
 use function strlen;

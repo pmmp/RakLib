@@ -17,15 +17,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pocketmine\utils\Binary;
 use function chr;
 use function count;
 use function sort;
 use const SORT_NUMERIC;
-#ifndef COMPILE
-use pocketmine\utils\Binary;
-#endif
-
-#include <rules/RakLibPacket.h>
 
 abstract class AcknowledgePacket extends Packet{
 	private const RECORD_TYPE_RANGE = 0;
