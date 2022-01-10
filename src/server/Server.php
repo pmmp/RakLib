@@ -304,7 +304,7 @@ class Server implements ServerInterface{
 				}
 			}
 		}catch(BinaryDataException $e){
-			$logFn = function() use ($address, $e, $buffer): void{
+			$logFn = function() use ($address, $e, $buffer) : void{
 				$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
 				$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
 				foreach($this->traceCleaner->getTrace(0, $e->getTrace()) as $line){

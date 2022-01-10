@@ -26,6 +26,7 @@ use function method_exists;
 use function str_replace;
 use function strval;
 use function substr;
+use function xdebug_get_function_stack;
 
 final class ExceptionTraceCleaner{
 	/** @var string */

@@ -41,13 +41,9 @@ use const SOL_SOCKET;
 use const SOL_UDP;
 
 class Socket{
-	/**
-	 * @var \Socket
-	 */
+	/** @var \Socket */
 	protected $socket;
-	/**
-	 * @var InternetAddress
-	 */
+	/** @var InternetAddress */
 	private $bindAddress;
 
 	/**

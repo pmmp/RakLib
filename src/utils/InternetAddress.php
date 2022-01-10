@@ -19,17 +19,11 @@ namespace raklib\utils;
 
 final class InternetAddress{
 
-	/**
-	 * @var string
-	 */
+	/** @var string */
 	private $ip;
-	/**
-	 * @var int
-	 */
+	/** @var int */
 	private $port;
-	/**
-	 * @var int
-	 */
+	/** @var int */
 	private $version;
 
 	public function __construct(string $address, int $port, int $version){
