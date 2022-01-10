@@ -108,6 +108,9 @@ class Server implements ServerInterface{
 	private $traceCleaner;
 
 	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+		if($maxMtuSize < Session::MIN_MTU_SIZE){
+			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
+		}
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
