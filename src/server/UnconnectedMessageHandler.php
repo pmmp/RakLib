@@ -37,7 +37,10 @@ use function substr;
 class UnconnectedMessageHandler{
 	/** @var Server */
 	private $server;
-	/** @var OfflineMessage[]|\SplFixedArray<OfflineMessage> */
+	/**
+	 * @var OfflineMessage[]|\SplFixedArray
+	 * @phpstan-var \SplFixedArray<OfflineMessage>
+	 */
 	private $packetPool;
 	/** @var ProtocolAcceptor */
 	private $protocolAcceptor;
