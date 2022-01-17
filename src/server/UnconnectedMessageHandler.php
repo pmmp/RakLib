@@ -111,6 +111,9 @@ class UnconnectedMessageHandler{
 		return true;
 	}
 
+	/**
+	 * @phpstan-param class-string<OfflineMessage> $class
+	 */
 	private function registerPacket(int $id, string $class) : void{
 		$this->packetPool[$id] = new $class;
 	}
