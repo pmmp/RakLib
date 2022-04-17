@@ -213,7 +213,7 @@ final class ReceiveReliabilityLayer{
 				//Any ordered packet resets the sequence index to zero, so that sequenced packets older than this ordered
 				//one get discarded. Sequenced packets also include (but don't increment) the order index, so a sequenced
 				//packet with an order index less than this will get discarded
-				$this->receiveSequencedHighestIndex[$packet->orderIndex] = 0;
+				$this->receiveSequencedHighestIndex[$packet->orderChannel] = 0;
 				$this->receiveOrderedIndex[$packet->orderChannel] = $packet->orderIndex + 1;
 
 				$this->handleEncapsulatedPacketRoute($packet);
