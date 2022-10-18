@@ -12,7 +12,7 @@ jobs:
       matrix:
         php: ["8.0", "8.1"]
     name: PHP ${{ matrix.php }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
 
