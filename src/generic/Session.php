@@ -75,16 +75,13 @@ abstract class Session{
 	/** @var int */
 	private $lastPingMeasure = 1;
 
-	/** @var int */
-	protected $internalId;
-
 	/** @var ReceiveReliabilityLayer */
 	private $recvLayer;
 
 	/** @var SendReliabilityLayer */
 	private $sendLayer;
 
-	public function __construct(\Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
+	public function __construct(\Logger $logger, InternetAddress $address, int $clientId, int $mtuSize){
 		if($mtuSize < self::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
 		}
@@ -93,8 +90,6 @@ abstract class Session{
 		$this->id = $clientId;
 
 		$this->lastUpdate = microtime(true);
-
-		$this->internalId = $internalId;
 
 		$this->recvLayer = new ReceiveReliabilityLayer(
 			$this->logger,

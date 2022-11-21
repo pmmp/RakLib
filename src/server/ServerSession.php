@@ -28,10 +28,12 @@ use function ord;
 
 class ServerSession extends Session{
 	private Server $server;
+	private int $internalId;
 
 	public function __construct(Server $server, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
 		$this->server = $server;
-		parent::__construct($logger, $address, $clientId, $mtuSize, $internalId);
+		$this->internalId = $internalId;
+		parent::__construct($logger, $address, $clientId, $mtuSize);
 	}
 
 	/**
