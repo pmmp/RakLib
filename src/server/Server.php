@@ -428,7 +428,7 @@ class Server implements ServerInterface{
 	private function checkSessions() : void{
 		if(count($this->sessions) > 4096){
 			foreach($this->sessions as $sessionId => $session){
-				if($session->isTemporal()){
+				if($session->isTemporary()){
 					$this->removeSessionInternal($session);
 					if(count($this->sessions) <= 4096){
 						break;

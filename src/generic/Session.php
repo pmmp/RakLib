@@ -65,9 +65,6 @@ abstract class Session{
 	private $disconnectionTime = 0;
 
 	/** @var bool */
-	protected $isTemporal = true;
-
-	/** @var bool */
 	private $isActive = false;
 
 	/** @var float */
@@ -166,8 +163,8 @@ abstract class Session{
 		return $this->state;
 	}
 
-	public function isTemporal() : bool{
-		return $this->isTemporal;
+	public function isTemporary() : bool{
+		return $this->state === self::STATE_CONNECTING;
 	}
 
 	public function isConnected() : bool{

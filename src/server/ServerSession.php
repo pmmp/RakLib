@@ -72,7 +72,6 @@ class ServerSession extends Session{
 
 			if($dataPacket->address->getPort() === $this->server->getPort() or !$this->server->portChecking){
 				$this->state = self::STATE_CONNECTED; //FINALLY!
-				$this->isTemporal = false;
 				$this->server->openSession($this);
 
 				//$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime); //can't use this due to system-address count issues in MCPE >.<
