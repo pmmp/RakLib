@@ -18,7 +18,6 @@ namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
 use raklib\generic\Session;
-use raklib\generic\Socket;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
@@ -46,7 +45,7 @@ class Server implements ServerInterface{
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
-	/** @var Socket */
+	/** @var ServerSocket */
 	protected $socket;
 
 	/** @var \Logger */
@@ -107,13 +106,14 @@ class Server implements ServerInterface{
 	/** @var ExceptionTraceCleaner */
 	private $traceCleaner;
 
-	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(int $serverId, \Logger $logger, ServerSocket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
 		}
 		$this->serverId = $serverId;
 		$this->logger = $logger;
 		$this->socket = $socket;
+		$this->socket->setBlocking(false);
 		$this->maxMtuSize = $maxMtuSize;
 		$this->eventSource = $eventSource;
 		$this->eventListener = $eventListener;
