@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use raklib\generic\Session;
 use raklib\generic\Socket;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
@@ -59,9 +60,9 @@ class Server implements ServerInterface{
 	/** @var int */
 	protected $sendBytes = 0;
 
-	/** @var Session[] */
+	/** @var ServerSession[] */
 	protected $sessionsByAddress = [];
-	/** @var Session[] */
+	/** @var ServerSession[] */
 	protected $sessions = [];
 
 	/** @var UnconnectedMessageHandler */
@@ -121,13 +122,6 @@ class Server implements ServerInterface{
 		$this->startTimeMS = (int) (microtime(true) * 1000);
 
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
-	}
-
-	/**
-	 * Returns the time in milliseconds since server start.
-	 */
-	public function getRakNetTimeMS() : int{
-		return ((int) (microtime(true) * 1000)) - $this->startTimeMS;
 	}
 
 	public function getPort() : int{
@@ -392,7 +386,7 @@ class Server implements ServerInterface{
 		$this->rawPacketFilters[] = $regex;
 	}
 
-	public function getSessionByAddress(InternetAddress $address) : ?Session{
+	public function getSessionByAddress(InternetAddress $address) : ?ServerSession{
 		return $this->sessionsByAddress[$address->toString()] ?? null;
 	}
 
@@ -400,7 +394,7 @@ class Server implements ServerInterface{
 		return isset($this->sessionsByAddress[$address->toString()]);
 	}
 
-	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
+	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : ServerSession{
 		$existingSession = $this->sessionsByAddress[$address->toString()] ?? null;
 		if($existingSession !== null){
 			$existingSession->forciblyDisconnect("client reconnect");
@@ -414,7 +408,7 @@ class Server implements ServerInterface{
 			$this->nextSessionId &= 0x7fffffff; //we don't expect more than 2 billion simultaneous connections, and this fits in 4 bytes
 		}
 
-		$session = new Session($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
+		$session = new ServerSession($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
 		$this->sessionsByAddress[$address->toString()] = $session;
 		$this->sessions[$this->nextSessionId] = $session;
 		$this->logger->debug("Created session for $address with MTU size $mtuSize");
@@ -422,11 +416,11 @@ class Server implements ServerInterface{
 		return $session;
 	}
 
-	private function removeSessionInternal(Session $session) : void{
+	private function removeSessionInternal(ServerSession $session) : void{
 		unset($this->sessionsByAddress[$session->getAddress()->toString()], $this->sessions[$session->getInternalId()]);
 	}
 
-	public function openSession(Session $session) : void{
+	public function openSession(ServerSession $session) : void{
 		$address = $session->getAddress();
 		$this->eventListener->onClientConnect($session->getInternalId(), $address->getIp(), $address->getPort(), $session->getID());
 	}
@@ -444,7 +438,7 @@ class Server implements ServerInterface{
 		}
 	}
 
-	public function notifyACK(Session $session, int $identifierACK) : void{
+	public function notifyACK(ServerSession $session, int $identifierACK) : void{
 		$this->eventListener->onPacketAck($session->getInternalId(), $identifierACK);
 	}
 

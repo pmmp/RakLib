@@ -22,7 +22,6 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\SplitPacketInfo;
-use raklib\server\Session;
 use function array_fill;
 use function count;
 use function str_split;

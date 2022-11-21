@@ -14,31 +14,28 @@
 
 declare(strict_types=1);
 
-namespace raklib\server;
+namespace raklib\generic;
 
-use raklib\generic\ReceiveReliabilityLayer;
-use raklib\generic\SendReliabilityLayer;
 use raklib\protocol\ACK;
 use raklib\protocol\AcknowledgePacket;
 use raklib\protocol\ConnectedPacket;
 use raklib\protocol\ConnectedPing;
 use raklib\protocol\ConnectedPong;
-use raklib\protocol\ConnectionRequest;
-use raklib\protocol\ConnectionRequestAccepted;
 use raklib\protocol\Datagram;
 use raklib\protocol\DisconnectionNotification;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\NACK;
-use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\PacketSerializer;
 use raklib\utils\InternetAddress;
+use function hrtime;
+use function intdiv;
 use function microtime;
 use function ord;
 
-class Session{
+abstract class Session{
 	public const MAX_SPLIT_PART_COUNT = 128;
 	public const MAX_CONCURRENT_SPLIT_COUNT = 4;
 
@@ -50,17 +47,14 @@ class Session{
 
 	public const MIN_MTU_SIZE = 400;
 
-	/** @var Server */
-	private $server;
-
 	/** @var \Logger */
 	private $logger;
 
 	/** @var InternetAddress */
-	private $address;
+	protected $address;
 
 	/** @var int */
-	private $state = self::STATE_CONNECTING;
+	protected $state = self::STATE_CONNECTING;
 
 	/** @var int */
 	private $id;
@@ -71,7 +65,7 @@ class Session{
 	private $disconnectionTime = 0;
 
 	/** @var bool */
-	private $isTemporal = true;
+	protected $isTemporal = true;
 
 	/** @var bool */
 	private $isActive = false;
@@ -82,7 +76,7 @@ class Session{
 	private $lastPingMeasure = 1;
 
 	/** @var int */
-	private $internalId;
+	protected $internalId;
 
 	/** @var ReceiveReliabilityLayer */
 	private $recvLayer;
@@ -90,11 +84,10 @@ class Session{
 	/** @var SendReliabilityLayer */
 	private $sendLayer;
 
-	public function __construct(Server $server, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
+	public function __construct(\Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
 		if($mtuSize < self::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
 		}
-		$this->server = $server;
 		$this->logger = new \PrefixedLogger($logger, "Session: " . $address->toString());
 		$this->address = $address;
 		$this->id = $clientId;
@@ -120,16 +113,50 @@ class Session{
 				$this->sendPacket($datagram);
 			},
 			function(int $identifierACK) : void{
-				$this->server->getEventListener()->onPacketAck($this->internalId, $identifierACK);
+				$this->onPacketAck($identifierACK);
 			}
 		);
 	}
 
 	/**
-	 * Returns an ID used to identify this session across threads.
+	 * Sends a packet in the appropriate way for the session type.
 	 */
-	public function getInternalId() : int{
-		return $this->internalId;
+	abstract protected function sendPacket(Packet $packet) : void;
+
+	/**
+	 * Called when a packet for which an ACK was requested is ACKed.
+	 */
+	abstract protected function onPacketAck(int $identifierACK) : void;
+
+	/**
+	 * Called when the session is terminated for any reason.
+	 */
+	abstract protected function onDisconnect(string $reason) : void;
+
+	/**
+	 * Called when a packet is received while the session is in the "connecting" state. This should only handle RakNet
+	 * connection packets. Any other packets should be ignored.
+	 */
+	abstract protected function handleRakNetConnectionPacket(string $packet) : void;
+
+	/**
+	 * Called when a user packet (ID >= ID_USER_PACKET_ENUM) is received from the remote peer.
+	 *
+	 * @see MessageIdentifiers::ID_USER_PACKET_ENUM
+	 */
+	abstract protected function onPacketReceive(string $packet) : void;
+
+	/**
+	 * Called when a new ping measurement is recorded.
+	 */
+	abstract protected function onPingMeasure(int $pingMS) : void;
+
+	/**
+	 * Returns a monotonically increasing timestamp. It does not need to match UNIX time.
+	 * This is used to calculate ping.
+	 */
+	protected function getRakNetTimeMS() : int{
+		return intdiv(hrtime(true), 1_000_000);
 	}
 
 	public function getAddress() : InternetAddress{
@@ -192,7 +219,7 @@ class Session{
 		}
 	}
 
-	private function queueConnectedPacket(ConnectedPacket $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
+	protected function queueConnectedPacket(ConnectedPacket $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
 		$out = new PacketSerializer();  //TODO: reuse streams to reduce allocations
 		$packet->encode($out);
 
@@ -208,52 +235,23 @@ class Session{
 		$this->sendLayer->addEncapsulatedToQueue($packet, $immediate);
 	}
 
-	private function sendPacket(Packet $packet) : void{
-		$this->server->sendPacket($packet, $this->address);
-	}
-
-	private function sendPing(int $reliability = PacketReliability::UNRELIABLE) : void{
-		$this->queueConnectedPacket(ConnectedPing::create($this->server->getRakNetTimeMS()), $reliability, 0, true);
+	protected function sendPing(int $reliability = PacketReliability::UNRELIABLE) : void{
+		$this->queueConnectedPacket(ConnectedPing::create($this->getRakNetTimeMS()), $reliability, 0, true);
 	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $packet) : void{
-		if($this->server === null){
-			return;
-		}
-
 		$id = ord($packet->buffer[0]);
 		if($id < MessageIdentifiers::ID_USER_PACKET_ENUM){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
-				if($id === ConnectionRequest::$ID){
-					$dataPacket = new ConnectionRequest();
-					$dataPacket->decode(new PacketSerializer($packet->buffer));
-					$this->queueConnectedPacket(ConnectionRequestAccepted::create(
-						$this->address,
-						[],
-						$dataPacket->sendPingTime,
-						$this->server->getRakNetTimeMS()
-					), PacketReliability::UNRELIABLE, 0, true);
-				}elseif($id === NewIncomingConnection::$ID){
-					$dataPacket = new NewIncomingConnection();
-					$dataPacket->decode(new PacketSerializer($packet->buffer));
-
-					if($dataPacket->address->getPort() === $this->server->getPort() or !$this->server->portChecking){
-						$this->state = self::STATE_CONNECTED; //FINALLY!
-						$this->isTemporal = false;
-						$this->server->openSession($this);
-
-						//$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime); //can't use this due to system-address count issues in MCPE >.<
-						$this->sendPing();
-					}
-				}
+				$this->handleRakNetConnectionPacket($packet->buffer);
 			}elseif($id === DisconnectionNotification::$ID){
-				$this->onClientDisconnect();
+				$this->handleRemoteDisconnect();
 			}elseif($id === ConnectedPing::$ID){
 				$dataPacket = new ConnectedPing();
 				$dataPacket->decode(new PacketSerializer($packet->buffer));
 				$this->queueConnectedPacket(ConnectedPong::create(
 					$dataPacket->sendPingTime,
-					$this->server->getRakNetTimeMS()
+					$this->getRakNetTimeMS()
 				), PacketReliability::UNRELIABLE, 0);
 			}elseif($id === ConnectedPong::$ID){
 				$dataPacket = new ConnectedPong();
@@ -262,7 +260,7 @@ class Session{
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
 			}
 		}elseif($this->state === self::STATE_CONNECTED){
-			$this->server->getEventListener()->onPacketReceive($this->internalId, $packet->buffer);
+			$this->onPacketReceive($packet->buffer);
 		}else{
 			//$this->logger->notice("Received packet before connection: " . bin2hex($packet->buffer));
 		}
@@ -272,12 +270,12 @@ class Session{
 	 * @param int $sendPongTime TODO: clock differential stuff
 	 */
 	private function handlePong(int $sendPingTime, int $sendPongTime) : void{
-		$currentTime = $this->server->getRakNetTimeMS();
+		$currentTime = $this->getRakNetTimeMS();
 		if($currentTime < $sendPingTime){
 			$this->logger->debug("Received invalid pong: timestamp is in the future by " . ($sendPingTime - $currentTime) . " ms");
 		}else{
 			$this->lastPingMeasure = $currentTime - $sendPingTime;
-			$this->server->getEventListener()->onPingMeasure($this->internalId, $this->lastPingMeasure);
+			$this->onPingMeasure($this->lastPingMeasure);
 		}
 	}
 
@@ -301,7 +299,7 @@ class Session{
 		if($this->isConnected()){
 			$this->state = self::STATE_DISCONNECT_PENDING;
 			$this->disconnectionTime = microtime(true);
-			$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
+			$this->onDisconnect($reason);
 			$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
 		}
 	}
@@ -311,11 +309,11 @@ class Session{
 	 */
 	public function forciblyDisconnect(string $reason) : void{
 		$this->state = self::STATE_DISCONNECTED;
-		$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
+		$this->onDisconnect($reason);
 		$this->logger->debug("Forcibly disconnecting session due to \"$reason\"");
 	}
 
-	private function onClientDisconnect() : void{
+	private function handleRemoteDisconnect() : void{
 		//the client will expect an ACK for this; make sure it gets sent, because after forcible termination
 		//there won't be any session ticks to update it
 		$this->recvLayer->update();
@@ -323,7 +321,7 @@ class Session{
 		if($this->isConnected()){
 			//the client might have disconnected after the server sent a disconnect notification, but before the client
 			//received it - in this case, we don't want to notify the event handler twice
-			$this->server->getEventListener()->onClientDisconnect($this->internalId, "client disconnect");
+			$this->onDisconnect("client disconnect");
 		}
 		$this->state = self::STATE_DISCONNECTED;
 		$this->logger->debug("Terminating session due to client disconnect");
