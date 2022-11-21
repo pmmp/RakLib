@@ -438,10 +438,6 @@ class Server implements ServerInterface{
 		}
 	}
 
-	public function notifyACK(ServerSession $session, int $identifierACK) : void{
-		$this->eventListener->onPacketAck($session->getInternalId(), $identifierACK);
-	}
-
 	public function getName() : string{
 		return $this->name;
 	}
