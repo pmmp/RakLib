@@ -33,7 +33,7 @@ use raklib\server\SimpleProtocolAcceptor;
 use raklib\utils\InternetAddress;
 use raklib\generic\Socket;
 
-require '../vendor/autoload.php';
+require dirname(__DIR__) . '/vendor/autoload.php';
 
 $bindAddr = "0.0.0.0";
 $bindPort = 19132;
