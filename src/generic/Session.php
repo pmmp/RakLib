@@ -47,36 +47,26 @@ abstract class Session{
 
 	public const MIN_MTU_SIZE = 400;
 
-	/** @var \Logger */
-	private $logger;
+	private \Logger $logger;
 
-	/** @var InternetAddress */
-	protected $address;
+	protected InternetAddress $address;
 
-	/** @var int */
-	protected $state = self::STATE_CONNECTING;
+	protected int $state = self::STATE_CONNECTING;
 
-	/** @var int */
-	private $id;
+	private int $id;
 
-	/** @var float */
-	private $lastUpdate;
-	/** @var float */
-	private $disconnectionTime = 0;
+	private float $lastUpdate;
+	private float $disconnectionTime = 0;
 
-	/** @var bool */
-	private $isActive = false;
+	private bool $isActive = false;
 
-	/** @var float */
-	private $lastPingTime = -1;
-	/** @var int */
-	private $lastPingMeasure = 1;
+	private float $lastPingTime = -1;
 
-	/** @var ReceiveReliabilityLayer */
-	private $recvLayer;
+	private int $lastPingMeasure = 1;
 
-	/** @var SendReliabilityLayer */
-	private $sendLayer;
+	private ReceiveReliabilityLayer $recvLayer;
+
+	private SendReliabilityLayer $sendLayer;
 
 	public function __construct(\Logger $logger, InternetAddress $address, int $clientId, int $mtuSize){
 		if($mtuSize < self::MIN_MTU_SIZE){
@@ -236,16 +226,16 @@ abstract class Session{
 		if($id < MessageIdentifiers::ID_USER_PACKET_ENUM){ //internal data packet
 			if($this->state === self::STATE_CONNECTING){
 				$this->handleRakNetConnectionPacket($packet->buffer);
-			}elseif($id === DisconnectionNotification::$ID){
+			}elseif($id === MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION){
 				$this->handleRemoteDisconnect();
-			}elseif($id === ConnectedPing::$ID){
+			}elseif($id === MessageIdentifiers::ID_CONNECTED_PING){
 				$dataPacket = new ConnectedPing();
 				$dataPacket->decode(new PacketSerializer($packet->buffer));
 				$this->queueConnectedPacket(ConnectedPong::create(
 					$dataPacket->sendPingTime,
 					$this->getRakNetTimeMS()
 				), PacketReliability::UNRELIABLE, 0);
-			}elseif($id === ConnectedPong::$ID){
+			}elseif($id === MessageIdentifiers::ID_CONNECTED_PONG){
 				$dataPacket = new ConnectedPong();
 				$dataPacket->decode(new PacketSerializer($packet->buffer));
 

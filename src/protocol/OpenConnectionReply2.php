@@ -21,14 +21,10 @@ use raklib\utils\InternetAddress;
 class OpenConnectionReply2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_2;
 
-	/** @var int */
-	public $serverID;
-	/** @var InternetAddress */
-	public $clientAddress;
-	/** @var int */
-	public $mtuSize;
-	/** @var bool */
-	public $serverSecurity = false;
+	public int $serverID;
+	public InternetAddress $clientAddress;
+	public int $mtuSize;
+	public bool $serverSecurity = false;
 
 	public static function create(int $serverId, InternetAddress $clientAddress, int $mtuSize, bool $serverSecurity) : self{
 		$result = new self;

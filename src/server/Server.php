@@ -45,76 +45,50 @@ class Server implements ServerInterface{
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
-	/** @var ServerSocket */
-	protected $socket;
-
-	/** @var \Logger */
-	protected $logger;
-
-	/** @var int */
-	protected $serverId;
-
-	/** @var int */
-	protected $receiveBytes = 0;
-	/** @var int */
-	protected $sendBytes = 0;
+	protected int $receiveBytes = 0;
+	protected int $sendBytes = 0;
 
 	/** @var ServerSession[] */
-	protected $sessionsByAddress = [];
+	protected array $sessionsByAddress = [];
 	/** @var ServerSession[] */
-	protected $sessions = [];
+	protected array $sessions = [];
 
-	/** @var UnconnectedMessageHandler */
-	protected $unconnectedMessageHandler;
-	/** @var string */
-	protected $name = "";
+	protected UnconnectedMessageHandler $unconnectedMessageHandler;
 
-	/** @var int */
-	protected $packetLimit = 200;
+	protected string $name = "";
 
-	/** @var bool */
-	protected $shutdown = false;
+	protected int $packetLimit = 200;
 
-	/** @var int */
-	protected $ticks = 0;
+	protected bool $shutdown = false;
+
+	protected int $ticks = 0;
 
 	/** @var int[] string (address) => int (unblock time) */
-	protected $block = [];
+	protected array $block = [];
 	/** @var int[] string (address) => int (number of packets) */
-	protected $ipSec = [];
+	protected array $ipSec = [];
 
 	/** @var string[] regex filters used to block out unwanted raw packets */
-	protected $rawPacketFilters = [];
+	protected array $rawPacketFilters = [];
 
-	/** @var bool */
-	public $portChecking = false;
+	public bool $portChecking = false;
 
-	/** @var int */
-	protected $maxMtuSize;
+	protected int $nextSessionId = 0;
 
-	/** @var int */
-	protected $nextSessionId = 0;
-
-	/** @var ServerEventSource */
-	private $eventSource;
-	/** @var ServerEventListener */
-	private $eventListener;
-
-	/** @var ExceptionTraceCleaner */
-	private $traceCleaner;
-
-	public function __construct(int $serverId, \Logger $logger, ServerSocket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(
+		protected int $serverId,
+		protected \Logger $logger,
+		protected ServerSocket $socket,
+		protected int $maxMtuSize,
+		ProtocolAcceptor $protocolAcceptor,
+		private ServerEventSource $eventSource,
+		private ServerEventListener $eventListener,
+		private ExceptionTraceCleaner $traceCleaner
+	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
 		}
-		$this->serverId = $serverId;
-		$this->logger = $logger;
-		$this->socket = $socket;
 		$this->socket->setBlocking(false);
-		$this->maxMtuSize = $maxMtuSize;
-		$this->eventSource = $eventSource;
-		$this->eventListener = $eventListener;
-		$this->traceCleaner = $traceCleaner;
 
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 	}

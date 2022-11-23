@@ -20,9 +20,9 @@ class IncompatibleProtocolVersion extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_INCOMPATIBLE_PROTOCOL_VERSION;
 
 	/** @var int */
-	public $protocolVersion;
+	public int $protocolVersion;
 	/** @var int */
-	public $serverId;
+	public int $serverId;
 
 	public static function create(int $protocolVersion, int $serverId) : self{
 		$result = new self;

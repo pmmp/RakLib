@@ -34,8 +34,7 @@ use const SOL_SOCKET;
 use const SOL_UDP;
 
 abstract class Socket{
-	/** @var \Socket */
-	protected $socket;
+	protected \Socket $socket;
 
 	/**
 	 * @throws SocketException
@@ -52,10 +51,7 @@ abstract class Socket{
 		}
 	}
 
-	/**
-	 * @return \Socket
-	 */
-	public function getSocket(){
+	public function getSocket() : \Socket{
 		return $this->socket;
 	}
 

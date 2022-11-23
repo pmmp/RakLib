@@ -19,8 +19,7 @@ namespace raklib\protocol;
 class ConnectedPing extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PING;
 
-	/** @var int */
-	public $sendPingTime;
+	public int $sendPingTime;
 
 	public static function create(int $sendPingTime) : self{
 		$result = new self;

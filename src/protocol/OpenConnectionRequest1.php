@@ -23,10 +23,8 @@ use function strlen;
 class OpenConnectionRequest1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
 
-	/** @var int */
-	public $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
-	/** @var int */
-	public $mtuSize;
+	public int $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
+	public int $mtuSize;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);

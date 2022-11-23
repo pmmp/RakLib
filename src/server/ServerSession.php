@@ -19,6 +19,7 @@ namespace raklib\server;
 use raklib\generic\Session;
 use raklib\protocol\ConnectionRequest;
 use raklib\protocol\ConnectionRequestAccepted;
+use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
@@ -57,7 +58,7 @@ class ServerSession extends Session{
 
 	final protected function handleRakNetConnectionPacket(string $packet) : void{
 		$id = ord($packet[0]);
-		if($id === ConnectionRequest::$ID){
+		if($id === MessageIdentifiers::ID_CONNECTION_REQUEST){
 			$dataPacket = new ConnectionRequest();
 			$dataPacket->decode(new PacketSerializer($packet));
 			$this->queueConnectedPacket(ConnectionRequestAccepted::create(
@@ -66,7 +67,7 @@ class ServerSession extends Session{
 				$dataPacket->sendPingTime,
 				$this->getRakNetTimeMS()
 			), PacketReliability::UNRELIABLE, 0, true);
-		}elseif($id === NewIncomingConnection::$ID){
+		}elseif($id === MessageIdentifiers::ID_NEW_INCOMING_CONNECTION){
 			$dataPacket = new NewIncomingConnection();
 			$dataPacket->decode(new PacketSerializer($packet));
 

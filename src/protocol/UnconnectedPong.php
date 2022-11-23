@@ -19,12 +19,9 @@ namespace raklib\protocol;
 class UnconnectedPong extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PONG;
 
-	/** @var int */
-	public $sendPingTime;
-	/** @var int */
-	public $serverId;
-	/** @var string */
-	public $serverName;
+	public int $sendPingTime;
+	public int $serverId;
+	public string $serverName;
 
 	public static function create(int $sendPingTime, int $serverId, string $serverName) : self{
 		$result = new self;

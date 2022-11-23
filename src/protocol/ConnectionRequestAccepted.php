@@ -24,14 +24,14 @@ class ConnectionRequestAccepted extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
 
 	/** @var InternetAddress */
-	public $address;
+	public InternetAddress $address;
 	/** @var InternetAddress[] */
-	public $systemAddresses = [];
+	public array $systemAddresses = [];
 
 	/** @var int */
-	public $sendPingTime;
+	public int $sendPingTime;
 	/** @var int */
-	public $sendPongTime;
+	public int $sendPongTime;
 
 	/**
 	 * @param InternetAddress[] $systemAddresses

@@ -27,7 +27,7 @@ abstract class AcknowledgePacket extends Packet{
 	private const RECORD_TYPE_SINGLE = 1;
 
 	/** @var int[] */
-	public $packets = [];
+	public array $packets = [];
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$payload = "";

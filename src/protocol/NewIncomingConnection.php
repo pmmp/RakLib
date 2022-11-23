@@ -24,15 +24,15 @@ class NewIncomingConnection extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
 	/** @var InternetAddress */
-	public $address;
+	public InternetAddress $address;
 
 	/** @var InternetAddress[] */
-	public $systemAddresses = [];
+	public array $systemAddresses = [];
 
 	/** @var int */
-	public $sendPingTime;
+	public int $sendPingTime;
 	/** @var int */
-	public $sendPongTime;
+	public int $sendPongTime;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putAddress($this->address);

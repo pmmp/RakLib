@@ -20,7 +20,7 @@ class AdvertiseSystem extends Packet{
 	public static $ID = MessageIdentifiers::ID_ADVERTISE_SYSTEM;
 
 	/** @var string */
-	public $serverName;
+	public string $serverName;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putString($this->serverName);

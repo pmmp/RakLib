@@ -28,71 +28,44 @@ use function count;
 
 final class ReceiveReliabilityLayer{
 
-	/** @var int */
-	public static $WINDOW_SIZE = 2048;
+	public static int $WINDOW_SIZE = 2048;
 
-	/** @var \Logger */
-	private $logger;
-
-	/**
-	 * @var \Closure
-	 * @phpstan-var \Closure(EncapsulatedPacket) : void
-	 */
-	private $onRecv;
-
-	/**
-	 * @var \Closure
-	 * @phpstan-var \Closure(AcknowledgePacket) : void
-	 */
-	private $sendPacket;
-
-	/** @var int */
-	private $windowStart;
-	/** @var int */
-	private $windowEnd;
-	/** @var int */
-	private $highestSeqNumber = -1;
+	private int $windowStart;
+	private int $windowEnd;
+	private int $highestSeqNumber = -1;
 
 	/** @var int[] */
-	private $ACKQueue = [];
+	private array $ACKQueue = [];
 	/** @var int[] */
-	private $NACKQueue = [];
+	private array $NACKQueue = [];
 
-	/** @var int */
-	private $reliableWindowStart;
-	/** @var int */
-	private $reliableWindowEnd;
+	private int $reliableWindowStart;
+	private int $reliableWindowEnd;
 	/** @var bool[] */
-	private $reliableWindow = [];
+	private array $reliableWindow = [];
 
 	/** @var int[] */
-	private $receiveOrderedIndex;
+	private array $receiveOrderedIndex;
 	/** @var int[] */
-	private $receiveSequencedHighestIndex;
+	private array $receiveSequencedHighestIndex;
 	/** @var EncapsulatedPacket[][] */
-	private $receiveOrderedPackets;
+	private array $receiveOrderedPackets;
 
 	/** @var (EncapsulatedPacket|null)[][] */
-	private $splitPackets = [];
-
-	/**
-	 * @var int
-	 * @phpstan-var positive-int
-	 */
-	private $maxSplitPacketPartCount;
-	/** @var int */
-	private $maxConcurrentSplitPackets;
+	private array $splitPackets = [];
 
 	/**
 	 * @phpstan-param positive-int $maxSplitPacketPartCount
 	 * @phpstan-param \Closure(EncapsulatedPacket) : void $onRecv
 	 * @phpstan-param \Closure(AcknowledgePacket) : void  $sendPacket
 	 */
-	public function __construct(\Logger $logger, \Closure $onRecv, \Closure $sendPacket, int $maxSplitPacketPartCount = PHP_INT_MAX, int $maxConcurrentSplitPackets = PHP_INT_MAX){
-		$this->logger = $logger;
-		$this->onRecv = $onRecv;
-		$this->sendPacket = $sendPacket;
-
+	public function __construct(
+		private \Logger $logger,
+		private \Closure $onRecv,
+		private \Closure $sendPacket,
+		private int $maxSplitPacketPartCount = PHP_INT_MAX,
+		private int $maxConcurrentSplitPackets = PHP_INT_MAX
+	){
 		$this->windowStart = 0;
 		$this->windowEnd = self::$WINDOW_SIZE;
 
@@ -103,9 +76,6 @@ final class ReceiveReliabilityLayer{
 		$this->receiveSequencedHighestIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 
 		$this->receiveOrderedPackets = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, []);
-
-		$this->maxSplitPacketPartCount = $maxSplitPacketPartCount;
-		$this->maxConcurrentSplitPackets = $maxConcurrentSplitPackets;
 	}
 
 	private function handleEncapsulatedPacketRoute(EncapsulatedPacket $pk) : void{

@@ -28,12 +28,9 @@ use function substr;
 use function xdebug_get_function_stack;
 
 final class ExceptionTraceCleaner{
-	/** @var string */
-	private $mainPath;
-
-	public function __construct(string $mainPath){
-		$this->mainPath = $mainPath;
-	}
+	public function __construct(
+		private string $mainPath
+	){}
 
 	/**
 	 * @param int                             $start
@@ -41,7 +38,7 @@ final class ExceptionTraceCleaner{
 	 *
 	 * @return list<string>
 	 */
-	public function getTrace($start = 0, $trace = null){
+	public function getTrace(int $start = 0, ?array $trace = null) : array{
 		if($trace === null){
 			if(function_exists("xdebug_get_function_stack")){
 				$trace = array_reverse(xdebug_get_function_stack());
@@ -71,12 +68,7 @@ final class ExceptionTraceCleaner{
 		return $messages;
 	}
 
-	/**
-	 * @param string $path
-	 *
-	 * @return string
-	 */
-	public function cleanPath($path){
+	public function cleanPath(string $path) : string{
 		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
 	}
 }

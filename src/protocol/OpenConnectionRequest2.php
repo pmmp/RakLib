@@ -21,12 +21,9 @@ use raklib\utils\InternetAddress;
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
 
-	/** @var int */
-	public $clientID;
-	/** @var InternetAddress */
-	public $serverAddress;
-	/** @var int */
-	public $mtuSize;
+	public int $clientID;
+	public InternetAddress $serverAddress;
+	public int $mtuSize;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);

@@ -30,21 +30,21 @@ class EncapsulatedPacket{
 	private const SPLIT_FLAG = 0b00010000;
 
 	/** @var int */
-	public $reliability;
+	public int $reliability;
 	/** @var int|null */
-	public $messageIndex;
+	public ?int $messageIndex = null;
 	/** @var int|null */
-	public $sequenceIndex;
+	public ?int $sequenceIndex = null;
 	/** @var int|null */
-	public $orderIndex;
+	public ?int $orderIndex = null;
 	/** @var int|null */
-	public $orderChannel;
+	public ?int $orderChannel = null;
 	/** @var SplitPacketInfo|null */
-	public $splitInfo = null;
+	public ?SplitPacketInfo $splitInfo = null;
 	/** @var string */
-	public $buffer = "";
+	public string $buffer = "";
 	/** @var int|null */
-	public $identifierACK = null;
+	public ?int $identifierACK = null;
 
 	/**
 	 * @throws BinaryDataException

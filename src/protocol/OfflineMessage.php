@@ -27,7 +27,7 @@ abstract class OfflineMessage extends Packet{
 	private const MAGIC = "\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78";
 
 	/** @var string */
-	protected $magic;
+	protected string $magic;
 
 	/**
 	 * @return void

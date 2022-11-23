@@ -18,12 +18,9 @@ namespace raklib\server;
 
 final class SimpleProtocolAcceptor implements ProtocolAcceptor{
 
-	/** @var int */
-	private $protocolVersion;
-
-	public function __construct(int $protocolVersion){
-		$this->protocolVersion = $protocolVersion;
-	}
+	public function __construct(
+		private int $protocolVersion
+	){}
 
 	public function accepts(int $protocolVersion) : bool{
 		return $this->protocolVersion === $protocolVersion;

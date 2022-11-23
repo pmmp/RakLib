@@ -21,16 +21,14 @@ use function microtime;
 
 final class ReliableCacheEntry{
 
-	/** @var EncapsulatedPacket[] */
-	private $packets;
-	/** @var float */
-	private $timestamp;
+	private float $timestamp;
 
 	/**
 	 * @param EncapsulatedPacket[] $packets
 	 */
-	public function __construct(array $packets){
-		$this->packets = $packets;
+	public function __construct(
+		private array $packets
+	){
 		$this->timestamp = microtime(true);
 	}
 
