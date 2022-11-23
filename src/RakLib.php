@@ -25,7 +25,6 @@ abstract class RakLib{
 
 	/**
 	 * Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate.
-	 * @var int
 	 */
 	public static int $SYSTEM_ADDRESS_COUNT = 20;
 }

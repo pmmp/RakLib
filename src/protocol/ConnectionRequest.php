@@ -19,11 +19,8 @@ namespace raklib\protocol;
 class ConnectionRequest extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST;
 
-	/** @var int */
 	public int $clientID;
-	/** @var int */
 	public int $sendPingTime;
-	/** @var bool */
 	public bool $useSecurity = false;
 
 	protected function encodePayload(PacketSerializer $out) : void{

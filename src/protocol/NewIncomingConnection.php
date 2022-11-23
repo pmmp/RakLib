@@ -23,15 +23,10 @@ use function strlen;
 class NewIncomingConnection extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
-	/** @var InternetAddress */
 	public InternetAddress $address;
-
 	/** @var InternetAddress[] */
 	public array $systemAddresses = [];
-
-	/** @var int */
 	public int $sendPingTime;
-	/** @var int */
 	public int $sendPongTime;
 
 	protected function encodePayload(PacketSerializer $out) : void{

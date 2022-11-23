@@ -29,21 +29,13 @@ class EncapsulatedPacket{
 
 	private const SPLIT_FLAG = 0b00010000;
 
-	/** @var int */
 	public int $reliability;
-	/** @var int|null */
 	public ?int $messageIndex = null;
-	/** @var int|null */
 	public ?int $sequenceIndex = null;
-	/** @var int|null */
 	public ?int $orderIndex = null;
-	/** @var int|null */
 	public ?int $orderChannel = null;
-	/** @var SplitPacketInfo|null */
 	public ?SplitPacketInfo $splitInfo = null;
-	/** @var string */
 	public string $buffer = "";
-	/** @var int|null */
 	public ?int $identifierACK = null;
 
 	/**

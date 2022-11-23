@@ -31,13 +31,9 @@ class Datagram extends Packet{
 
 	public const HEADER_SIZE = 1 + 3; //header flags (1) + sequence number (3)
 
-	/** @var int */
 	public int $headerFlags = 0;
-
 	/** @var EncapsulatedPacket[] */
 	public array $packets = [];
-
-	/** @var int */
 	public int $seqNumber;
 
 	protected function encodeHeader(PacketSerializer $out) : void{

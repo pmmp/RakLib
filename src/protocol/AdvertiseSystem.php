@@ -19,7 +19,6 @@ namespace raklib\protocol;
 class AdvertiseSystem extends Packet{
 	public static $ID = MessageIdentifiers::ID_ADVERTISE_SYSTEM;
 
-	/** @var string */
 	public string $serverName;
 
 	protected function encodePayload(PacketSerializer $out) : void{
