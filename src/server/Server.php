@@ -90,9 +90,6 @@ class Server implements ServerInterface{
 	public $portChecking = false;
 
 	/** @var int */
-	protected $startTimeMS;
-
-	/** @var int */
 	protected $maxMtuSize;
 
 	/** @var int */
@@ -118,8 +115,6 @@ class Server implements ServerInterface{
 		$this->eventSource = $eventSource;
 		$this->eventListener = $eventListener;
 		$this->traceCleaner = $traceCleaner;
-
-		$this->startTimeMS = (int) (microtime(true) * 1000);
 
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 	}
