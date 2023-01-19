@@ -39,8 +39,8 @@ final class ExceptionTraceCleaner{
 	 */
 	public function getTrace(int $start = 0, ?array $trace = null) : array{
 		if($trace === null){
-			if(function_exists("xdebug_get_function_stack")){
-				$trace = array_reverse(xdebug_get_function_stack());
+			if(function_exists("xdebug_get_function_stack") && count($trace = @xdebug_get_function_stack()) !== 0){
+				$trace = array_reverse($trace);
 			}else{
 				$e = new \Exception();
 				$trace = $e->getTrace();
