@@ -49,6 +49,14 @@ class ServerSocket extends Socket{
 		return $this->bindAddress;
 	}
 
+	public function enableBroadcast() : bool{
+		return socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 1);
+	}
+
+	public function disableBroadcast() : bool{
+		return socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 0);
+	}
+
 	/**
 	 * @param string $source reference parameter
 	 * @param int    $port reference parameter
