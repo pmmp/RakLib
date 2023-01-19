@@ -27,6 +27,7 @@ if(str_contains($broadcastAddress, ".")){
 }
 
 $socket = new ServerSocket($bindAddress);
+$socket->enableBroadcast();
 $clientId = mt_rand(0, Limits::INT32_MAX);
 \GlobalLogger::get()->info("Listening on " . $bindAddress);
 \GlobalLogger::get()->info("Press CTRL+C to stop");
