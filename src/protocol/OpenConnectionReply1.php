@@ -19,12 +19,9 @@ namespace raklib\protocol;
 class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 
-	/** @var int */
-	public $serverID;
-	/** @var bool */
-	public $serverSecurity = false;
-	/** @var int */
-	public $mtuSize;
+	public int $serverID;
+	public bool $serverSecurity = false;
+	public int $mtuSize;
 
 	public static function create(int $serverId, bool $serverSecurity, int $mtuSize) : self{
 		$result = new self;

@@ -17,21 +17,14 @@ declare(strict_types=1);
 namespace raklib\utils;
 
 final class InternetAddress{
-
-	/** @var string */
-	private $ip;
-	/** @var int */
-	private $port;
-	/** @var int */
-	private $version;
-
-	public function __construct(string $address, int $port, int $version){
-		$this->ip = $address;
+	public function __construct(
+		private string $ip,
+		private int $port,
+		private int $version
+	){
 		if($port < 0 or $port > 65535){
 			throw new \InvalidArgumentException("Invalid port range");
 		}
-		$this->port = $port;
-		$this->version = $version;
 	}
 
 	public function getIp() : string{

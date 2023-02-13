@@ -17,7 +17,9 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
+use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\OfflineMessage;
 use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
@@ -35,20 +37,17 @@ use function strlen;
 use function substr;
 
 class UnconnectedMessageHandler{
-	/** @var Server */
-	private $server;
 	/**
 	 * @var OfflineMessage[]|\SplFixedArray
 	 * @phpstan-var \SplFixedArray<OfflineMessage>
 	 */
-	private $packetPool;
-	/** @var ProtocolAcceptor */
-	private $protocolAcceptor;
+	private \SplFixedArray $packetPool;
 
-	public function __construct(Server $server, ProtocolAcceptor $protocolAcceptor){
+	public function __construct(
+		private Server $server,
+		private ProtocolAcceptor $protocolAcceptor
+	){
 		$this->registerPackets();
-		$this->server = $server;
-		$this->protocolAcceptor = $protocolAcceptor;
 	}
 
 	/**
@@ -130,10 +129,10 @@ class UnconnectedMessageHandler{
 	private function registerPackets() : void{
 		$this->packetPool = new \SplFixedArray(256);
 
-		$this->registerPacket(UnconnectedPing::$ID, UnconnectedPing::class);
-		$this->registerPacket(UnconnectedPingOpenConnections::$ID, UnconnectedPingOpenConnections::class);
-		$this->registerPacket(OpenConnectionRequest1::$ID, OpenConnectionRequest1::class);
-		$this->registerPacket(OpenConnectionRequest2::$ID, OpenConnectionRequest2::class);
+		$this->registerPacket(MessageIdentifiers::ID_UNCONNECTED_PING, UnconnectedPing::class);
+		$this->registerPacket(MessageIdentifiers::ID_UNCONNECTED_PING_OPEN_CONNECTIONS, UnconnectedPingOpenConnections::class);
+		$this->registerPacket(MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1, OpenConnectionRequest1::class);
+		$this->registerPacket(MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2, OpenConnectionRequest2::class);
 	}
 
 }

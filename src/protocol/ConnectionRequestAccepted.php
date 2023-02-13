@@ -23,15 +23,11 @@ use function strlen;
 class ConnectionRequestAccepted extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
 
-	/** @var InternetAddress */
-	public $address;
+	public InternetAddress $address;
 	/** @var InternetAddress[] */
-	public $systemAddresses = [];
-
-	/** @var int */
-	public $sendPingTime;
-	/** @var int */
-	public $sendPongTime;
+	public array $systemAddresses = [];
+	public int $sendPingTime;
+	public int $sendPongTime;
 
 	/**
 	 * @param InternetAddress[] $systemAddresses

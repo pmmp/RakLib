@@ -23,16 +23,11 @@ use function strlen;
 class NewIncomingConnection extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
 
-	/** @var InternetAddress */
-	public $address;
-
+	public InternetAddress $address;
 	/** @var InternetAddress[] */
-	public $systemAddresses = [];
-
-	/** @var int */
-	public $sendPingTime;
-	/** @var int */
-	public $sendPongTime;
+	public array $systemAddresses = [];
+	public int $sendPingTime;
+	public int $sendPongTime;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putAddress($this->address);

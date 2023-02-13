@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace raklib\utils;
 
 use function array_reverse;
+use function count;
 use function function_exists;
 use function get_class;
 use function gettype;
@@ -28,20 +29,16 @@ use function substr;
 use function xdebug_get_function_stack;
 
 final class ExceptionTraceCleaner{
-	/** @var string */
-	private $mainPath;
-
-	public function __construct(string $mainPath){
-		$this->mainPath = $mainPath;
-	}
+	public function __construct(
+		private string $mainPath
+	){}
 
 	/**
-	 * @param int                             $start
 	 * @param list<array<string, mixed>>|null $trace
 	 *
 	 * @return list<string>
 	 */
-	public function getTrace($start = 0, $trace = null){
+	public function getTrace(int $start = 0, ?array $trace = null) : array{
 		if($trace === null){
 			if(function_exists("xdebug_get_function_stack") && count($trace = @xdebug_get_function_stack()) !== 0){
 				$trace = array_reverse($trace);
@@ -71,12 +68,7 @@ final class ExceptionTraceCleaner{
 		return $messages;
 	}
 
-	/**
-	 * @param string $path
-	 *
-	 * @return string
-	 */
-	public function cleanPath($path){
+	public function cleanPath(string $path) : string{
 		return str_replace(["\\", ".php", "phar://", str_replace(["\\", "phar://"], ["/", ""], $this->mainPath)], ["/", "", "", ""], $path);
 	}
 }

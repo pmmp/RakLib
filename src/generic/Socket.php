@@ -16,17 +16,13 @@ declare(strict_types=1);
 
 namespace raklib\generic;
 
-use raklib\utils\InternetAddress;
-use function socket_bind;
 use function socket_close;
 use function socket_create;
 use function socket_last_error;
-use function socket_recvfrom;
-use function socket_sendto;
+use function socket_set_block;
 use function socket_set_nonblock;
 use function socket_set_option;
 use function socket_strerror;
-use function strlen;
 use function trim;
 use const AF_INET;
 use const AF_INET6;
@@ -34,52 +30,28 @@ use const IPV6_V6ONLY;
 use const SO_RCVBUF;
 use const SO_SNDBUF;
 use const SOCK_DGRAM;
-use const SOCKET_EADDRINUSE;
-use const SOCKET_EWOULDBLOCK;
 use const SOL_SOCKET;
 use const SOL_UDP;
 
-class Socket{
-	/** @var \Socket */
-	protected $socket;
-	/** @var InternetAddress */
-	private $bindAddress;
+abstract class Socket{
+	protected \Socket $socket;
 
 	/**
 	 * @throws SocketException
 	 */
-	public function __construct(InternetAddress $bindAddress){
-		$this->bindAddress = $bindAddress;
-		$socket = @socket_create($bindAddress->getVersion() === 4 ? AF_INET : AF_INET6, SOCK_DGRAM, SOL_UDP);
+	protected function __construct(bool $ipv6){
+		$socket = @socket_create($ipv6 ? AF_INET6 : AF_INET, SOCK_DGRAM, SOL_UDP);
 		if($socket === false){
 			throw new \RuntimeException("Failed to create socket: " . trim(socket_strerror(socket_last_error())));
 		}
 		$this->socket = $socket;
 
-		if($bindAddress->getVersion() === 6){
+		if($ipv6){
 			socket_set_option($this->socket, IPPROTO_IPV6, IPV6_V6ONLY, 1); //Don't map IPv4 to IPv6, the implementation can create another RakLib instance to handle IPv4
 		}
-
-		if(@socket_bind($this->socket, $bindAddress->getIp(), $bindAddress->getPort()) === true){
-			$this->setSendBuffer(1024 * 1024 * 8)->setRecvBuffer(1024 * 1024 * 8);
-		}else{
-			$error = socket_last_error($this->socket);
-			if($error === SOCKET_EADDRINUSE){ //platform error messages aren't consistent
-				throw new SocketException("Failed to bind socket: Something else is already running on $bindAddress", $error);
-			}
-			throw new SocketException("Failed to bind to " . $bindAddress . ": " . trim(socket_strerror($error)), $error);
-		}
-		socket_set_nonblock($this->socket);
 	}
 
-	public function getBindAddress() : InternetAddress{
-		return $this->bindAddress;
-	}
-
-	/**
-	 * @return \Socket
-	 */
-	public function getSocket(){
+	public function getSocket() : \Socket{
 		return $this->socket;
 	}
 
@@ -89,36 +61,6 @@ class Socket{
 
 	public function getLastError() : int{
 		return socket_last_error($this->socket);
-	}
-
-	/**
-	 * @param string $source reference parameter
-	 * @param int    $port reference parameter
-	 *
-	 * @throws SocketException
-	 */
-	public function readPacket(?string &$source, ?int &$port) : ?string{
-		$buffer = "";
-		if(@socket_recvfrom($this->socket, $buffer, 65535, 0, $source, $port) === false){
-			$errno = socket_last_error($this->socket);
-			if($errno === SOCKET_EWOULDBLOCK){
-				return null;
-			}
-			throw new SocketException("Failed to recv (errno $errno): " . trim(socket_strerror($errno)), $errno);
-		}
-		return $buffer;
-	}
-
-	/**
-	 * @throws SocketException
-	 */
-	public function writePacket(string $buffer, string $dest, int $port) : int{
-		$result = @socket_sendto($this->socket, $buffer, strlen($buffer), 0, $dest, $port);
-		if($result === false){
-			$errno = socket_last_error($this->socket);
-			throw new SocketException("Failed to send to $dest $port (errno $errno): " . trim(socket_strerror($errno)), $errno);
-		}
-		return $result;
 	}
 
 	/**
@@ -137,5 +79,22 @@ class Socket{
 		@socket_set_option($this->socket, SOL_SOCKET, SO_RCVBUF, $size);
 
 		return $this;
+	}
+
+	/**
+	 * @return $this
+	 */
+	public function setRecvTimeout(int $seconds, int $microseconds = 0){
+		@socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, ["sec" => $seconds, "usec" => $microseconds]);
+
+		return $this;
+	}
+
+	public function setBlocking(bool $blocking) : void{
+		if($blocking){
+			socket_set_block($this->socket);
+		}else{
+			socket_set_nonblock($this->socket);
+		}
 	}
 }

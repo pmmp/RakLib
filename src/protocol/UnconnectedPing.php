@@ -19,10 +19,8 @@ namespace raklib\protocol;
 class UnconnectedPing extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
 
-	/** @var int */
-	public $sendPingTime;
-	/** @var int */
-	public $clientId;
+	public int $sendPingTime;
+	public int $clientId;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putLong($this->sendPingTime);

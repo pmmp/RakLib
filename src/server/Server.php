@@ -17,7 +17,8 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
-use raklib\generic\Socket;
+use raklib\generic\DisconnectReason;
+use raklib\generic\Session;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
@@ -45,89 +46,52 @@ class Server implements ServerInterface{
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
-	/** @var Socket */
-	protected $socket;
+	protected int $receiveBytes = 0;
+	protected int $sendBytes = 0;
 
-	/** @var \Logger */
-	protected $logger;
+	/** @var ServerSession[] */
+	protected array $sessionsByAddress = [];
+	/** @var ServerSession[] */
+	protected array $sessions = [];
 
-	/** @var int */
-	protected $serverId;
+	protected UnconnectedMessageHandler $unconnectedMessageHandler;
 
-	/** @var int */
-	protected $receiveBytes = 0;
-	/** @var int */
-	protected $sendBytes = 0;
+	protected string $name = "";
 
-	/** @var Session[] */
-	protected $sessionsByAddress = [];
-	/** @var Session[] */
-	protected $sessions = [];
+	protected int $packetLimit = 200;
 
-	/** @var UnconnectedMessageHandler */
-	protected $unconnectedMessageHandler;
-	/** @var string */
-	protected $name = "";
+	protected bool $shutdown = false;
 
-	/** @var int */
-	protected $packetLimit = 200;
-
-	/** @var bool */
-	protected $shutdown = false;
-
-	/** @var int */
-	protected $ticks = 0;
+	protected int $ticks = 0;
 
 	/** @var int[] string (address) => int (unblock time) */
-	protected $block = [];
+	protected array $block = [];
 	/** @var int[] string (address) => int (number of packets) */
-	protected $ipSec = [];
+	protected array $ipSec = [];
 
 	/** @var string[] regex filters used to block out unwanted raw packets */
-	protected $rawPacketFilters = [];
+	protected array $rawPacketFilters = [];
 
-	/** @var bool */
-	public $portChecking = false;
+	public bool $portChecking = false;
 
-	/** @var int */
-	protected $startTimeMS;
+	protected int $nextSessionId = 0;
 
-	/** @var int */
-	protected $maxMtuSize;
-
-	/** @var int */
-	protected $nextSessionId = 0;
-
-	/** @var ServerEventSource */
-	private $eventSource;
-	/** @var ServerEventListener */
-	private $eventListener;
-
-	/** @var ExceptionTraceCleaner */
-	private $traceCleaner;
-
-	public function __construct(int $serverId, \Logger $logger, Socket $socket, int $maxMtuSize, ProtocolAcceptor $protocolAcceptor, ServerEventSource $eventSource, ServerEventListener $eventListener, ExceptionTraceCleaner $traceCleaner){
+	public function __construct(
+		protected int $serverId,
+		protected \Logger $logger,
+		protected ServerSocket $socket,
+		protected int $maxMtuSize,
+		ProtocolAcceptor $protocolAcceptor,
+		private ServerEventSource $eventSource,
+		private ServerEventListener $eventListener,
+		private ExceptionTraceCleaner $traceCleaner
+	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
 		}
-		$this->serverId = $serverId;
-		$this->logger = $logger;
-		$this->socket = $socket;
-		$this->maxMtuSize = $maxMtuSize;
-		$this->eventSource = $eventSource;
-		$this->eventListener = $eventListener;
-		$this->traceCleaner = $traceCleaner;
-
-		$this->startTimeMS = (int) (microtime(true) * 1000);
+		$this->socket->setBlocking(false);
 
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
-	}
-
-	/**
-	 * Returns the time in milliseconds since server start.
-	 */
-	public function getRakNetTimeMS() : int{
-		return ((int) (microtime(true) * 1000)) - $this->startTimeMS;
 	}
 
 	public function getPort() : int{
@@ -182,7 +146,7 @@ class Server implements ServerInterface{
 		}
 
 		foreach($this->sessions as $session){
-			$session->initiateDisconnect("server shutdown");
+			$session->initiateDisconnect(DisconnectReason::SERVER_SHUTDOWN);
 		}
 
 		while(count($this->sessions) > 0){
@@ -353,7 +317,7 @@ class Server implements ServerInterface{
 
 	public function closeSession(int $sessionId) : void{
 		if(isset($this->sessions[$sessionId])){
-			$this->sessions[$sessionId]->initiateDisconnect("server disconnect");
+			$this->sessions[$sessionId]->initiateDisconnect(DisconnectReason::SERVER_DISCONNECT);
 		}
 	}
 
@@ -392,7 +356,7 @@ class Server implements ServerInterface{
 		$this->rawPacketFilters[] = $regex;
 	}
 
-	public function getSessionByAddress(InternetAddress $address) : ?Session{
+	public function getSessionByAddress(InternetAddress $address) : ?ServerSession{
 		return $this->sessionsByAddress[$address->toString()] ?? null;
 	}
 
@@ -400,10 +364,10 @@ class Server implements ServerInterface{
 		return isset($this->sessionsByAddress[$address->toString()]);
 	}
 
-	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : Session{
+	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : ServerSession{
 		$existingSession = $this->sessionsByAddress[$address->toString()] ?? null;
 		if($existingSession !== null){
-			$existingSession->forciblyDisconnect("client reconnect");
+			$existingSession->forciblyDisconnect(DisconnectReason::CLIENT_RECONNECT);
 			$this->removeSessionInternal($existingSession);
 		}
 
@@ -414,7 +378,7 @@ class Server implements ServerInterface{
 			$this->nextSessionId &= 0x7fffffff; //we don't expect more than 2 billion simultaneous connections, and this fits in 4 bytes
 		}
 
-		$session = new Session($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
+		$session = new ServerSession($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
 		$this->sessionsByAddress[$address->toString()] = $session;
 		$this->sessions[$this->nextSessionId] = $session;
 		$this->logger->debug("Created session for $address with MTU size $mtuSize");
@@ -422,11 +386,11 @@ class Server implements ServerInterface{
 		return $session;
 	}
 
-	private function removeSessionInternal(Session $session) : void{
+	private function removeSessionInternal(ServerSession $session) : void{
 		unset($this->sessionsByAddress[$session->getAddress()->toString()], $this->sessions[$session->getInternalId()]);
 	}
 
-	public function openSession(Session $session) : void{
+	public function openSession(ServerSession $session) : void{
 		$address = $session->getAddress();
 		$this->eventListener->onClientConnect($session->getInternalId(), $address->getIp(), $address->getPort(), $session->getID());
 	}
@@ -434,7 +398,7 @@ class Server implements ServerInterface{
 	private function checkSessions() : void{
 		if(count($this->sessions) > 4096){
 			foreach($this->sessions as $sessionId => $session){
-				if($session->isTemporal()){
+				if($session->isTemporary()){
 					$this->removeSessionInternal($session);
 					if(count($this->sessions) <= 4096){
 						break;
@@ -442,10 +406,6 @@ class Server implements ServerInterface{
 				}
 			}
 		}
-	}
-
-	public function notifyACK(Session $session, int $identifierACK) : void{
-		$this->eventListener->onPacketAck($session->getInternalId(), $identifierACK);
 	}
 
 	public function getName() : string{

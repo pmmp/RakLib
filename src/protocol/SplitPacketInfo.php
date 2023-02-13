@@ -17,18 +17,12 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 final class SplitPacketInfo{
-	/** @var int */
-	private $id;
-	/** @var int */
-	private $partIndex;
-	/** @var int */
-	private $totalPartCount;
-
-	public function __construct(int $id, int $partIndex, int $totalPartCount){
+	public function __construct(
+		private int $id,
+		private int $partIndex,
+		private int $totalPartCount
+	){
 		//TODO: argument validation
-		$this->id = $id;
-		$this->partIndex = $partIndex;
-		$this->totalPartCount = $totalPartCount;
 	}
 
 	public function getId() : int{

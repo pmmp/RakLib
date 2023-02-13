@@ -22,7 +22,6 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\PacketReliability;
 use raklib\protocol\SplitPacketInfo;
-use raklib\server\Session;
 use function array_fill;
 use function count;
 use function str_split;
@@ -30,60 +29,39 @@ use function strlen;
 use function time;
 
 final class SendReliabilityLayer{
-
-	/**
-	 * @var \Closure
-	 * @phpstan-var \Closure(Datagram) : void
-	 */
-	private $sendDatagramCallback;
-	/**
-	 * @var \Closure
-	 * @phpstan-var \Closure(int) : void
-	 */
-	private $onACK;
-
-	/**
-	 * @var int
-	 * @phpstan-var int<Session::MIN_MTU_SIZE, max>
-	 */
-	private $mtuSize;
-
 	/** @var EncapsulatedPacket[] */
-	private $sendQueue = [];
+	private array $sendQueue = [];
 
-	/** @var int */
-	private $splitID = 0;
+	private int $splitID = 0;
 
-	/** @var int */
-	private $sendSeqNumber = 0;
+	private int $sendSeqNumber = 0;
 
-	/** @var int */
-	private $messageIndex = 0;
+	private int $messageIndex = 0;
 
 	/** @var int[] */
-	private $sendOrderedIndex;
+	private array $sendOrderedIndex;
 	/** @var int[] */
-	private $sendSequencedIndex;
+	private array $sendSequencedIndex;
 
 	/** @var ReliableCacheEntry[] */
-	private $resendQueue = [];
+	private array $resendQueue = [];
 
 	/** @var ReliableCacheEntry[] */
-	private $reliableCache = [];
+	private array $reliableCache = [];
 
 	/** @var int[][] */
-	private $needACK = [];
+	private array $needACK = [];
 
 	/**
 	 * @phpstan-param int<Session::MIN_MTU_SIZE, max> $mtuSize
-	 * @phpstan-param \Closure(Datagram) : void $sendDatagram
+	 * @phpstan-param \Closure(Datagram) : void $sendDatagramCallback
 	 * @phpstan-param \Closure(int) : void      $onACK
 	 */
-	public function __construct(int $mtuSize, \Closure $sendDatagram, \Closure $onACK){
-		$this->mtuSize = $mtuSize;
-		$this->sendDatagramCallback = $sendDatagram;
-		$this->onACK = $onACK;
-
+	public function __construct(
+		private int $mtuSize,
+		private \Closure $sendDatagramCallback,
+		private \Closure $onACK
+	){
 		$this->sendOrderedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 		$this->sendSequencedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 	}

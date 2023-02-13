@@ -29,22 +29,14 @@ class EncapsulatedPacket{
 
 	private const SPLIT_FLAG = 0b00010000;
 
-	/** @var int */
-	public $reliability;
-	/** @var int|null */
-	public $messageIndex;
-	/** @var int|null */
-	public $sequenceIndex;
-	/** @var int|null */
-	public $orderIndex;
-	/** @var int|null */
-	public $orderChannel;
-	/** @var SplitPacketInfo|null */
-	public $splitInfo = null;
-	/** @var string */
-	public $buffer = "";
-	/** @var int|null */
-	public $identifierACK = null;
+	public int $reliability;
+	public ?int $messageIndex = null;
+	public ?int $sequenceIndex = null;
+	public ?int $orderIndex = null;
+	public ?int $orderChannel = null;
+	public ?SplitPacketInfo $splitInfo = null;
+	public string $buffer = "";
+	public ?int $identifierACK = null;
 
 	/**
 	 * @throws BinaryDataException
@@ -54,7 +46,7 @@ class EncapsulatedPacket{
 
 		$flags = $stream->getByte();
 		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
-		$hasSplit = ($flags & self::SPLIT_FLAG) > 0;
+		$hasSplit = ($flags & self::SPLIT_FLAG) !== 0;
 
 		$length = (int) ceil($stream->getShort() / 8);
 		if($length === 0){

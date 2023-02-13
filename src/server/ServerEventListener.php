@@ -16,11 +16,19 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use raklib\generic\DisconnectReason;
+
 interface ServerEventListener{
 
 	public function onClientConnect(int $sessionId, string $address, int $port, int $clientID) : void;
 
-	public function onClientDisconnect(int $sessionId, string $reason) : void;
+	/**
+	 * @param int $reason one of the DisconnectReason constants
+	 * @phpstan-param DisconnectReason::* $reason
+	 *
+	 * @see DisconnectReason
+	 */
+	public function onClientDisconnect(int $sessionId, int $reason) : void;
 
 	public function onPacketReceive(int $sessionId, string $packet) : void;
 
