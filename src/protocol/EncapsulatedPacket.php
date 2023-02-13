@@ -46,7 +46,7 @@ class EncapsulatedPacket{
 
 		$flags = $stream->getByte();
 		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
-		$hasSplit = ($flags & self::SPLIT_FLAG) > 0;
+		$hasSplit = ($flags & self::SPLIT_FLAG) !== 0;
 
 		$length = (int) ceil($stream->getShort() / 8);
 		if($length === 0){
