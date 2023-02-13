@@ -23,7 +23,7 @@ jobs:
 
       - name: Cache Composer packages
         id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: "~/.cache/composer"
           key: "php-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}"
