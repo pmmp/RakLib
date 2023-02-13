@@ -23,8 +23,6 @@ abstract class RakLib{
 	 */
 	public const DEFAULT_PROTOCOL_VERSION = 6;
 
-	/**
-	 * Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate.
-	 */
+	/** Regular RakNet uses 10 by default. MCPE uses 20. Configure this value as appropriate. */
 	public static int $SYSTEM_ADDRESS_COUNT = 20;
 }

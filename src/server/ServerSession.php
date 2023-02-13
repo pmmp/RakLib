@@ -52,7 +52,7 @@ class ServerSession extends Session{
 		$this->server->getEventListener()->onPacketAck($this->internalId, $identifierACK);
 	}
 
-	protected function onDisconnect(string $reason) : void{
+	protected function onDisconnect(int $reason) : void{
 		$this->server->getEventListener()->onClientDisconnect($this->internalId, $reason);
 	}
 

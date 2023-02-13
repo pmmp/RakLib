@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use raklib\generic\DisconnectReason;
 use raklib\generic\Session;
 use raklib\generic\SocketException;
 use raklib\protocol\ACK;
@@ -145,7 +146,7 @@ class Server implements ServerInterface{
 		}
 
 		foreach($this->sessions as $session){
-			$session->initiateDisconnect("server shutdown");
+			$session->initiateDisconnect(DisconnectReason::SERVER_SHUTDOWN);
 		}
 
 		while(count($this->sessions) > 0){
@@ -316,7 +317,7 @@ class Server implements ServerInterface{
 
 	public function closeSession(int $sessionId) : void{
 		if(isset($this->sessions[$sessionId])){
-			$this->sessions[$sessionId]->initiateDisconnect("server disconnect");
+			$this->sessions[$sessionId]->initiateDisconnect(DisconnectReason::SERVER_DISCONNECT);
 		}
 	}
 
@@ -366,7 +367,7 @@ class Server implements ServerInterface{
 	public function createSession(InternetAddress $address, int $clientId, int $mtuSize) : ServerSession{
 		$existingSession = $this->sessionsByAddress[$address->toString()] ?? null;
 		if($existingSession !== null){
-			$existingSession->forciblyDisconnect("client reconnect");
+			$existingSession->forciblyDisconnect(DisconnectReason::CLIENT_RECONNECT);
 			$this->removeSessionInternal($existingSession);
 		}
 

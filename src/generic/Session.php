@@ -112,8 +112,13 @@ abstract class Session{
 
 	/**
 	 * Called when the session is terminated for any reason.
+	 *
+	 * @param int $reason one of the DisconnectReason::* constants
+	 * @phpstan-param DisconnectReason::* $reason
+	 *
+	 * @see DisconnectReason
 	 */
-	abstract protected function onDisconnect(string $reason) : void;
+	abstract protected function onDisconnect(int $reason) : void;
 
 	/**
 	 * Called when a packet is received while the session is in the "connecting" state. This should only handle RakNet
@@ -166,7 +171,7 @@ abstract class Session{
 
 	public function update(float $time) : void{
 		if(!$this->isActive and ($this->lastUpdate + 10) < $time){
-			$this->forciblyDisconnect("timeout");
+			$this->forciblyDisconnect(DisconnectReason::PEER_TIMEOUT);
 
 			return;
 		}
@@ -276,23 +281,33 @@ abstract class Session{
 
 	/**
 	 * Initiates a graceful asynchronous disconnect which ensures both parties got all packets.
+	 *
+	 * @param int $reason one of the DisconnectReason constants
+	 * @phpstan-param DisconnectReason::* $reason
+	 *
+	 * @see DisconnectReason
 	 */
-	public function initiateDisconnect(string $reason) : void{
+	public function initiateDisconnect(int $reason) : void{
 		if($this->isConnected()){
 			$this->state = self::STATE_DISCONNECT_PENDING;
 			$this->disconnectionTime = microtime(true);
 			$this->onDisconnect($reason);
-			$this->logger->debug("Requesting graceful disconnect because \"$reason\"");
+			$this->logger->debug("Requesting graceful disconnect because \"" . DisconnectReason::toString($reason) . "\"");
 		}
 	}
 
 	/**
 	 * Disconnects the session with immediate effect, regardless of current session state. Usually used in timeout cases.
+	 *
+	 * @param int $reason one of the DisconnectReason constants
+	 * @phpstan-param DisconnectReason::* $reason
+	 *
+	 * @see DisconnectReason
 	 */
-	public function forciblyDisconnect(string $reason) : void{
+	public function forciblyDisconnect(int $reason) : void{
 		$this->state = self::STATE_DISCONNECTED;
 		$this->onDisconnect($reason);
-		$this->logger->debug("Forcibly disconnecting session due to \"$reason\"");
+		$this->logger->debug("Forcibly disconnecting session due to " . DisconnectReason::toString($reason));
 	}
 
 	private function handleRemoteDisconnect() : void{
@@ -303,7 +318,7 @@ abstract class Session{
 		if($this->isConnected()){
 			//the client might have disconnected after the server sent a disconnect notification, but before the client
 			//received it - in this case, we don't want to notify the event handler twice
-			$this->onDisconnect("client disconnect");
+			$this->onDisconnect(DisconnectReason::CLIENT_DISCONNECT);
 		}
 		$this->state = self::STATE_DISCONNECTED;
 		$this->logger->debug("Terminating session due to client disconnect");
