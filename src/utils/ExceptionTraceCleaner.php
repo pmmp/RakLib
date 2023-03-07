@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace raklib\utils;
 
 use function array_reverse;
+use function count;
 use function function_exists;
 use function get_class;
 use function gettype;
