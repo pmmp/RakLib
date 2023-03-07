@@ -225,6 +225,10 @@ final class ReceiveReliabilityLayer{
 
 				$this->receiveOrderedIndex[$packet->orderChannel] = $i;
 			}elseif($packet->orderIndex > $this->receiveOrderedIndex[$packet->orderChannel]){
+				if(count($this->receiveOrderedPackets[$packet->orderChannel]) >= self::$WINDOW_SIZE){
+					//queue overflow for this channel - we should probably disconnect the peer at this point
+					return;
+				}
 				$this->receiveOrderedPackets[$packet->orderChannel][$packet->orderIndex] = $packet;
 			}else{
 				//duplicate/already received packet
