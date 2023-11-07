@@ -59,10 +59,10 @@ class ServerSocket extends Socket{
 	}
 
 	/**
-	 * @param string $source reference parameter
-	 * @param int    $port reference parameter
+	 * @param string|null $source reference parameter
+	 * @param int|null $port reference parameter
 	 *
-	 * @throws SocketException
+	 * @return string|null
 	 */
 	public function readPacket(?string &$source, ?int &$port) : ?string{
 		$buffer = "";
