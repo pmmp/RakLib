@@ -63,6 +63,7 @@ class ServerSocket extends Socket{
 	 * @param int|null $port reference parameter
 	 *
 	 * @return string|null
+	 * @throws SocketException
 	 */
 	public function readPacket(?string &$source, ?int &$port) : ?string{
 		$buffer = "";
