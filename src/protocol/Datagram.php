@@ -50,7 +50,7 @@ class Datagram extends Packet{
 	/**
 	 * @return int
 	 */
-	public function length(){
+	public function length(): int{
 		$length = self::HEADER_SIZE;
 		foreach($this->packets as $packet){
 			$length += $packet->getTotalLength();
