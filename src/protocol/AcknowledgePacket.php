@@ -49,13 +49,12 @@ abstract class AcknowledgePacket extends Packet{
 					if($start === $last){
 						$payload .= chr(self::RECORD_TYPE_SINGLE);
 						$payload .= Binary::writeLTriad($start);
-						$start = $last = $current;
 					}else{
 						$payload .= chr(self::RECORD_TYPE_RANGE);
 						$payload .= Binary::writeLTriad($start);
 						$payload .= Binary::writeLTriad($last);
-						$start = $last = $current;
 					}
+					$start = $last = $current;			   
 					++$records;
 				}
 			}
