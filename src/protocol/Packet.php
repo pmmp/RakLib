@@ -20,7 +20,7 @@ use pocketmine\utils\BinaryDataException;
 
 abstract class Packet{
 	/** @var int */
-	public static $ID = -1;
+	public static int $ID = -1;
 
 	public function encode(PacketSerializer $out) : void{
 		$this->encodeHeader($out);
