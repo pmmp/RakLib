@@ -85,7 +85,7 @@ final class SendReliabilityLayer{
 
 		$resendable = [];
 		foreach($datagram->packets as $pk){
-			if(PacketReliability::isReliable($pk->reliability)){
+			if($pk->reliability->isReliable()){
 				$resendable[] = $pk;
 			}
 		}
@@ -133,9 +133,9 @@ final class SendReliabilityLayer{
 			$this->needACK[$packet->identifierACK] = [];
 		}
 
-		if(PacketReliability::isOrdered($packet->reliability)){
+		if($packet->reliability->isOrdered()){
 			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]++;
-		}elseif(PacketReliability::isSequenced($packet->reliability)){
+		}elseif($packet->reliability->isSequenced()){
 			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]; //sequenced packets don't increment the ordered channel index
 			$packet->sequenceIndex = $this->sendSequencedIndex[$packet->orderChannel]++;
 		}
@@ -153,7 +153,7 @@ final class SendReliabilityLayer{
 				$pk->reliability = $packet->reliability;
 				$pk->buffer = $buffer;
 
-				if(PacketReliability::isReliable($pk->reliability)){
+				if($pk->reliability->isReliable()){
 					$pk->messageIndex = $this->messageIndex++;
 				}
 
@@ -164,7 +164,7 @@ final class SendReliabilityLayer{
 				$this->addToQueue($pk, true);
 			}
 		}else{
-			if(PacketReliability::isReliable($packet->reliability)){
+			if($packet->reliability->isReliable()){
 				$packet->messageIndex = $this->messageIndex++;
 			}
 			$this->addToQueue($packet, $immediate);

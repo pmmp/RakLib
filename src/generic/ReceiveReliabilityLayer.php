@@ -163,13 +163,13 @@ final class ReceiveReliabilityLayer{
 			return;
 		}
 
-		if(PacketReliability::isSequencedOrOrdered($packet->reliability) and ($packet->orderChannel < 0 or $packet->orderChannel >= PacketReliability::MAX_ORDER_CHANNELS)){
+		if($packet->reliability->isSequencedOrOrdered() and ($packet->orderChannel < 0 or $packet->orderChannel >= PacketReliability::MAX_ORDER_CHANNELS)){
 			//TODO: this should result in peer banning
 			$this->logger->debug("Invalid packet, bad order channel ($packet->orderChannel)");
 			return;
 		}
 
-		if(PacketReliability::isSequenced($packet->reliability)){
+		if($packet->reliability->isSequenced()){
 			if($packet->sequenceIndex < $this->receiveSequencedHighestIndex[$packet->orderChannel] or $packet->orderIndex < $this->receiveOrderedIndex[$packet->orderChannel]){
 				//too old sequenced packet, discard it
 				return;
@@ -177,7 +177,7 @@ final class ReceiveReliabilityLayer{
 
 			$this->receiveSequencedHighestIndex[$packet->orderChannel] = $packet->sequenceIndex + 1;
 			$this->handleEncapsulatedPacketRoute($packet);
-		}elseif(PacketReliability::isOrdered($packet->reliability)){
+		}elseif($packet->reliability->isOrdered()){
 			if($packet->orderIndex === $this->receiveOrderedIndex[$packet->orderChannel]){
 				//this is the packet we expected to get next
 				//Any ordered packet resets the sequence index to zero, so that sequenced packets older than this ordered
