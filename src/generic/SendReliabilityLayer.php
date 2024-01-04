@@ -29,6 +29,8 @@ use function strlen;
 use function time;
 
 final class SendReliabilityLayer{
+	private const DATAGRAM_MTU_OVERHEAD = 36 + Datagram::HEADER_SIZE; //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36
+
 	/** @var EncapsulatedPacket[] */
 	private array $sendQueue = [];
 
@@ -52,6 +54,8 @@ final class SendReliabilityLayer{
 	/** @var int[][] */
 	private array $needACK = [];
 
+	private int $maxDatagramPayloadSize;
+
 	/**
 	 * @phpstan-param int<Session::MIN_MTU_SIZE, max> $mtuSize
 	 * @phpstan-param \Closure(Datagram) : void $sendDatagramCallback
@@ -64,6 +68,8 @@ final class SendReliabilityLayer{
 	){
 		$this->sendOrderedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
 		$this->sendSequencedIndex = array_fill(0, PacketReliability::MAX_ORDER_CHANNELS, 0);
+
+		$this->maxDatagramPayloadSize = $this->mtuSize - self::DATAGRAM_MTU_OVERHEAD;
 	}
 
 	/**
@@ -98,12 +104,12 @@ final class SendReliabilityLayer{
 			$this->needACK[$pk->identifierACK][$pk->messageIndex] = $pk->messageIndex;
 		}
 
-		$length = Datagram::HEADER_SIZE;
+		$length = 0;
 		foreach($this->sendQueue as $queued){
 			$length += $queued->getTotalLength();
 		}
 
-		if($length + $pk->getTotalLength() > $this->mtuSize - 36){ //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36 bytes
+		if($length + $pk->getTotalLength() > $this->maxDatagramPayloadSize){
 			$this->sendQueue();
 		}
 
@@ -132,11 +138,10 @@ final class SendReliabilityLayer{
 			$packet->sequenceIndex = $this->sendSequencedIndex[$packet->orderChannel]++;
 		}
 
-		//IP header size (20 bytes) + UDP header size (8 bytes) + RakNet weird (8 bytes) + datagram header size (4 bytes) + max encapsulated packet header size (20 bytes)
-		$maxSize = $this->mtuSize - 60;
+		$maxBufferSize = $this->maxDatagramPayloadSize - $packet->getHeaderLength();
 
-		if(strlen($packet->buffer) > $maxSize){
-			$buffers = str_split($packet->buffer, $maxSize);
+		if(strlen($packet->buffer) > $maxBufferSize){
+			$buffers = str_split($packet->buffer, $maxBufferSize - EncapsulatedPacket::SPLIT_INFO_LENGTH);
 			$bufferCount = count($buffers);
 
 			$splitID = ++$this->splitID % 65536;
