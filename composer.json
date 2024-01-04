@@ -4,7 +4,7 @@
 	"type": "library",
 	"license": "GPL-3.0",
 	"require": {
-		"php": "^8.0",
+		"php": "^8.1",
 		"php-ipv6": "*",
 		"php-64bit": "*",
 		"ext-sockets": "*",
