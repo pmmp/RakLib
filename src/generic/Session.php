@@ -34,11 +34,9 @@ use function hrtime;
 use function intdiv;
 use function microtime;
 use function ord;
+use const PHP_INT_MAX;
 
 abstract class Session{
-	public const MAX_SPLIT_PART_COUNT = 128;
-	public const MAX_CONCURRENT_SPLIT_COUNT = 4;
-
 	public const STATE_CONNECTING = 0;
 	public const STATE_CONNECTED = 1;
 	public const STATE_DISCONNECT_PENDING = 2;
@@ -68,7 +66,18 @@ abstract class Session{
 
 	private SendReliabilityLayer $sendLayer;
 
-	public function __construct(\Logger $logger, InternetAddress $address, int $clientId, int $mtuSize){
+	/**
+	 * @phpstan-param positive-int $recvMaxSplitParts
+	 * @phpstan-param positive-int $recvMaxConcurrentSplits
+	 */
+	public function __construct(
+		\Logger $logger,
+		InternetAddress $address,
+		int $clientId,
+		int $mtuSize,
+		int $recvMaxSplitParts = PHP_INT_MAX,
+		int $recvMaxConcurrentSplits = PHP_INT_MAX
+	){
 		if($mtuSize < self::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . self::MIN_MTU_SIZE . ", got $mtuSize");
 		}
@@ -86,8 +95,8 @@ abstract class Session{
 			function(AcknowledgePacket $pk) : void{
 				$this->sendPacket($pk);
 			},
-			self::MAX_SPLIT_PART_COUNT,
-			self::MAX_CONCURRENT_SPLIT_COUNT
+			$recvMaxSplitParts,
+			$recvMaxConcurrentSplits
 		);
 		$this->sendLayer = new SendReliabilityLayer(
 			$mtuSize,

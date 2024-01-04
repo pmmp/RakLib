@@ -84,7 +84,9 @@ class Server implements ServerInterface{
 		ProtocolAcceptor $protocolAcceptor,
 		private ServerEventSource $eventSource,
 		private ServerEventListener $eventListener,
-		private ExceptionTraceCleaner $traceCleaner
+		private ExceptionTraceCleaner $traceCleaner,
+		private int $recvMaxSplitParts = ServerSession::DEFAULT_MAX_SPLIT_PART_COUNT,
+		private int $recvMaxConcurrentSplits = ServerSession::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT
 	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
@@ -378,7 +380,7 @@ class Server implements ServerInterface{
 			$this->nextSessionId &= 0x7fffffff; //we don't expect more than 2 billion simultaneous connections, and this fits in 4 bytes
 		}
 
-		$session = new ServerSession($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId);
+		$session = new ServerSession($this, $this->logger, clone $address, $clientId, $mtuSize, $this->nextSessionId, $this->recvMaxSplitParts, $this->recvMaxConcurrentSplits);
 		$this->sessionsByAddress[$address->toString()] = $session;
 		$this->sessions[$this->nextSessionId] = $session;
 		$this->logger->debug("Created session for $address with MTU size $mtuSize");

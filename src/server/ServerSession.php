@@ -28,13 +28,25 @@ use raklib\utils\InternetAddress;
 use function ord;
 
 class ServerSession extends Session{
+	public const DEFAULT_MAX_SPLIT_PART_COUNT = 128;
+	public const DEFAULT_MAX_CONCURRENT_SPLIT_COUNT = 4;
+
 	private Server $server;
 	private int $internalId;
 
-	public function __construct(Server $server, \Logger $logger, InternetAddress $address, int $clientId, int $mtuSize, int $internalId){
+	public function __construct(
+		Server $server,
+		\Logger $logger,
+		InternetAddress $address,
+		int $clientId,
+		int $mtuSize,
+		int $internalId,
+		int $recvMaxSplitParts = self::DEFAULT_MAX_SPLIT_PART_COUNT,
+		int $recvMaxConcurrentSplits = self::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT
+	){
 		$this->server = $server;
 		$this->internalId = $internalId;
-		parent::__construct($logger, $address, $clientId, $mtuSize);
+		parent::__construct($logger, $address, $clientId, $mtuSize, $recvMaxSplitParts, $recvMaxConcurrentSplits);
 	}
 
 	/**
