@@ -76,6 +76,10 @@ class Server implements ServerInterface{
 
 	protected int $nextSessionId = 0;
 
+	/**
+	 * @phpstan-param positive-int $recvMaxSplitParts
+	 * @phpstan-param positive-int $recvMaxConcurrentSplits
+	 */
 	public function __construct(
 		protected int $serverId,
 		protected \Logger $logger,

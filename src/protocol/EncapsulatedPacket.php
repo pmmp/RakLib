@@ -90,6 +90,9 @@ class EncapsulatedPacket{
 			. $this->buffer;
 	}
 
+	/**
+	 * @phpstan-return int<3, 23>
+	 */
 	public function getHeaderLength() : int{
 		return
 			1 + //reliability

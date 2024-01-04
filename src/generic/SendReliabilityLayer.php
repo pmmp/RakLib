@@ -30,6 +30,7 @@ use function time;
 
 final class SendReliabilityLayer{
 	private const DATAGRAM_MTU_OVERHEAD = 36 + Datagram::HEADER_SIZE; //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36
+	private const MIN_POSSIBLE_PACKET_SIZE_LIMIT = Session::MIN_MTU_SIZE - self::DATAGRAM_MTU_OVERHEAD;
 
 	/** @var EncapsulatedPacket[] */
 	private array $sendQueue = [];
@@ -54,6 +55,7 @@ final class SendReliabilityLayer{
 	/** @var int[][] */
 	private array $needACK = [];
 
+	/** @phpstan-var int<self::MIN_POSSIBLE_PACKET_SIZE_LIMIT, max> */
 	private int $maxDatagramPayloadSize;
 
 	/**

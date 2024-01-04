@@ -1,0 +1,6 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Constant raklib\\\\generic\\\\SendReliabilityLayer\\:\\:MIN_POSSIBLE_PACKET_SIZE_LIMIT is unused\\.$#"
+			count: 1
+			path: ../../../src/generic/SendReliabilityLayer.php
