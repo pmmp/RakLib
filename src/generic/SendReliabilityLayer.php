@@ -152,6 +152,7 @@ final class SendReliabilityLayer{
 				$pk->splitInfo = new SplitPacketInfo($splitID, $count, $bufferCount);
 				$pk->reliability = $packet->reliability;
 				$pk->buffer = $buffer;
+				$pk->identifierACK = $packet->identifierACK;
 
 				if(PacketReliability::isReliable($pk->reliability)){
 					$pk->messageIndex = $this->messageIndex++;
