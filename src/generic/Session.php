@@ -215,7 +215,7 @@ abstract class Session{
 		}
 	}
 
-	protected function queueConnectedPacket(ConnectedPacket $packet, PacketReliability $reliability, int $orderChannel, bool $immediate = false) : void{
+	protected function queueConnectedPacket(ConnectedPacket $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
 		$out = new PacketSerializer();  //TODO: reuse streams to reduce allocations
 		$packet->encode($out);
 
@@ -231,7 +231,7 @@ abstract class Session{
 		$this->sendLayer->addEncapsulatedToQueue($packet, $immediate);
 	}
 
-	protected function sendPing(PacketReliability $reliability = PacketReliability::UNRELIABLE) : void{
+	protected function sendPing(int $reliability = PacketReliability::UNRELIABLE) : void{
 		$this->queueConnectedPacket(ConnectedPing::create($this->getRakNetTimeMS()), $reliability, 0, true);
 	}
 

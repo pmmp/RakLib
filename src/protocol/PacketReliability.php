@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-enum PacketReliability : int{
+abstract class PacketReliability{
 
 	/*
 	 * From https://github.com/OculusVR/RakNet/blob/master/Source/PacketPriority.h
@@ -24,49 +24,49 @@ enum PacketReliability : int{
 	 * Default: 0b010 (2) or 0b011 (3)
 	 */
 
-	case UNRELIABLE = 0;
-	case UNRELIABLE_SEQUENCED = 1;
-	case RELIABLE = 2;
-	case RELIABLE_ORDERED = 3;
-	case RELIABLE_SEQUENCED = 4;
+	public const UNRELIABLE = 0;
+	public const UNRELIABLE_SEQUENCED = 1;
+	public const RELIABLE = 2;
+	public const RELIABLE_ORDERED = 3;
+	public const RELIABLE_SEQUENCED = 4;
 
 	/* The following reliabilities are used in RakNet internals, but never sent on the wire. */
-	case UNRELIABLE_WITH_ACK_RECEIPT = 5;
-	case RELIABLE_WITH_ACK_RECEIPT = 6;
-	case RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
+	public const UNRELIABLE_WITH_ACK_RECEIPT = 5;
+	public const RELIABLE_WITH_ACK_RECEIPT = 6;
+	public const RELIABLE_ORDERED_WITH_ACK_RECEIPT = 7;
 
 	public const MAX_ORDER_CHANNELS = 32;
 
-	public function isReliable() : bool{
+	public static function isReliable(int $reliability) : bool{
 		return (
-			$this === self::RELIABLE or
-			$this === self::RELIABLE_ORDERED or
-			$this === self::RELIABLE_SEQUENCED or
-			$this === self::RELIABLE_WITH_ACK_RECEIPT or
-			$this === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
+			$reliability === self::RELIABLE or
+			$reliability === self::RELIABLE_ORDERED or
+			$reliability === self::RELIABLE_SEQUENCED or
+			$reliability === self::RELIABLE_WITH_ACK_RECEIPT or
+			$reliability === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
 		);
 	}
 
-	public function isSequenced() : bool{
+	public static function isSequenced(int $reliability) : bool{
 		return (
-			$this === self::UNRELIABLE_SEQUENCED or
-			$this === self::RELIABLE_SEQUENCED
+			$reliability === self::UNRELIABLE_SEQUENCED or
+			$reliability === self::RELIABLE_SEQUENCED
 		);
 	}
 
-	public function isOrdered() : bool{
+	public static function isOrdered(int $reliability) : bool{
 		return (
-			$this === self::RELIABLE_ORDERED or
-			$this === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
+			$reliability === self::RELIABLE_ORDERED or
+			$reliability === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
 		);
 	}
 
-	public function isSequencedOrOrdered() : bool{
+	public static function isSequencedOrOrdered(int $reliability) : bool{
 		return (
-			$this === self::UNRELIABLE_SEQUENCED or
-			$this === self::RELIABLE_ORDERED or
-			$this === self::RELIABLE_SEQUENCED or
-			$this === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
+			$reliability === self::UNRELIABLE_SEQUENCED or
+			$reliability === self::RELIABLE_ORDERED or
+			$reliability === self::RELIABLE_SEQUENCED or
+			$reliability === self::RELIABLE_ORDERED_WITH_ACK_RECEIPT
 		);
 	}
 }

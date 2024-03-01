@@ -31,7 +31,7 @@ class EncapsulatedPacket{
 
 	public const SPLIT_INFO_LENGTH = 4 + 2 + 4; //split count (4) + split ID (2) + split index (4)
 
-	public PacketReliability $reliability;
+	public int $reliability;
 	public ?int $messageIndex = null;
 	public ?int $sequenceIndex = null;
 	public ?int $orderIndex = null;
@@ -47,12 +47,7 @@ class EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
 
 		$flags = $stream->getByte();
-		$reliability = PacketReliability::tryFrom(($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT);
-		if($reliability === null){
-			//TODO: we should reject the ACK_RECEIPT types here - they aren't supposed to be sent over the wire
-			throw new BinaryDataException("Invalid encapsulated packet reliability");
-		}
-		$packet->reliability = $reliability;
+		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
 		$hasSplit = ($flags & self::SPLIT_FLAG) !== 0;
 
 		$length = (int) ceil($stream->getShort() / 8);
@@ -60,15 +55,15 @@ class EncapsulatedPacket{
 			throw new BinaryDataException("Encapsulated payload length cannot be zero");
 		}
 
-		if($reliability->isReliable()){
+		if(PacketReliability::isReliable($reliability)){
 			$packet->messageIndex = $stream->getLTriad();
 		}
 
-		if($reliability->isSequenced()){
+		if(PacketReliability::isSequenced($reliability)){
 			$packet->sequenceIndex = $stream->getLTriad();
 		}
 
-		if($reliability->isSequencedOrOrdered()){
+		if(PacketReliability::isSequencedOrOrdered($reliability)){
 			$packet->orderIndex = $stream->getLTriad();
 			$packet->orderChannel = $stream->getByte();
 		}
@@ -86,11 +81,11 @@ class EncapsulatedPacket{
 
 	public function toBinary() : string{
 		return
-			chr(($this->reliability->value << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0)) .
+			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0)) .
 			Binary::writeShort(strlen($this->buffer) << 3) .
-			($this->reliability->isReliable() ? Binary::writeLTriad($this->messageIndex) : "") .
-			($this->reliability->isSequenced() ? Binary::writeLTriad($this->sequenceIndex) : "") .
-			($this->reliability->isSequencedOrOrdered() ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "") .
+			(PacketReliability::isReliable($this->reliability) ? Binary::writeLTriad($this->messageIndex) : "") .
+			(PacketReliability::isSequenced($this->reliability) ? Binary::writeLTriad($this->sequenceIndex) : "") .
+			(PacketReliability::isSequencedOrOrdered($this->reliability) ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "") .
 			($this->splitInfo !== null ? Binary::writeInt($this->splitInfo->getTotalPartCount()) . Binary::writeShort($this->splitInfo->getId()) . Binary::writeInt($this->splitInfo->getPartIndex()) : "")
 			. $this->buffer;
 	}
@@ -102,9 +97,9 @@ class EncapsulatedPacket{
 		return
 			1 + //reliability
 			2 + //length
-			($this->reliability->isReliable() ? 3 : 0) + //message index
-			($this->reliability->isSequenced() ? 3 : 0) + //sequence index
-			($this->reliability->isSequencedOrOrdered() ? 3 + 1 : 0) + //order index (3) + order channel (1)
+			(PacketReliability::isReliable($this->reliability) ? 3 : 0) + //message index
+			(PacketReliability::isSequenced($this->reliability) ? 3 : 0) + //sequence index
+			(PacketReliability::isSequencedOrOrdered($this->reliability) ? 3 + 1 : 0) + //order index (3) + order channel (1)
 			($this->splitInfo !== null ? self::SPLIT_INFO_LENGTH : 0);
 	}
 
