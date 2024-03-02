@@ -207,9 +207,9 @@ final class SendReliabilityLayer{
 			isset($this->reliableWindow[$this->reliableWindowStart]) && //this messageIndex has been used
 			$this->reliableWindow[$this->reliableWindowStart] === true //we received an ack for this messageIndex
 		){
+			unset($this->reliableWindow[$this->reliableWindowStart]);
 			$this->reliableWindowStart++;
 			$this->reliableWindowEnd++;
-			unset($this->reliableWindow[$this->reliableWindowStart]);
 		}
 	}
 
