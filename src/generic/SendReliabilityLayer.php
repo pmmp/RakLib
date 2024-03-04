@@ -26,13 +26,18 @@ use function array_fill;
 use function array_push;
 use function assert;
 use function count;
+use function microtime;
 use function str_split;
 use function strlen;
-use function time;
 
 final class SendReliabilityLayer{
 	private const DATAGRAM_MTU_OVERHEAD = 36 + Datagram::HEADER_SIZE; //IP header (20 bytes) + UDP header (8 bytes) + RakNet weird (8 bytes) = 36
 	private const MIN_POSSIBLE_PACKET_SIZE_LIMIT = Session::MIN_MTU_SIZE - self::DATAGRAM_MTU_OVERHEAD;
+	/**
+	 * Delay in seconds before an unacked packet is retransmitted.
+	 * TODO: Replace this with dynamic calculation based on roundtrip times (that's a complex task for another time)
+	 */
+	private const UNACKED_RETRANSMIT_DELAY = 2.0;
 
 	/** @var EncapsulatedPacket[] */
 	private array $sendQueue = [];
@@ -255,8 +260,9 @@ final class SendReliabilityLayer{
 	}
 
 	public function update() : void{
+		$retransmitOlderThan = microtime(true) - self::UNACKED_RETRANSMIT_DELAY;
 		foreach($this->reliableCache as $seq => $pk){
-			if($pk->getTimestamp() < (time() - 8)){
+			if($pk->getTimestamp() < $retransmitOlderThan){
 				//behave as if a NACK was received
 				array_push($this->resendQueue, ...$pk->getPackets());
 				unset($this->reliableCache[$seq]);
