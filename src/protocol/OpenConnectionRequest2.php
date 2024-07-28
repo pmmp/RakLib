@@ -21,12 +21,18 @@ use raklib\utils\InternetAddress;
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
 
+	public bool $serverSecurity = false;
+	public int $cookie = 0;
 	public int $clientID;
 	public InternetAddress $serverAddress;
 	public int $mtuSize;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
+		$out->putByte(($this->serverSecurity ? 1 : 0));
+		if ($this->serverSecurity) {
+			$out->putInt($this->cookie);
+		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
 		$out->putLong($this->clientID);
@@ -34,6 +40,10 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
+		$this->serverSecurity = $in->getByte();
+		if ($this->serverSecurity) {
+			$this->cookie = $in->getInt();
+		}
 		$this->serverAddress = $in->getAddress();
 		$this->mtuSize = $in->getShort();
 		$this->clientID = $in->getLong();
