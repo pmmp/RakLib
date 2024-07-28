@@ -29,9 +29,9 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
-		$out->putByte(($this->serverSecurity ? 1 : 0));
 		if ($this->serverSecurity) {
 			$out->putInt($this->cookie);
+			$out->putByte(false); // WHY MOJANG?
 		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
@@ -40,9 +40,9 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
-		$this->serverSecurity = $in->getByte() !== 0;
 		if ($this->serverSecurity) {
 			$this->cookie = $in->getInt();
+			$in->getByte(); // JUST 5 BYTES AND THERE IS WEIRD EXTRA BYTE
 		}
 		$this->serverAddress = $in->getAddress();
 		$this->mtuSize = $in->getShort();
