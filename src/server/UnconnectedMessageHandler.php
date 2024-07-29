@@ -81,8 +81,13 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(IncompatibleProtocolVersion::create($this->protocolAcceptor->getPrimaryVersion(), $this->server->getID()), $address);
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
+				$serverHasSecurity = false; // then relocate it ve make it available
+				$cookie = 0;
+				if ($serverHasSecurity) {
+					$cookie = crc32(Binary::writeLInt(mt_rand(0, 0xFFFFFFFF)) . Binary::writeLShort($address->getPort()) . $address->getIp());
+				}
 				//IP header size (20 bytes) + UDP header size (8 bytes)
-				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), false, $packet->mtuSize + 28), $address);
+				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $serverHasSecurity, $cookie, $packet->mtuSize + 28), $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
 			if($packet->serverAddress->getPort() === $this->server->getPort() or !$this->server->portChecking){
