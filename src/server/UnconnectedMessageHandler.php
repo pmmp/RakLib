@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\Binary;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\MessageIdentifiers;
