@@ -20,14 +20,15 @@ class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 
 	public int $serverID;
-	public bool $serverSecurity = false;
-	public int $cookie = 0;
+	public bool $serverSecurity;
+	public int $cookie;
 	public int $mtuSize;
 
-	public static function create(int $serverId, bool $serverSecurity, int $mtuSize) : self{
+	public static function create(int $serverId, bool $serverSecurity, int $cookie, int $mtuSize) : self{
 		$result = new self;
 		$result->serverID = $serverId;
 		$result->serverSecurity = $serverSecurity;
+		$result->cookie = $cookie;
 		$result->mtuSize = $mtuSize;
 		return $result;
 	}
@@ -37,7 +38,7 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$out->putLong($this->serverID);
 		$out->putByte($this->serverSecurity ? 1 : 0);
 		if ($this->serverSecurity) {
-			$out->putInt($this->createCookie());
+			$out->putInt($this->cookie);
 		}
 		$out->putShort($this->mtuSize);
 	}
@@ -51,11 +52,4 @@ class OpenConnectionReply1 extends OfflineMessage{
 		}
 		$this->mtuSize = $in->getShort();
 	}
-
-	private function createCookie() : int {
-		$cookieSalt = mt_rand(0, 0xFFFFFFFF);
-		$cookie = Binary::writeLInt($cookieSalt) . Binary::writeLShort(Server::getInstance()->getPort()) . Server::getInstance()->getIp();
-		return crc32($cookie);
-	}
 }
-
