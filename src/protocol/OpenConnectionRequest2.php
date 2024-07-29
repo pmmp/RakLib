@@ -31,7 +31,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 		$this->writeMagic($out);
 		if ($this->serverSecurity) {
 			$out->putInt($this->cookie);
-			$out->putByte(false); // WHY MOJANG?
+			$out->putByte(0); // WHY MOJANG?
 		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
