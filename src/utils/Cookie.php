@@ -23,7 +23,10 @@
  
 
  final class Cookie{
-    
+
+	 /**
+     * @var (string|int)[] $cookies
+     */
 	private static array $cookies = [];
 
     public static function get(InternetAddress $address) : int{
@@ -52,7 +55,7 @@
 
     public static function add(InternetAddress $address) : void{
         if (!isset(self::$cookies[$address->toString()])) {
-            self::$cookies[$address->toString()] = self::generateCookie($address);
+            self::$cookies[$address->toString()] = self::generate($address);
         }
     }
 
