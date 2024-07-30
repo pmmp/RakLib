@@ -17,7 +17,6 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\Binary;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\MessageIdentifiers;
@@ -31,6 +30,7 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
+use raklib\utils\Cookie;
 use function get_class;
 use function min;
 use function ord;
@@ -82,13 +82,12 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(IncompatibleProtocolVersion::create($this->protocolAcceptor->getPrimaryVersion(), $this->server->getID()), $address);
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
-				$serverHasSecurity = false; // then relocate it ve make it available
-				$cookie = 0;
+				$serverHasSecurity = false; // then relocate it and make it available
 				if ($serverHasSecurity) {
-					$cookie = crc32(Binary::writeLInt(mt_rand(0, 0xFFFFFFFF)) . Binary::writeLShort($address->getPort()) . $address->getIp());
+					Cookie::add($address);
 				}
 				//IP header size (20 bytes) + UDP header size (8 bytes)
-				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $serverHasSecurity, $cookie, $packet->mtuSize + 28), $address);
+				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $serverHasSecurity, Cookie::get($address), $packet->mtuSize + 28), $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
 			if($packet->serverAddress->getPort() === $this->server->getPort() or !$this->server->portChecking){
@@ -101,6 +100,11 @@ class UnconnectedMessageHandler{
 					//for redundancy, in case someone rips up Server - we really don't want connected sessions getting
 					//overwritten
 					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
+					return true;
+				}
+				if (!Cookie::check($address, $packet->cookie)) {
+					// Disconnect if OpenConnectionReply1 and the cookie in the OpenCnnectionRequest2 packet do not match
+					$this->server->getLogger()->debug("Not creating session for $address due to session mismatched cookies");
 					return true;
 				}
 				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
