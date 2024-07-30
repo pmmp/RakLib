@@ -25,7 +25,7 @@
  final class Cookie{
 
 	 /**
-     * @var (string|int)[] $cookies
+     * @var array<string, int> $cookies
      */
 	private static array $cookies = [];
 
