@@ -31,7 +31,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 		$this->writeMagic($out);
 		if (Cookie::$serverHasSecurity) {
 			$out->putInt($this->cookie);
-			$out->putBool(0); // Client wrote challenge
+			$out->putBool(false); // Client wrote challenge
 		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
