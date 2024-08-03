@@ -17,11 +17,11 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 use raklib\utils\InternetAddress;
+use raklib\utils\Cookie;
 
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
 
-	public bool $serverSecurity = false;
 	public int $cookie = 0;
 	public int $clientID;
 	public InternetAddress $serverAddress;
@@ -29,9 +29,9 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
-		if ($this->serverSecurity) {
+		if (Cookie::$serverHasSecurity) {
 			$out->putInt($this->cookie);
-			$out->putByte(0); // WHY MOJANG?
+			$out->putBool(0); // Client wrote challenge
 		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
@@ -40,9 +40,9 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
-		if ($this->serverSecurity) {
+		if (Cookie::$serverHasSecurity) {
 			$this->cookie = $in->getInt();
-			$in->getByte(); // JUST 5 BYTES AND THERE IS WEIRD EXTRA BYTE
+			$in->getBool();
 		}
 		$this->serverAddress = $in->getAddress();
 		$this->mtuSize = $in->getShort();

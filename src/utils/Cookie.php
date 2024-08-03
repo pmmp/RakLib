@@ -20,7 +20,6 @@
  use pocketmine\utils\Binary;
  use function mt_rand;
  use function crc32;
- 
 
  final class Cookie{
 
@@ -42,16 +41,12 @@
         $addressStr = $address->toString();
 
         if (isset(self::$cookies[$addressStr])) {
+            // If it checks the Cookie, it means that it is in the OpenConnectionRequest2 phase and we can delete it from memory
+            unset(self::$cookies[$addressStr]);
             if (self::$cookies[$addressStr] == $cookie) {
-                // If it checks the Cookie, it means that it is in the OpenConnectionRequest2 phase and we can delete it from memory
-                unset(self::$cookies[$addressStr]);
                 return true;
             }
-        } else {
-            $e = new \Exception(); // can u fix that?
-        }
-
-        unset(self::$cookies[$addressStr]);
+        } // Is there any chance that this is something else?
         return false;
     }
 
