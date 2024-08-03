@@ -24,6 +24,8 @@
 
  final class Cookie{
 
+    public static bool $disableCookies = true;
+
 	 /**
      * @var array<string, int> $cookies
      */
