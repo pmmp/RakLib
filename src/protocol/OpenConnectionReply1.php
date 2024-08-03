@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use function is_int;
+
 class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 
@@ -37,7 +39,7 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$this->writeMagic($out);
 		$out->putLong($this->serverID);
 		$out->putByte($this->serverSecurity ? 1 : 0);
-		if ($this->serverSecurity) {
+		if ($this->serverSecurity && is_int($this->cookie)) {
 			$out->putInt($this->cookie);
 		}
 		$out->putShort($this->mtuSize);
