@@ -24,6 +24,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	public int $cookie = 0;
 	public int $clientID;
+	public bool $clientSupportsSecurity = false; // Always false for the vanilla client.
 	public InternetAddress $serverAddress;
 	public int $mtuSize;
 
@@ -31,7 +32,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 		$this->writeMagic($out);
 		if (Cookie::$serverHasSecurity) {
 			$out->putInt($this->cookie);
-			$out->putBool(false); // Client wrote challenge
+			$out->putBool($this->clientSupportsSecurity);
 		}
 		$out->putAddress($this->serverAddress);
 		$out->putShort($this->mtuSize);
@@ -42,7 +43,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 		$this->readMagic($in);
 		if (Cookie::$serverHasSecurity) {
 			$this->cookie = $in->getInt();
-			$in->getBool();
+			$this->clientSupportsSecurity = $in->getBool();
 		}
 		$this->serverAddress = $in->getAddress();
 		$this->mtuSize = $in->getShort();
