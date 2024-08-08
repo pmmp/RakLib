@@ -23,10 +23,10 @@ class OpenConnectionReply1 extends OfflineMessage{
 
 	public int $serverID;
 	public bool $serverSecurity;
-	public int|null $cookie;
+	public ?int $cookie;
 	public int $mtuSize;
 
-	public static function create(int $serverId, bool $serverSecurity, int $cookie = null, int $mtuSize) : self{
+	public static function create(int $serverId, bool $serverSecurity, ?int $cookie = null, int $mtuSize) : self{
 		$result = new self;
 		$result->serverID = $serverId;
 		$result->serverSecurity = $serverSecurity;

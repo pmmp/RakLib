@@ -30,7 +30,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
-		if (Cookie::$serverHasSecurity) {
+		if (Cookie::hasServerSecurity()) {
 			$out->putInt($this->cookie);
 			$out->putBool($this->clientSupportsSecurity);
 		}
@@ -41,7 +41,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
-		if (Cookie::$serverHasSecurity) {
+		if (Cookie::hasServerSecurity()) {
 			$this->cookie = $in->getInt();
 			$this->clientSupportsSecurity = $in->getBool();
 		}

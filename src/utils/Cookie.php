@@ -37,6 +37,10 @@
         return 0;
     }
 
+    public static function hasServerSecurity () : bool {
+        return self::$serverHasSecurity;
+    }
+
     public static function check(InternetAddress $address, int $cookie) : bool{
         $addressStr = $address->toString();
 
