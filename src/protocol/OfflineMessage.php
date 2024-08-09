@@ -29,13 +29,17 @@ abstract class OfflineMessage extends Packet{
 	protected string $magic = self::MAGIC;
 
 	/**
+	 * @return void
 	 * @throws BinaryDataException
 	 */
-	protected function readMagic(BinaryStream $in) : void{
+	protected function readMagic(BinaryStream $in){
 		$this->magic = $in->get(16);
 	}
 
-	protected function writeMagic(BinaryStream $out) : void{
+	/**
+	 * @return void
+	 */
+	protected function writeMagic(BinaryStream $out){
 		$out->put($this->magic);
 	}
 

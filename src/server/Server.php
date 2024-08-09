@@ -78,9 +78,7 @@ class Server implements ServerInterface{
 
 	protected int $nextSessionId = 0;
 
-	public bool $hasServerSecurity = false;
-
-	public ?Cookie $cookie;
+	public ?Cookie $cookie = null;
 
 	/**
 	 * @phpstan-param positive-int $recvMaxSplitParts
@@ -105,7 +103,8 @@ class Server implements ServerInterface{
 
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 
-		$this->cookie = Cookie::setServerSecurity($this->hasServerSecurity());
+		// If you don't want to use security on the server, just delete this line.
+		$this->cookie = new Cookie();
 	}
 
 	public function getPort() : int{
@@ -118,10 +117,6 @@ class Server implements ServerInterface{
 
 	public function getLogger() : \Logger{
 		return $this->logger;
-	}
-
-	public function hasServerSecurity() : bool {
-		return $this->hasServerSecurity;
 	}
 
 	public function getCookie() : ?Cookie {

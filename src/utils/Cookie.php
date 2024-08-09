@@ -18,7 +18,7 @@ namespace raklib\utils;
 
 use raklib\utils\InternetAddress;
 use pocketmine\utils\Binary;
-use function mt_rand;
+use function random_int;
 use function crc32;
 
 final class Cookie{
@@ -28,16 +28,9 @@ final class Cookie{
 	 */
 	private array $cookies = [];
 
-	public function get(InternetAddress $address) : int{
+	public function get(InternetAddress $address) : ?int{
 		if (isset($this->cookies[$address->toString()])) {
 			return $this->cookies[$address->toString()];
-		}
-		return 0;
-	}
-
-	public static function setServerSecurity(bool $security) : ?Cookie {
-		if ($security) {
-			return new Cookie();
 		}
 		return null;
 	}
@@ -47,8 +40,8 @@ final class Cookie{
 
 		if (isset($this->cookies[$addressStr])) {
 			// If it checks the Cookie, it means that it is in the OpenConnectionRequest2 phase, and we can delete it from memory.
-			unset($this->cookies[$addressStr]);
-			if ($this->cookies[$addressStr] == $cookie) {
+			if ($this->cookies[$addressStr] === $cookie) {
+				unset($this->cookies[$addressStr]);
 				return true;
 			}
 		} // Is there any chance that this is something else?
@@ -62,6 +55,6 @@ final class Cookie{
 	}
 
 	private function generate(InternetAddress $address) : int{
-		return crc32(Binary::writeLInt(mt_rand(0, 0xFFFFFFFF)) . Binary::writeLShort($address->getPort()) . $address->getIp());
+		return crc32(Binary::writeLInt(random_int(0, 0xffffffff)) . Binary::writeLShort($address->getPort()) . $address->getIp());
 	}
 }

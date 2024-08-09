@@ -39,6 +39,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	}
 
 	protected function decodePayload(PacketSerializer $in) : void{
+		//$length = strlen($in->getRemaining()); // magic(16) + cookie(4) + clientSupportsSecurity(1) + serverAddress(??) + mtuSize(2) + clientID(8)
 		$this->readMagic($in);
 		if ($this->cookie !== null) {
 			$this->cookie = $in->getInt();
