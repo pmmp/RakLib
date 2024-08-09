@@ -82,11 +82,13 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(IncompatibleProtocolVersion::create($this->protocolAcceptor->getPrimaryVersion(), $this->server->getID()), $address);
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
+				$cookie = null;
 				if ($this->server->getCookie() instanceof Cookie) {
 					$this->server->getCookie()->add($address);
+					$cookie = $this->server->getCookie()->get($address);
 				}
 				//IP header size (20 bytes) + UDP header size (8 bytes)
-				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $this->server->getCookie()->get($address), $packet->mtuSize + 28), $address);
+				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $cookie, $packet->mtuSize + 28), $address);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
 			// The client may not send such data even though serverSecurity is enabled, and if we try to decode this, we may encounter an error
