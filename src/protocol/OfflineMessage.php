@@ -18,7 +18,6 @@ namespace raklib\protocol;
 
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
-use raklib\utils\Cookie;
 
 abstract class OfflineMessage extends Packet{
 
