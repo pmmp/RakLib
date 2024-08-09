@@ -17,20 +17,19 @@ declare(strict_types=1);
 namespace raklib\protocol;
 
 use raklib\utils\InternetAddress;
-use raklib\utils\Cookie;
 
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
 
-	public int $cookie = 0;
 	public int $clientID;
+	public ?int $cookie;
 	public bool $clientSupportsSecurity = false; // Always false for the vanilla client.
 	public InternetAddress $serverAddress;
 	public int $mtuSize;
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
-		if (Cookie::hasServerSecurity()) {
+		if ($this->cookie !== null) {
 			$out->putInt($this->cookie);
 			$out->putBool($this->clientSupportsSecurity);
 		}
@@ -41,7 +40,7 @@ class OpenConnectionRequest2 extends OfflineMessage{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->readMagic($in);
-		if (Cookie::hasServerSecurity()) {
+		if ($this->cookie !== null) {
 			$this->cookie = $in->getInt();
 			$this->clientSupportsSecurity = $in->getBool();
 		}

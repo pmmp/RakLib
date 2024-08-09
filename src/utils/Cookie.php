@@ -12,55 +12,56 @@
  * (at your option) any later version.
  */
 
- declare(strict_types=1);
+declare(strict_types=1);
 
- namespace raklib\utils;
+namespace raklib\utils;
 
- use raklib\utils\InternetAddress;
- use pocketmine\utils\Binary;
- use function mt_rand;
- use function crc32;
+use raklib\utils\InternetAddress;
+use pocketmine\utils\Binary;
+use function mt_rand;
+use function crc32;
 
- final class Cookie{
+final class Cookie{
 
-    public static bool $serverHasSecurity = false;
+	/**
+	 * @var array<string, int> $cookies
+	 */
+	private array $cookies = [];
 
-	 /**
-     * @var array<string, int> $cookies
-     */
-	private static array $cookies = [];
+	public function get(InternetAddress $address) : int{
+		if (isset($this->cookies[$address->toString()])) {
+			return $this->cookies[$address->toString()];
+		}
+		return 0;
+	}
 
-    public static function get(InternetAddress $address) : int{
-        if (isset(self::$cookies[$address->toString()])) {
-            return self::$cookies[$address->toString()];
-        }
-        return 0;
-    }
+	public static function setServerSecurity(bool $security) : ?Cookie {
+		if ($security) {
+			return new Cookie();
+		}
+		return null;
+	}
 
-    public static function hasServerSecurity () : bool {
-        return self::$serverHasSecurity;
-    }
+	public function check(InternetAddress $address, int $cookie) : bool{
+		$addressStr = $address->toString();
 
-    public static function check(InternetAddress $address, int $cookie) : bool{
-        $addressStr = $address->toString();
+		if (isset($this->cookies[$addressStr])) {
+			// If it checks the Cookie, it means that it is in the OpenConnectionRequest2 phase, and we can delete it from memory.
+			unset($this->cookies[$addressStr]);
+			if ($this->cookies[$addressStr] == $cookie) {
+				return true;
+			}
+		} // Is there any chance that this is something else?
+		return false;
+	}
 
-        if (isset(self::$cookies[$addressStr])) {
-            // If it checks the Cookie, it means that it is in the OpenConnectionRequest2 phase and we can delete it from memory
-            unset(self::$cookies[$addressStr]);
-            if (self::$cookies[$addressStr] == $cookie) {
-                return true;
-            }
-        } // Is there any chance that this is something else?
-        return false;
-    }
+	public function add(InternetAddress $address) : void{
+		if (!isset($this->cookies[$address->toString()])) {
+			$this->cookies[$address->toString()] = $this->generate($address);
+		}
+	}
 
-    public static function add(InternetAddress $address) : void{
-        if (!isset(self::$cookies[$address->toString()])) {
-            self::$cookies[$address->toString()] = self::generate($address);
-        }
-    }
-
-    private static function generate(InternetAddress $address) : int{
-        return crc32(Binary::writeLInt(mt_rand(0, 0xFFFFFFFF)) . Binary::writeLShort($address->getPort()) . $address->getIp());
-    }
+	private function generate(InternetAddress $address) : int{
+		return crc32(Binary::writeLInt(mt_rand(0, 0xFFFFFFFF)) . Binary::writeLShort($address->getPort()) . $address->getIp());
+	}
 }

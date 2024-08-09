@@ -18,6 +18,7 @@ namespace raklib\protocol;
 
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
+use raklib\utils\Cookie;
 
 abstract class OfflineMessage extends Packet{
 
@@ -29,17 +30,13 @@ abstract class OfflineMessage extends Packet{
 	protected string $magic = self::MAGIC;
 
 	/**
-	 * @return void
 	 * @throws BinaryDataException
 	 */
-	protected function readMagic(BinaryStream $in){
+	protected function readMagic(BinaryStream $in) : void{
 		$this->magic = $in->get(16);
 	}
 
-	/**
-	 * @return void
-	 */
-	protected function writeMagic(BinaryStream $out){
+	protected function writeMagic(BinaryStream $out) : void{
 		$out->put($this->magic);
 	}
 
