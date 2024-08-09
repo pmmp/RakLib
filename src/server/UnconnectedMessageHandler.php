@@ -30,6 +30,7 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
+use raklib\utils\Cookie;
 use function get_class;
 use function min;
 use function ord;
