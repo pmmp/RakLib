@@ -39,7 +39,7 @@ class OpenConnectionReply1 extends OfflineMessage{
 		$this->writeMagic($out);
 		$out->putLong($this->serverID);
 		$out->putByte($this->serverSecurity ? 1 : 0);
-		if ($this->serverSecurity && is_int($this->cookie)) {
+		if ($this->serverSecurity && $this->cookie !== null) {
 			$out->putInt($this->cookie);
 		}
 		$out->putShort($this->mtuSize);
