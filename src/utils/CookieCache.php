@@ -17,10 +17,8 @@ declare(strict_types=1);
 namespace raklib\utils;
 
 use raklib\utils\InternetAddress;
-use pocketmine\utils\Binary;
 use pocketmine\utils\Limits;
 use function random_int;
-use function crc32;
 
 final class CookieCache{
 
