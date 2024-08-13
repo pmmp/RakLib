@@ -18,6 +18,7 @@ namespace raklib\utils;
 
 use raklib\utils\InternetAddress;
 use pocketmine\utils\Binary;
+use pocketmine\utils\Limits;
 use function random_int;
 use function crc32;
 
@@ -48,6 +49,6 @@ final class CookieCache{
 	}
 
 	private function generate(InternetAddress $address) : int{
-		return random_int(0, 0xffffffff);
+		return random_int(0, Limits::UINT32_MAX);
 	}
 }
