@@ -48,6 +48,6 @@ final class CookieCache{
 	}
 
 	private function generate(InternetAddress $address) : int{
-		return crc32(Binary::writeLInt(random_int(0, 0xffffffff)));
+		return random_int(0, 0xffffffff);
 	}
 }
