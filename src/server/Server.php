@@ -27,7 +27,7 @@ use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketSerializer;
-use raklib\utils\Cookie;
+use raklib\utils\CookieCache;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -78,7 +78,7 @@ class Server implements ServerInterface{
 
 	protected int $nextSessionId = 0;
 
-	public ?Cookie $cookie = null;
+	public ?CookieCache $cookie = null;
 
 	/**
 	 * @phpstan-param positive-int $recvMaxSplitParts
@@ -104,7 +104,7 @@ class Server implements ServerInterface{
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 
 		// If you don't want to use security on the server, just delete this line.
-		$this->cookie = new Cookie();
+		$this->cookie = new CookieCache();
 	}
 
 	public function getPort() : int{
@@ -119,7 +119,7 @@ class Server implements ServerInterface{
 		return $this->logger;
 	}
 
-	public function getCookie() : ?Cookie {
+	public function getCookie() : ?CookieCache {
 		return $this->cookie;
 	}
 

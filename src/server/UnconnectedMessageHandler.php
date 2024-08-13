@@ -30,7 +30,7 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
-use raklib\utils\Cookie;
+use raklib\utils\CookieCache;
 use function get_class;
 use function min;
 use function ord;
@@ -83,9 +83,8 @@ class UnconnectedMessageHandler{
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
 				$cookie = null;
-				if ($this->server->getCookie() instanceof Cookie) {
-					$this->server->getCookie()->add($address);
-					$cookie = $this->server->getCookie()->get($address);
+				if ($this->server->getCookie() instanceof CookieCache) {
+					$cookie = $this->server->getCookie()->add($address);
 				}
 				//IP header size (20 bytes) + UDP header size (8 bytes)
 				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $cookie, $packet->mtuSize + 28), $address);
@@ -104,7 +103,7 @@ class UnconnectedMessageHandler{
 					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
 					return true;
 				}
-				if ($this->server->getCookie() instanceof Cookie) { // womp womp
+				if ($this->server->getCookie() instanceof CookieCache) { // womp womp
 					if (!$this->server->getCookie()->check($address, $packet->cookie)) {
 						// Disconnect if OpenConnectionReply1 and the cookie in the OpenConnectionRequest2 packet do not match
 						$this->server->getLogger()->debug("Not creating session for $address due to session mismatched cookies");

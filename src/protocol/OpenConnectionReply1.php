@@ -23,13 +23,12 @@ class OpenConnectionReply1 extends OfflineMessage{
 
 	public int $serverID;
 	public bool $serverSecurity;
-	public ?int $cookie;
+	public ?int $cookie = null;
 	public int $mtuSize;
 
 	public static function create(int $serverId, ?int $cookie, int $mtuSize) : self{
 		$result = new self;
 		$result->serverID = $serverId;
-		$result->serverSecurity = $cookie !== null;
 		$result->cookie = $cookie;
 		$result->mtuSize = $mtuSize;
 		return $result;
@@ -38,8 +37,8 @@ class OpenConnectionReply1 extends OfflineMessage{
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->writeMagic($out);
 		$out->putLong($this->serverID);
-		$out->putByte($this->serverSecurity ? 1 : 0);
-		if ($this->serverSecurity && $this->cookie !== null) {
+		$out->putByte($this->cookie !== null ? 1 : 0);
+		if ($this->cookie !== null) {
 			$out->putInt($this->cookie);
 		}
 		$out->putShort($this->mtuSize);

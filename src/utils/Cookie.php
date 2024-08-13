@@ -21,19 +21,12 @@ use pocketmine\utils\Binary;
 use function random_int;
 use function crc32;
 
-final class Cookie{
+final class CookieCache{
 
 	/**
 	 * @var array<string, int> $cookies
 	 */
 	private array $cookies = [];
-
-	public function get(InternetAddress $address) : ?int{
-		if (isset($this->cookies[$address->toString()])) {
-			return $this->cookies[$address->toString()];
-		}
-		return null;
-	}
 
 	public function check(InternetAddress $address, int $cookie) : bool{
 		$addressStr = $address->toString();
@@ -48,13 +41,13 @@ final class Cookie{
 		return false;
 	}
 
-	public function add(InternetAddress $address) : void{
-		if (!isset($this->cookies[$address->toString()])) {
-			$this->cookies[$address->toString()] = $this->generate($address);
-		}
+	public function add(InternetAddress $address) : int{
+		$cookie = $this->generate($address);
+		$this->cookies[$address->toString()] = $cookie;
+		return $cookie;
 	}
 
 	private function generate(InternetAddress $address) : int{
-		return crc32(Binary::writeLInt(random_int(0, 0xffffffff)) . Binary::writeLShort($address->getPort()) . $address->getIp());
+		return crc32(Binary::writeLInt(random_int(0, 0xffffffff)));
 	}
 }
