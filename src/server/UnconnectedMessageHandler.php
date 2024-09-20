@@ -83,8 +83,8 @@ class UnconnectedMessageHandler{
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
 				$cookie = null;
-				if ($this->server->getCookie() instanceof CookieCache) {
-					$cookie = $this->server->getCookie()->add($address);
+				if ($this->server->getCookieCache() instanceof CookieCache) {
+					$cookie = $this->server->getCookieCache()->add($address);
 				}
 				//IP header size (20 bytes) + UDP header size (8 bytes)
 				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), $cookie, $packet->mtuSize + 28), $address);
@@ -103,8 +103,9 @@ class UnconnectedMessageHandler{
 					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
 					return true;
 				}
-				if ($this->server->getCookie() instanceof CookieCache) { // womp womp
-					if (!$this->server->getCookie()->check($address, $packet->cookie)) {
+				$cookieCache = $this->server->getCookieCache();
+				if ($cookie_cache instanceof CookieCache) { // womp womp
+					if (!$cookie_cache->check($address, $packet->cookie)) {
 						// Disconnect if OpenConnectionReply1 and the cookie in the OpenConnectionRequest2 packet do not match
 						$this->server->getLogger()->debug("Not creating session for $address due to session mismatched cookies");
 						return true;

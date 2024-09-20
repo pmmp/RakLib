@@ -78,7 +78,7 @@ class Server implements ServerInterface{
 
 	protected int $nextSessionId = 0;
 
-	public ?CookieCache $cookie = null;
+	public ?CookieCache $cookieCache = null;
 
 	/**
 	 * @phpstan-param positive-int $recvMaxSplitParts
@@ -104,7 +104,7 @@ class Server implements ServerInterface{
 		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
 
 		// If you don't want to use security on the server, just delete this line.
-		$this->cookie = new CookieCache();
+		$this->cookieCache = new CookieCache();
 	}
 
 	public function getPort() : int{
@@ -119,8 +119,8 @@ class Server implements ServerInterface{
 		return $this->logger;
 	}
 
-	public function getCookie() : ?CookieCache {
-		return $this->cookie;
+	public function getCookieCache() : ?CookieCache {
+		return $this->cookieCache;
 	}
 
 	public function tickProcessor() : void{
@@ -179,8 +179,8 @@ class Server implements ServerInterface{
 		foreach($this->sessions as $session){
 			$session->update($time);
 			if($session->isFullyDisconnected()){
-				if ($this->getCookie() instanceof CookieCache) {
-					$this->getCookie()->remove($session->getAddress());
+				if ($this->getCookieCache() instanceof CookieCache) {
+					$this->getCookieCache()->remove($session->getAddress());
 				}
 				$this->removeSessionInternal($session);
 			}
