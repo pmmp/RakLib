@@ -103,13 +103,13 @@ class UnconnectedMessageHandler{
 					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
 					return true;
 				}
-				$cookieCache = $this->server->getCookieCache();
-				if ($cookieCache instanceof CookieCache) { // womp womp
-					if (!$cookieCache->check($address, $packet->cookie)) {
+				if ($this->server->getCookieCache() instanceof CookieCache) { // womp womp
+					if ($packet->cookie === null || !$this->server->getCookieCache()->check($address, $packet->cookie)) {
 						// Disconnect if OpenConnectionReply1 and the cookie in the OpenConnectionRequest2 packet do not match
 						$this->server->getLogger()->debug("Not creating session for $address due to session mismatched cookies");
 						return true;
 					}
+					
 				}
 				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
 				$this->server->sendPacket(OpenConnectionReply2::create($this->server->getID(), $address, $mtuSize, false), $address);
