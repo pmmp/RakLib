@@ -104,8 +104,8 @@ class UnconnectedMessageHandler{
 					return true;
 				}
 				$cookieCache = $this->server->getCookieCache();
-				if ($cookie_cache instanceof CookieCache) { // womp womp
-					if (!$cookie_cache->check($address, $packet->cookie)) {
+				if ($cookieCache instanceof CookieCache) { // womp womp
+					if (!$cookieCache->check($address, $packet->cookie)) {
 						// Disconnect if OpenConnectionReply1 and the cookie in the OpenConnectionRequest2 packet do not match
 						$this->server->getLogger()->debug("Not creating session for $address due to session mismatched cookies");
 						return true;
