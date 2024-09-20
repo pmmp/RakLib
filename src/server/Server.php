@@ -179,6 +179,9 @@ class Server implements ServerInterface{
 		foreach($this->sessions as $session){
 			$session->update($time);
 			if($session->isFullyDisconnected()){
+				if ($this->getCookie() instanceof CookieCache) {
+					$this->getCookie()->remove($session->getAddress());
+				}
 				$this->removeSessionInternal($session);
 			}
 		}

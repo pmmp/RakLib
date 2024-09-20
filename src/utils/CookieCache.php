@@ -46,6 +46,13 @@ final class CookieCache{
 		return $cookie;
 	}
 
+	public function remove(InternetAddress $address) : void{
+		$addressStr = $address->toString();
+		if (isset($this->cookies[$addressStr])) {
+			unset($this->cookies[$addressStr]);
+		}
+	}
+
 	private function generate(InternetAddress $address) : int{
 		return random_int(0, Limits::UINT32_MAX);
 	}
