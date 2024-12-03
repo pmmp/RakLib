@@ -44,8 +44,8 @@ use const SOCKET_ECONNRESET;
 
 class Server implements ServerInterface{
 
-	private const RAKLIB_TPS = 100;
-	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
+	public const RAKLIB_TPS = 100;
+	public const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
 
 	protected int $receiveBytes = 0;
 	protected int $sendBytes = 0;
@@ -87,7 +87,6 @@ class Server implements ServerInterface{
 		protected ServerSocket $socket,
 		protected int $maxMtuSize,
 		ProtocolAcceptor $protocolAcceptor,
-		private ServerEventSource $eventSource,
 		private ServerEventListener $eventListener,
 		private ExceptionTraceCleaner $traceCleaner,
 		private int $recvMaxSplitParts = ServerSession::DEFAULT_MAX_SPLIT_PART_COUNT,
@@ -113,58 +112,40 @@ class Server implements ServerInterface{
 		return $this->logger;
 	}
 
-	public function tickProcessor() : void{
-		$start = microtime(true);
-
-		/*
-		 * The below code is designed to allow co-op between sending and receiving to avoid slowing down either one
-		 * when high traffic is coming either way. Yielding will occur after 100 messages.
-		 */
-		do{
-			$stream = !$this->shutdown;
-			for($i = 0; $i < 100 && $stream && !$this->shutdown; ++$i){ //if we received a shutdown event, we don't care about any more messages from the event source
-				$stream = $this->eventSource->process($this);
-			}
-
-			$socket = true;
-			for($i = 0; $i < 100 && $socket; ++$i){
-				$socket = $this->receivePacket();
-			}
-		}while($stream || $socket);
-
-		$this->tick();
-
-		$time = microtime(true) - $start;
-		if($time < self::RAKLIB_TIME_PER_TICK){
-			@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
-		}
-	}
-
 	/**
 	 * Disconnects all sessions and blocks until everything has been shut down properly.
 	 */
 	public function waitShutdown() : void{
 		$this->shutdown = true;
 
-		while($this->eventSource->process($this)){
-			//Ensure that any late messages are processed before we start initiating server disconnects, so that if the
-			//server implementation used a custom disconnect mechanism (e.g. a server transfer), we don't break it in
-			//race conditions.
-		}
-
 		foreach($this->sessions as $session){
 			$session->initiateDisconnect(DisconnectReason::SERVER_SHUTDOWN);
 		}
 
 		while(count($this->sessions) > 0){
-			$this->tickProcessor();
+			$start = microtime(true);
+
+			while($this->receivePacket()){
+				//NOOP
+			}
+			$this->tick();
+
+			$time = microtime(true) - $start;
+			if($time < self::RAKLIB_TIME_PER_TICK && count($this->sessions) > 0){
+				@time_sleep_until(microtime(true) + self::RAKLIB_TIME_PER_TICK - $time);
+			}
 		}
 
 		$this->socket->close();
 		$this->logger->debug("Graceful shutdown complete");
 	}
 
-	private function tick() : void{
+	/**
+	 * Ticks sessions, updates bandwidth stats and IP bans, and other heartbeat tasks.
+	 * This should be called once per 10ms. It must be called in regular intervals.
+	 * @see self::RAKLIB_TIME_PER_TICK
+	 */
+	public function tick() : void{
 		$time = microtime(true);
 		foreach($this->sessions as $session){
 			$session->update($time);
@@ -198,8 +179,15 @@ class Server implements ServerInterface{
 		++$this->ticks;
 	}
 
-	/** @phpstan-impure */
-	private function receivePacket() : bool{
+	/**
+	 * Reads a packet from the socket and processes it.
+	 *
+	 * This should be called in a loop until it returns false. However, it may be desirable to break out of the loop
+	 * to do other tasks even if there are packets left to process, to ensure high traffic doesn't starve other tasks.
+	 *
+	 * @phpstan-impure
+	 */
+	public function receivePacket() : bool{
 		try{
 			$buffer = $this->socket->readPacket($addressIp, $addressPort);
 		}catch(SocketException $e){
