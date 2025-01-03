@@ -30,6 +30,7 @@ use raklib\protocol\PacketSerializer;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
+use function assert;
 use function bin2hex;
 use function count;
 use function get_class;
@@ -214,6 +215,9 @@ class Server implements ServerInterface{
 		if($buffer === null){
 			return false; //no data
 		}
+		assert($addressIp !== null, "Can't be null if we got a buffer");
+		assert($addressPort !== null, "Can't be null if we got a buffer");
+
 		$len = strlen($buffer);
 
 		$this->receiveBytes += $len;

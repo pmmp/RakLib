@@ -170,6 +170,8 @@ while(true){
 				if($buffer === null || $buffer === ""){
 					continue;
 				}
+				assert($recvAddr !== null, "Can't be null if we got a buffer");
+				assert($recvPort !== null, "Can't be null if we got a buffer");
 				if(isset($clients[$recvAddr][$recvPort])){
 					$client = $clients[$recvAddr][$recvPort];
 					$client->setActive();
