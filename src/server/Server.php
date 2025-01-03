@@ -18,9 +18,9 @@ namespace raklib\server;
 
 use pocketmine\utils\BinaryDataException;
 use raklib\generic\DisconnectReason;
+use raklib\generic\PacketHandlingException;
 use raklib\generic\Session;
 use raklib\generic\SocketException;
-use raklib\generic\PacketHandlingException;
 use raklib\protocol\ACK;
 use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
