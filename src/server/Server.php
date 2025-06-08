@@ -100,7 +100,8 @@ class Server implements ServerInterface{
 		private int $recvMaxSplitParts = ServerSession::DEFAULT_MAX_SPLIT_PART_COUNT,
 		private int $recvMaxConcurrentSplits = ServerSession::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT,
 		private int $blockMessageSuppressionThreshold = self::BLOCK_MESSAGE_SUPPRESSION_THRESHOLD,
-		private int $packetErrorSuppressionThreshold = self::PACKET_ERROR_SUPPRESSION_THRESHOLD
+		private int $packetErrorSuppressionThreshold = self::PACKET_ERROR_SUPPRESSION_THRESHOLD,
+		private bool $blockIpOnPacketErrors = true
 	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
@@ -319,7 +320,9 @@ class Server implements ServerInterface{
 				}
 			}
 			$this->packetErrorsSinceLastUpdate++;
-			$this->blockAddress($address->getIp(), 5);
+			if($this->blockIpOnPacketErrors){
+				$this->blockAddress($address->getIp(), 5);
+			}
 		}
 
 		return true;
