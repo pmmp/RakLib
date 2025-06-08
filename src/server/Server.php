@@ -47,6 +47,8 @@ class Server implements ServerInterface{
 
 	private const RAKLIB_TPS = 100;
 	private const RAKLIB_TIME_PER_TICK = 1 / self::RAKLIB_TPS;
+	private const BLOCK_MESSAGE_SUPPRESSION_THRESHOLD = 2;
+	private const PACKET_ERROR_SUPPRESSION_THRESHOLD = 2;
 
 	protected int $receiveBytes = 0;
 	protected int $sendBytes = 0;
@@ -71,6 +73,10 @@ class Server implements ServerInterface{
 	/** @var int[] string (address) => int (number of packets) */
 	protected array $ipSec = [];
 
+	private int $blockedSinceLastUpdate = 0;
+
+	private int $packetErrorsSinceLastUpdate = 0;
+
 	/** @var string[] regex filters used to block out unwanted raw packets */
 	protected array $rawPacketFilters = [];
 
@@ -92,7 +98,9 @@ class Server implements ServerInterface{
 		private ServerEventListener $eventListener,
 		private ExceptionTraceCleaner $traceCleaner,
 		private int $recvMaxSplitParts = ServerSession::DEFAULT_MAX_SPLIT_PART_COUNT,
-		private int $recvMaxConcurrentSplits = ServerSession::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT
+		private int $recvMaxConcurrentSplits = ServerSession::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT,
+		private int $blockMessageSuppressionThreshold = self::BLOCK_MESSAGE_SUPPRESSION_THRESHOLD,
+		private int $packetErrorSuppressionThreshold = self::PACKET_ERROR_SUPPRESSION_THRESHOLD
 	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
@@ -182,6 +190,18 @@ class Server implements ServerInterface{
 				$this->sendBytes = 0;
 				$this->receiveBytes = 0;
 			}
+
+			$packetErrorsWithoutMessage = $this->packetErrorsSinceLastUpdate - $this->packetErrorSuppressionThreshold;
+			if($packetErrorsWithoutMessage > 0){
+				$this->logger->warning("$packetErrorsWithoutMessage suppressed packet errors - RakLib may be under attack");
+			}
+			$this->packetErrorsSinceLastUpdate = 0;
+
+			$ipsBlockedWithoutMessage = $this->blockedSinceLastUpdate - $this->blockMessageSuppressionThreshold;
+			if($ipsBlockedWithoutMessage > 0){
+				$this->logger->warning("$ipsBlockedWithoutMessage more IP addresses were blocked - RakLib may be under attack");
+			}
+			$this->blockedSinceLastUpdate = 0;
 
 			if(count($this->block) > 0){
 				asort($this->block);
@@ -283,19 +303,22 @@ class Server implements ServerInterface{
 				}
 			}
 		}catch(BinaryDataException $e){
-			$logFn = function() use ($address, $e, $buffer) : void{
-				$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
-				$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-				foreach($this->traceCleaner->getTrace(0, $e->getTrace()) as $line){
-					$this->logger->debug($line);
+			if($this->packetErrorsSinceLastUpdate < $this->packetErrorSuppressionThreshold){
+				$logFn = function() use ($address, $e, $buffer) : void{
+					$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
+					$this->logger->debug(get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+					foreach($this->traceCleaner->getTrace(0, $e->getTrace()) as $line){
+						$this->logger->debug($line);
+					}
+					$this->logger->error("Bad packet from $address: " . $e->getMessage());
+				};
+				if($this->logger instanceof \BufferedLogger){
+					$this->logger->buffer($logFn);
+				}else{
+					$logFn();
 				}
-				$this->logger->error("Bad packet from $address: " . $e->getMessage());
-			};
-			if($this->logger instanceof \BufferedLogger){
-				$this->logger->buffer($logFn);
-			}else{
-				$logFn();
 			}
+			$this->packetErrorsSinceLastUpdate++;
 			$this->blockAddress($address->getIp(), 5);
 		}
 
@@ -354,10 +377,14 @@ class Server implements ServerInterface{
 		if(!isset($this->block[$address]) or $timeout === -1){
 			if($timeout === -1){
 				$final = PHP_INT_MAX;
-			}else{
-				$this->logger->notice("Blocked $address for $timeout seconds");
+			}
+			if($this->blockedSinceLastUpdate < $this->blockMessageSuppressionThreshold){
+				//Suppress additional log messages if multiple IPs have been banned in quick succession
+				//In the case of IP spoofing attacks we don't want log spam to slow down the server
+				$this->logger->notice("Blocked $address" . ($timeout === -1 ? " forever" : " for $timeout seconds"));
 			}
 			$this->block[$address] = $final;
+			$this->blockedSinceLastUpdate++;
 		}elseif($this->block[$address] < $final){
 			$this->block[$address] = $final;
 		}
