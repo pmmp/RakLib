@@ -53,6 +53,8 @@ abstract class Session{
 
 	private int $id;
 
+	private int $protocol;
+
 	private float $lastUpdate;
 	private float $disconnectionTime = 0;
 
@@ -75,6 +77,7 @@ abstract class Session{
 		InternetAddress $address,
 		int $clientId,
 		int $mtuSize,
+		int $protocol,
 		int $recvMaxSplitParts = PHP_INT_MAX,
 		int $recvMaxConcurrentSplits = PHP_INT_MAX
 	){
@@ -84,6 +87,7 @@ abstract class Session{
 		$this->logger = new \PrefixedLogger($logger, "Session: " . $address->toString());
 		$this->address = $address;
 		$this->id = $clientId;
+		$this->protocol = $protocol;
 
 		$this->lastUpdate = microtime(true);
 
@@ -165,6 +169,10 @@ abstract class Session{
 
 	public function getID() : int{
 		return $this->id;
+	}
+
+	public function getProtocol() : int{
+		return $this->protocol;
 	}
 
 	public function getState() : int{
