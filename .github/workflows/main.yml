@@ -20,7 +20,7 @@ jobs:
         uses: shivammathur/setup-php@2.35.4
         with:
           php-version: ${{ matrix.php }}
-          extensions: encoding-https://github.com/pmmp/ext-encoding@0.5.0
+          extensions: encoding-https://github.com/pmmp/ext-encoding@0.5.1
 
       - name: Cache Composer packages
         id: composer-cache
