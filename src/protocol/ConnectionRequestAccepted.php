@@ -16,6 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\RakLib;
 use raklib\utils\InternetAddress;
 use function strlen;
@@ -45,31 +48,31 @@ class ConnectionRequestAccepted extends ConnectedPacket{
 		$this->systemAddresses[] = new InternetAddress("127.0.0.1", 0, 4);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putAddress($this->address);
-		$out->putShort(0);
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		PacketSerializer::putAddress($out, $this->address);
+		BE::writeUnsignedShort($out, 0);
 
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$out->putAddress($this->systemAddresses[$i] ?? $dummy);
+			PacketSerializer::putAddress($out, $this->systemAddresses[$i] ?? $dummy);
 		}
 
-		$out->putLong($this->sendPingTime);
-		$out->putLong($this->sendPongTime);
+		BE::writeUnsignedLong($out, $this->sendPingTime);
+		BE::writeUnsignedLong($out, $this->sendPongTime);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->address = $in->getAddress();
-		$in->getShort(); //TODO: check this
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$this->address = PacketSerializer::getAddress($in);
+		BE::readUnsignedShort($in); //TODO: check this
 
-		$len = strlen($in->getBuffer());
+		$len = strlen($in->getData());
 		$dummy = new InternetAddress("0.0.0.0", 0, 4);
 
 		for($i = 0; $i < RakLib::$SYSTEM_ADDRESS_COUNT; ++$i){
-			$this->systemAddresses[$i] = $in->getOffset() + 16 < $len ? $in->getAddress() : $dummy; //HACK: avoids trying to read too many addresses on bad data
+			$this->systemAddresses[$i] = $in->getOffset() + 16 < $len ? PacketSerializer::getAddress($in) : $dummy; //HACK: avoids trying to read too many addresses on bad data
 		}
 
-		$this->sendPingTime = $in->getLong();
-		$this->sendPongTime = $in->getLong();
+		$this->sendPingTime = BE::readUnsignedLong($in);
+		$this->sendPongTime = BE::readUnsignedLong($in);
 	}
 }

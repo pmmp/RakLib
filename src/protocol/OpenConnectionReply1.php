@@ -16,6 +16,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+
 class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 
@@ -31,17 +36,17 @@ class OpenConnectionReply1 extends OfflineMessage{
 		return $result;
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
-		$out->putLong($this->serverID);
-		$out->putByte($this->serverSecurity ? 1 : 0);
-		$out->putShort($this->mtuSize);
+		BE::writeUnsignedLong($out, $this->serverID);
+		Byte::writeUnsigned($out, $this->serverSecurity ? 1 : 0);
+		BE::writeUnsignedShort($out, $this->mtuSize);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
-		$this->serverID = $in->getLong();
-		$this->serverSecurity = $in->getByte() !== 0;
-		$this->mtuSize = $in->getShort();
+		$this->serverID = BE::readUnsignedLong($in);
+		$this->serverSecurity = Byte::readUnsigned($in) !== 0;
+		$this->mtuSize = BE::readUnsignedShort($in);
 	}
 }

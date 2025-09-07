@@ -16,6 +16,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
@@ -32,60 +37,60 @@ final class PacketSerializer extends BinaryStream{
 	/**
 	 * @throws BinaryDataException
 	 */
-	public function getString() : string{
-		return $this->get($this->getShort());
+	public static function getString(ByteBufferReader $in) : string{
+		return $in->readByteArray(BE::readUnsignedShort($in));
 	}
 
 	/**
 	 * @throws BinaryDataException
 	 */
-	public function getAddress() : InternetAddress{
-		$version = $this->getByte();
+	public static function getAddress(ByteBufferReader $in) : InternetAddress{
+		$version = Byte::readUnsigned($in);
 		if($version === 4){
-			$addr = ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff) . "." . ((~$this->getByte()) & 0xff);
-			$port = $this->getShort();
+			$addr = ((~Byte::readUnsigned($in)) & 0xff) . "." . ((Byte::readUnsigned($in)) & 0xff) . "." . ((~Byte::readUnsigned($in)) & 0xff) . "." . ((~Byte::readUnsigned($in)) & 0xff);
+			$port = BE::readUnsignedShort($in);
 			return new InternetAddress($addr, $port, $version);
 		}elseif($version === 6){
 			//http://man7.org/linux/man-pages/man7/ipv6.7.html
-			$this->getLShort(); //Family, AF_INET6
-			$port = $this->getShort();
-			$this->getInt(); //flow info
-			$addr = inet_ntop($this->get(16));
+			LE::readUnsignedShort($in); //Family, AF_INET6
+			$port = BE::readUnsignedShort($in);
+			BE::readUnsignedInt($in); //flow info
+			$addr = inet_ntop($in->readByteArray(16));
 			if($addr === false){
 				throw new BinaryDataException("Failed to parse IPv6 address");
 			}
-			$this->getInt(); //scope ID
+			BE::readUnsignedInt($in); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
 			throw new BinaryDataException("Unknown IP address version $version");
 		}
 	}
 
-	public function putString(string $v) : void{
-		$this->putShort(strlen($v));
-		$this->put($v);
+	public static function putString(ByteBufferWriter $out, string $v) : void{
+		BE::writeUnsignedShort($out, strlen($v));
+		$out->writeByteArray($v);
 	}
 
-	public function putAddress(InternetAddress $address) : void{
+	public static function putAddress(ByteBufferWriter $out, InternetAddress $address) : void{
 		$version = $address->getVersion();
-		$this->putByte($version);
+		Byte::writeUnsigned($out, $version);
 		if($version === 4){
 			$parts = explode(".", $address->getIp());
 			assert(count($parts) === 4, "Wrong number of parts in IPv4 IP, expected 4, got " . count($parts));
 			foreach($parts as $b){
-				$this->putByte((~((int) $b)) & 0xff);
+				Byte::writeUnsigned($out, (~((int) $b)) & 0xff);
 			}
-			$this->putShort($address->getPort());
+			BE::writeUnsignedShort($out, $address->getPort());
 		}elseif($version === 6){
-			$this->putLShort(AF_INET6);
-			$this->putShort($address->getPort());
-			$this->putInt(0);
+			LE::writeUnsignedShort($out, AF_INET6);
+			BE::writeUnsignedShort($out, $address->getPort());
+			BE::writeUnsignedInt($out, 0);
 			$rawIp = inet_pton($address->getIp());
 			if($rawIp === false){
 				throw new \InvalidArgumentException("Invalid IPv6 address could not be encoded");
 			}
-			$this->put($rawIp);
-			$this->putInt(0);
+			$out->writeByteArray($rawIp);
+			BE::writeUnsignedInt($out, 0);
 		}else{
 			throw new \InvalidArgumentException("IP version $version is not supported");
 		}

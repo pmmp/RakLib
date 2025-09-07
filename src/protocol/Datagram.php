@@ -16,6 +16,12 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use function strlen;
+
 class Datagram extends Packet{
 	public const BITFLAG_VALID = 0x80;
 	public const BITFLAG_ACK = 0x40;
@@ -36,14 +42,14 @@ class Datagram extends Packet{
 	public array $packets = [];
 	public int $seqNumber;
 
-	protected function encodeHeader(PacketSerializer $out) : void{
-		$out->putByte(self::BITFLAG_VALID | $this->headerFlags);
+	protected function encodeHeader(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, self::BITFLAG_VALID | $this->headerFlags);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLTriad($this->seqNumber);
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		LE::writeUnsignedTriad($out, $this->seqNumber);
 		foreach($this->packets as $packet){
-			$out->put($packet->toBinary());
+			$packet->toBinary($out);
 		}
 	}
 
@@ -59,14 +65,15 @@ class Datagram extends Packet{
 		return $length;
 	}
 
-	protected function decodeHeader(PacketSerializer $in) : void{
-		$this->headerFlags = $in->getByte();
+	protected function decodeHeader(ByteBufferReader $in) : void{
+		$this->headerFlags = Byte::readUnsigned($in);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->seqNumber = $in->getLTriad();
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$this->seqNumber = LE::readUnsignedTriad($in);
 
-		while(!$in->feof()){
+		$len = strlen($in->getData());
+		while($in->getOffset() < $len){
 			$this->packets[] = EncapsulatedPacket::fromBinary($in);
 		}
 	}

@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use pmmp\encoding\ByteBufferReader;
 use pocketmine\utils\BinaryDataException;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
@@ -25,7 +26,6 @@ use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
 use raklib\protocol\OpenConnectionRequest1;
 use raklib\protocol\OpenConnectionRequest2;
-use raklib\protocol\PacketSerializer;
 use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
@@ -61,13 +61,13 @@ class UnconnectedMessageHandler{
 		if($pk === null){
 			return false;
 		}
-		$reader = new PacketSerializer($payload);
+		$reader = new ByteBufferReader($payload);
 		$pk->decode($reader);
 		if(!$pk->isValid()){
 			return false;
 		}
-		if(!$reader->feof()){
-			$remains = substr($reader->getBuffer(), $reader->getOffset());
+		if($reader->getOffset() < strlen($reader->getData())){
+			$remains = substr($reader->getData(), $reader->getOffset());
 			$this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
 		}
 		return $this->handle($pk, $address);

@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace raklib\generic;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\protocol\ACK;
 use raklib\protocol\AcknowledgePacket;
 use raklib\protocol\ConnectedPacket;
@@ -28,7 +30,6 @@ use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
-use raklib\protocol\PacketSerializer;
 use raklib\utils\InternetAddress;
 use function hrtime;
 use function intdiv;
@@ -220,13 +221,13 @@ abstract class Session{
 	}
 
 	protected function queueConnectedPacket(ConnectedPacket $packet, int $reliability, int $orderChannel, bool $immediate = false) : void{
-		$out = new PacketSerializer();  //TODO: reuse streams to reduce allocations
+		$out = new ByteBufferWriter();  //TODO: reuse streams to reduce allocations
 		$packet->encode($out);
 
 		$encapsulated = new EncapsulatedPacket();
 		$encapsulated->reliability = $reliability;
 		$encapsulated->orderChannel = $orderChannel;
-		$encapsulated->buffer = $out->getBuffer();
+		$encapsulated->buffer = $out->getData();
 
 		$this->sendLayer->addEncapsulatedToQueue($encapsulated, $immediate);
 	}
@@ -248,14 +249,14 @@ abstract class Session{
 				$this->handleRemoteDisconnect();
 			}elseif($id === MessageIdentifiers::ID_CONNECTED_PING){
 				$dataPacket = new ConnectedPing();
-				$dataPacket->decode(new PacketSerializer($packet->buffer));
+				$dataPacket->decode(new ByteBufferReader($packet->buffer));
 				$this->queueConnectedPacket(ConnectedPong::create(
 					$dataPacket->sendPingTime,
 					$this->getRakNetTimeMS()
 				), PacketReliability::UNRELIABLE, 0);
 			}elseif($id === MessageIdentifiers::ID_CONNECTED_PONG){
 				$dataPacket = new ConnectedPong();
-				$dataPacket->decode(new PacketSerializer($packet->buffer));
+				$dataPacket->decode(new ByteBufferReader($packet->buffer));
 
 				$this->handlePong($dataPacket->sendPingTime, $dataPacket->sendPongTime);
 			}

@@ -16,6 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\utils\InternetAddress;
 
 class OpenConnectionRequest2 extends OfflineMessage{
@@ -25,17 +28,17 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	public InternetAddress $serverAddress;
 	public int $mtuSize;
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
-		$out->putAddress($this->serverAddress);
-		$out->putShort($this->mtuSize);
-		$out->putLong($this->clientID);
+		PacketSerializer::putAddress($out, $this->serverAddress);
+		BE::writeUnsignedShort($out, $this->mtuSize);
+		BE::writeUnsignedLong($out, $this->clientID);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
-		$this->serverAddress = $in->getAddress();
-		$this->mtuSize = $in->getShort();
-		$this->clientID = $in->getLong();
+		$this->serverAddress = PacketSerializer::getAddress($in);
+		$this->mtuSize = BE::readUnsignedShort($in);
+		$this->clientID = BE::readUnsignedLong($in);
 	}
 }

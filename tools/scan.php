@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\utils\Limits;
 use raklib\generic\SocketException;
 use raklib\protocol\MessageIdentifiers;
@@ -37,9 +38,9 @@ function sendPing(ServerSocket $socket, string $broadcastAddress, int $port, int
 	$ping->clientId = $clientId;
 	$ping->sendPingTime = intdiv(hrtime(true), 1_000_000);
 
-	$serializer = new PacketSerializer();
+	$serializer = new ByteBufferWriter();
 	$ping->encode($serializer);
-	$socket->writePacket($serializer->getBuffer(), $broadcastAddress, $port);
+	$socket->writePacket($serializer->getData(), $broadcastAddress, $port);
 }
 sendPing($socket, $broadcastAddress, $port, $clientId);
 

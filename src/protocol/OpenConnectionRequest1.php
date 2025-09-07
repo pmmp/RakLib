@@ -16,6 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\RakLib;
 use function str_repeat;
 use function strlen;
@@ -26,16 +29,16 @@ class OpenConnectionRequest1 extends OfflineMessage{
 	public int $protocol = RakLib::DEFAULT_PROTOCOL_VERSION;
 	public int $mtuSize;
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
-		$out->putByte($this->protocol);
-		$out->put(str_repeat("\x00", $this->mtuSize - strlen($out->getBuffer())));
+		Byte::writeUnsigned($out, $this->protocol);
+		$out->writeByteArray(str_repeat("\x00", $this->mtuSize - strlen($out->getData())));
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
-		$this->protocol = $in->getByte();
-		$this->mtuSize = strlen($in->getBuffer());
-		$in->getRemaining(); //silence unread warnings
+		$this->protocol = Byte::readUnsigned($in);
+		$this->mtuSize = strlen($in->getData());
+		$in->setOffset(strlen($in->getData())); //silence unread warnings
 	}
 }

@@ -16,21 +16,25 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+
 class UnconnectedPing extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_UNCONNECTED_PING;
 
 	public int $sendPingTime;
 	public int $clientId;
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLong($this->sendPingTime);
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		BE::writeUnsignedLong($out, $this->sendPingTime);
 		$this->writeMagic($out);
-		$out->putLong($this->clientId);
+		BE::writeUnsignedLong($out, $this->clientId);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->sendPingTime = $in->getLong();
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$this->sendPingTime = BE::readUnsignedLong($in);
 		$this->readMagic($in);
-		$this->clientId = $in->getLong();
+		$this->clientId = BE::readUnsignedLong($in);
 	}
 }

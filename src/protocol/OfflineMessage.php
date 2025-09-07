@@ -16,8 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\BinaryStream;
 
 abstract class OfflineMessage extends Packet{
 
@@ -32,15 +33,15 @@ abstract class OfflineMessage extends Packet{
 	 * @return void
 	 * @throws BinaryDataException
 	 */
-	protected function readMagic(BinaryStream $in){
-		$this->magic = $in->get(16);
+	protected function readMagic(ByteBufferReader $in){
+		$this->magic = $in->readByteArray(16);
 	}
 
 	/**
 	 * @return void
 	 */
-	protected function writeMagic(BinaryStream $out){
-		$out->put($this->magic);
+	protected function writeMagic(ByteBufferWriter $out){
+		$out->writeByteArray($this->magic);
 	}
 
 	public function isValid() : bool{
