@@ -34,7 +34,6 @@ abstract class AcknowledgePacket extends Packet{
 	public array $packets = [];
 
 	protected function encodePayload(ByteBufferWriter $out) : void{
-		$payload = "";
 		$subWriter = new ByteBufferWriter();
 		sort($this->packets, SORT_NUMERIC);
 		$count = count($this->packets);
@@ -77,7 +76,7 @@ abstract class AcknowledgePacket extends Packet{
 		}
 
 		BE::writeUnsignedShort($out, $records);
-		$out->writeByteArray($payload);
+		$out->writeByteArray($subWriter->getData());
 	}
 
 	protected function decodePayload(ByteBufferReader $in) : void{
