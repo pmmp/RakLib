@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace raklib\server;
 
 use pmmp\encoding\ByteBufferReader;
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\DataDecodeException;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\MessageIdentifiers;
@@ -51,7 +51,7 @@ class UnconnectedMessageHandler{
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public function handleRaw(string $payload, InternetAddress $address) : bool{
 		if($payload === ""){

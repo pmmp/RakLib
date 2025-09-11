@@ -3,10 +3,8 @@
 declare(strict_types=1);
 
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\utils\Limits;
 use raklib\generic\SocketException;
 use raklib\protocol\MessageIdentifiers;
-use raklib\protocol\PacketSerializer;
 use raklib\protocol\UnconnectedPing;
 use raklib\server\ServerSocket;
 use raklib\utils\InternetAddress;
@@ -29,7 +27,7 @@ if(str_contains($broadcastAddress, ".")){
 
 $socket = new ServerSocket($bindAddress);
 $socket->enableBroadcast();
-$clientId = mt_rand(0, Limits::INT32_MAX);
+$clientId = mt_rand(0, 0x7f_ff_ff_ff);
 \GlobalLogger::get()->info("Listening on " . $bindAddress);
 \GlobalLogger::get()->info("Press CTRL+C to stop");
 

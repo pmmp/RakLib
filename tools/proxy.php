@@ -21,17 +21,11 @@
 
 declare(strict_types=1);
 
-use pocketmine\utils\Limits;
 use raklib\client\ClientSocket;
 use raklib\generic\SocketException;
 use raklib\protocol\MessageIdentifiers;
-use raklib\protocol\UnconnectedPong;
-use raklib\server\ProtocolAcceptor;
-use raklib\server\Server;
 use raklib\server\ServerSocket;
-use raklib\server\SimpleProtocolAcceptor;
 use raklib\utils\InternetAddress;
-use raklib\generic\Socket;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -127,7 +121,7 @@ function serverToClientRelay(ClientSession $client, ServerSocket $clientProxySoc
 /** @var ClientSession[][] $clients */
 $clients = [];
 
-$serverId = mt_rand(0, Limits::INT32_MAX);
+$serverId = mt_rand(0, 0x7f_ff_ff_ff);
 $mostRecentPong = null;
 
 while(true){

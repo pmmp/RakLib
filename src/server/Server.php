@@ -18,7 +18,7 @@ namespace raklib\server;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\DataDecodeException;
 use raklib\generic\DisconnectReason;
 use raklib\generic\PacketHandlingException;
 use raklib\generic\Session;
@@ -304,7 +304,7 @@ class Server implements ServerInterface{
 					$this->logger->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}
-		}catch(BinaryDataException $e){
+		}catch(DataDecodeException $e){
 			if($this->packetErrorsSinceLastUpdate < $this->packetErrorSuppressionThreshold){
 				$logFn = function() use ($address, $e, $buffer) : void{
 					$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));

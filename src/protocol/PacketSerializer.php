@@ -20,9 +20,8 @@ use pmmp\encoding\BE;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\LE;
-use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\BinaryStream;
 use raklib\utils\InternetAddress;
 use function assert;
 use function count;
@@ -32,17 +31,20 @@ use function inet_pton;
 use function strlen;
 use const AF_INET6;
 
-final class PacketSerializer extends BinaryStream{
+final class PacketSerializer{
+	private function __construct(){
+		//NOOP
+	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public static function getString(ByteBufferReader $in) : string{
 		return $in->readByteArray(BE::readUnsignedShort($in));
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public static function getAddress(ByteBufferReader $in) : InternetAddress{
 		$version = Byte::readUnsigned($in);
@@ -57,12 +59,12 @@ final class PacketSerializer extends BinaryStream{
 			BE::readUnsignedInt($in); //flow info
 			$addr = inet_ntop($in->readByteArray(16));
 			if($addr === false){
-				throw new BinaryDataException("Failed to parse IPv6 address");
+				throw new DataDecodeException("Failed to parse IPv6 address");
 			}
 			BE::readUnsignedInt($in); //scope ID
 			return new InternetAddress($addr, $port, $version);
 		}else{
-			throw new BinaryDataException("Unknown IP address version $version");
+			throw new DataDecodeException("Unknown IP address version $version");
 		}
 	}
 

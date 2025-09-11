@@ -19,7 +19,7 @@ namespace raklib\protocol;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\DataDecodeException;
 
 abstract class Packet{
 	/** @var int */
@@ -37,7 +37,7 @@ abstract class Packet{
 	abstract protected function encodePayload(ByteBufferWriter $out) : void;
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public function decode(ByteBufferReader $in) : void{
 		$this->decodeHeader($in);
@@ -45,14 +45,14 @@ abstract class Packet{
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	protected function decodeHeader(ByteBufferReader $in) : void{
 		Byte::readUnsigned($in); //PID
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	abstract protected function decodePayload(ByteBufferReader $in) : void;
 }

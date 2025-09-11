@@ -20,8 +20,8 @@ use pmmp\encoding\BE;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\LE;
-use pocketmine\utils\BinaryDataException;
 use function ceil;
 use function strlen;
 
@@ -43,7 +43,7 @@ class EncapsulatedPacket{
 	public ?int $identifierACK = null;
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public static function fromBinary(ByteBufferReader $stream) : EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
@@ -54,7 +54,7 @@ class EncapsulatedPacket{
 
 		$length = (int) ceil(BE::readUnsignedShort($stream) / 8);
 		if($length === 0){
-			throw new BinaryDataException("Encapsulated payload length cannot be zero");
+			throw new DataDecodeException("Encapsulated payload length cannot be zero");
 		}
 
 		if(PacketReliability::isReliable($reliability)){

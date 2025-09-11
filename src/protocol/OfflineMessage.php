@@ -18,7 +18,7 @@ namespace raklib\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\DataDecodeException;
 
 abstract class OfflineMessage extends Packet{
 
@@ -31,7 +31,7 @@ abstract class OfflineMessage extends Packet{
 
 	/**
 	 * @return void
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	protected function readMagic(ByteBufferReader $in){
 		$this->magic = $in->readByteArray(16);
