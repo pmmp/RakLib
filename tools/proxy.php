@@ -152,7 +152,7 @@ while(true){
 				$buffer = $proxyToServerUnconnectedSocket->readPacket();
 				if($buffer !== null && $buffer !== "" && ord($buffer[0]) === MessageIdentifiers::ID_UNCONNECTED_PONG){
 					$mostRecentPong = $buffer;
-					\GlobalLogger::get()->info("Caching ping response from server: " . $buffer);
+					\GlobalLogger::get()->info("Caching ping response from server: " . preg_replace("/[[:^print:]]/", ".", $buffer));
 				}
 			}elseif($socket === $clientProxySocket->getSocket()){
 				try{
