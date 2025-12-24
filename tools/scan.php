@@ -11,7 +11,7 @@ use raklib\utils\InternetAddress;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-if(count($argv) === 3){
+if(isset($argv) && count($argv) === 3){
 	$broadcastAddress = $argv[1];
 	$port = (int) $argv[2];
 }else{

@@ -86,14 +86,14 @@ class EncapsulatedPacket{
 
 		BE::writeUnsignedShort($out, strlen($this->buffer) << 3);
 		if(PacketReliability::isReliable($this->reliability)){
-			LE::writeUnsignedTriad($out, $this->messageIndex);
+			LE::writeUnsignedTriad($out, $this->messageIndex ?? throw new \LogicException("Message index must be set for reliability $this->reliability"));
 		}
 		if(PacketReliability::isSequenced($this->reliability)){
-			LE::writeUnsignedTriad($out, $this->sequenceIndex);
+			LE::writeUnsignedTriad($out, $this->sequenceIndex ?? throw new \LogicException("Sequence index must be set for reliability $this->reliability"));
 		}
 		if(PacketReliability::isSequencedOrOrdered($this->reliability)){
-			LE::writeUnsignedTriad($out, $this->orderIndex);
-			Byte::writeUnsigned($out, $this->orderChannel);
+			LE::writeUnsignedTriad($out, $this->orderIndex ?? throw new \LogicException("Order index must be set for reliability $this->reliability"));
+			Byte::writeUnsigned($out, $this->orderChannel ?? throw new \LogicException("Order channel must be set for reliability $this->reliability"));
 		}
 		if($this->splitInfo !== null){
 			BE::writeUnsignedInt($out, $this->splitInfo->getTotalPartCount());
