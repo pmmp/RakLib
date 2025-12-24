@@ -176,6 +176,7 @@ final class ReceiveReliabilityLayer{
 		}
 
 		if($packet->reliability->isSequenced()){
+			assert($packet->orderChannel !== null && $packet->sequenceIndex !== null, 'These should have been set during decode');
 			if($packet->sequenceIndex < $this->receiveSequencedHighestIndex[$packet->orderChannel] or $packet->orderIndex < $this->receiveOrderedIndex[$packet->orderChannel]){
 				//too old sequenced packet, discard it
 				return;
@@ -184,28 +185,30 @@ final class ReceiveReliabilityLayer{
 			$this->receiveSequencedHighestIndex[$packet->orderChannel] = $packet->sequenceIndex + 1;
 			$this->handleEncapsulatedPacketRoute($packet);
 		}elseif($packet->reliability->isOrdered()){
-			if($packet->orderIndex === $this->receiveOrderedIndex[$packet->orderChannel]){
+			$orderChannel = $packet->orderChannel;
+			assert($orderChannel !== null, 'This should have been set during decode');
+			if($packet->orderIndex === $this->receiveOrderedIndex[$orderChannel]){
 				//this is the packet we expected to get next
 				//Any ordered packet resets the sequence index to zero, so that sequenced packets older than this ordered
 				//one get discarded. Sequenced packets also include (but don't increment) the order index, so a sequenced
 				//packet with an order index less than this will get discarded
-				$this->receiveSequencedHighestIndex[$packet->orderChannel] = 0;
-				$this->receiveOrderedIndex[$packet->orderChannel] = $packet->orderIndex + 1;
+				$this->receiveSequencedHighestIndex[$orderChannel] = 0;
+				$this->receiveOrderedIndex[$orderChannel] = $packet->orderIndex + 1;
 
 				$this->handleEncapsulatedPacketRoute($packet);
-				$i = $this->receiveOrderedIndex[$packet->orderChannel];
-				for(; isset($this->receiveOrderedPackets[$packet->orderChannel][$i]); ++$i){
-					$this->handleEncapsulatedPacketRoute($this->receiveOrderedPackets[$packet->orderChannel][$i]);
-					unset($this->receiveOrderedPackets[$packet->orderChannel][$i]);
+				$i = $this->receiveOrderedIndex[$orderChannel];
+				for(; isset($this->receiveOrderedPackets[$orderChannel][$i]); ++$i){
+					$this->handleEncapsulatedPacketRoute($this->receiveOrderedPackets[$orderChannel][$i]);
+					unset($this->receiveOrderedPackets[$orderChannel][$i]);
 				}
 
-				$this->receiveOrderedIndex[$packet->orderChannel] = $i;
-			}elseif($packet->orderIndex > $this->receiveOrderedIndex[$packet->orderChannel]){
-				if(count($this->receiveOrderedPackets[$packet->orderChannel]) >= self::$WINDOW_SIZE){
+				$this->receiveOrderedIndex[$orderChannel] = $i;
+			}elseif($packet->orderIndex > $this->receiveOrderedIndex[$orderChannel]){
+				if(count($this->receiveOrderedPackets[$orderChannel]) >= self::$WINDOW_SIZE){
 					//queue overflow for this channel - we should probably disconnect the peer at this point
 					return;
 				}
-				$this->receiveOrderedPackets[$packet->orderChannel][$packet->orderIndex] = $packet;
+				$this->receiveOrderedPackets[$orderChannel][$packet->orderIndex] = $packet;
 			}else{
 				//duplicate/already received packet
 			}

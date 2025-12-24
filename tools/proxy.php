@@ -38,6 +38,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 $bindAddr = "0.0.0.0";
 $bindPort = 19132;
 
+$argv ??= [];
 if(count($argv) === 3){
 	$serverAddress = $argv[1];
 	$serverPort = (int) $argv[2];
@@ -152,7 +153,7 @@ while(true){
 				$buffer = $proxyToServerUnconnectedSocket->readPacket();
 				if($buffer !== null && $buffer !== "" && ord($buffer[0]) === MessageIdentifiers::ID_UNCONNECTED_PONG){
 					$mostRecentPong = $buffer;
-					\GlobalLogger::get()->info("Caching ping response from server: " . $buffer);
+					\GlobalLogger::get()->info("Caching ping response from server: " . preg_replace("/[[:^print:]]/", ".", $buffer));
 				}
 			}elseif($socket === $clientProxySocket->getSocket()){
 				try{
@@ -170,6 +171,8 @@ while(true){
 				if($buffer === null || $buffer === ""){
 					continue;
 				}
+				assert($recvAddr !== null, "Can't be null if we got a buffer");
+				assert($recvPort !== null, "Can't be null if we got a buffer");
 				if(isset($clients[$recvAddr][$recvPort])){
 					$client = $clients[$recvAddr][$recvPort];
 					$client->setActive();

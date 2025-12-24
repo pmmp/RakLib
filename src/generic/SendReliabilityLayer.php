@@ -169,8 +169,14 @@ final class SendReliabilityLayer{
 		}
 
 		if($packet->reliability->isOrdered()){
+			if($packet->orderChannel === null){
+				throw new \InvalidArgumentException("Order channel must be set reliability {$packet->reliability->name}");
+			}
 			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]++;
 		}elseif($packet->reliability->isSequenced()){
+			if($packet->orderChannel === null){
+				throw new \InvalidArgumentException("Order channel must be set for reliability {$packet->reliability->name}");
+			}
 			$packet->orderIndex = $this->sendOrderedIndex[$packet->orderChannel]; //sequenced packets don't increment the ordered channel index
 			$packet->sequenceIndex = $this->sendSequencedIndex[$packet->orderChannel]++;
 		}

@@ -88,9 +88,19 @@ class EncapsulatedPacket{
 		return
 			chr(($this->reliability->value << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0)) .
 			Binary::writeShort(strlen($this->buffer) << 3) .
-			($this->reliability->isReliable() ? Binary::writeLTriad($this->messageIndex) : "") .
-			($this->reliability->isSequenced() ? Binary::writeLTriad($this->sequenceIndex) : "") .
-			($this->reliability->isSequencedOrOrdered() ? Binary::writeLTriad($this->orderIndex) . chr($this->orderChannel) : "") .
+			($this->reliability->isReliable() ?
+				Binary::writeLTriad($this->messageIndex ?? throw new \LogicException("Message index must be set for reliability {$this->reliability->name}")) :
+				""
+			) .
+			($this->reliability->isSequenced() ?
+				Binary::writeLTriad($this->sequenceIndex ?? throw new \LogicException("Sequence index must be set for reliability {$this->reliability->name}")) :
+				""
+			) .
+			($this->reliability->isSequencedOrOrdered() ?
+				Binary::writeLTriad($this->orderIndex ?? throw new \LogicException("Order index must be set for reliability {$this->reliability->name}")) .
+					chr($this->orderChannel ?? throw new \LogicException("Order channel must be set for reliability {$this->reliability->name}")) :
+				""
+			) .
 			($this->splitInfo !== null ? Binary::writeInt($this->splitInfo->getTotalPartCount()) . Binary::writeShort($this->splitInfo->getId()) . Binary::writeInt($this->splitInfo->getPartIndex()) : "")
 			. $this->buffer;
 	}
