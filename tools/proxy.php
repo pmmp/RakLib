@@ -38,6 +38,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 $bindAddr = "0.0.0.0";
 $bindPort = 19132;
 
+$argv ??= [];
 if(count($argv) === 3){
 	$serverAddress = $argv[1];
 	$serverPort = (int) $argv[2];
