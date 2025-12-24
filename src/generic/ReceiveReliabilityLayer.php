@@ -176,7 +176,7 @@ final class ReceiveReliabilityLayer{
 		}
 
 		if(PacketReliability::isSequenced($packet->reliability)){
-			assert($packet->orderChannel !== null, 'This should have been set during decode');
+			assert($packet->orderChannel !== null && $packet->sequenceIndex !== null, 'These should have been set during decode');
 			if($packet->sequenceIndex < $this->receiveSequencedHighestIndex[$packet->orderChannel] or $packet->orderIndex < $this->receiveOrderedIndex[$packet->orderChannel]){
 				//too old sequenced packet, discard it
 				return;
