@@ -84,6 +84,8 @@ class Server implements ServerInterface{
 
 	protected int $nextSessionId = 0;
 
+	private int $cookieRotationIntervalTicks;
+
 	/**
 	 * @phpstan-param positive-int $recvMaxSplitParts
 	 * @phpstan-param positive-int $recvMaxConcurrentSplits
@@ -101,14 +103,16 @@ class Server implements ServerInterface{
 		private int $recvMaxConcurrentSplits = ServerSession::DEFAULT_MAX_CONCURRENT_SPLIT_COUNT,
 		private int $blockMessageSuppressionThreshold = self::BLOCK_MESSAGE_SUPPRESSION_THRESHOLD,
 		private int $packetErrorSuppressionThreshold = self::PACKET_ERROR_SUPPRESSION_THRESHOLD,
-		private bool $blockIpOnPacketErrors = true
+		private bool $blockIpOnPacketErrors = true,
+		int $cookieRotationIntervalSeconds = 5,
 	){
 		if($maxMtuSize < Session::MIN_MTU_SIZE){
 			throw new \InvalidArgumentException("MTU size must be at least " . Session::MIN_MTU_SIZE . ", got $maxMtuSize");
 		}
 		$this->socket->setBlocking(false);
 
-		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor);
+		$this->cookieRotationIntervalTicks = $cookieRotationIntervalSeconds * self::RAKLIB_TPS;
+		$this->unconnectedMessageHandler = new UnconnectedMessageHandler($this, $protocolAcceptor, $cookieRotationIntervalSeconds > 0);
 	}
 
 	public function getPort() : int{
@@ -214,6 +218,14 @@ class Server implements ServerInterface{
 						break;
 					}
 				}
+			}
+
+			if($this->cookieRotationIntervalTicks > 0 && ($this->ticks % $this->cookieRotationIntervalTicks) === 0){
+				$mismatches = $this->unconnectedMessageHandler->getCookieMismatchSinceLastRotation();
+				if($mismatches > 0){
+					$this->logger->warning("Mismatched cookies detected $mismatches times since last rotation - RakLib may be experiencing an attack from spoofed IP addresses");
+				}
+				$this->unconnectedMessageHandler->rotateCookieSalts();
 			}
 		}
 

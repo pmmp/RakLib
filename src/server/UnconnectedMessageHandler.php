@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use pocketmine\utils\Binary;
 use pocketmine\utils\BinaryDataException;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
@@ -30,9 +31,11 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
+use function crc32;
 use function get_class;
 use function min;
 use function ord;
+use function random_int;
 use function strlen;
 use function substr;
 
@@ -43,11 +46,49 @@ class UnconnectedMessageHandler{
 	 */
 	private \SplFixedArray $packetPool;
 
+	private string $currentCookieSalt;
+	private string $previousCookieSalt;
+	private int $cookieMismatches = 0;
+
 	public function __construct(
 		private Server $server,
-		private ProtocolAcceptor $protocolAcceptor
+		private ProtocolAcceptor $protocolAcceptor,
+		private bool $antiIpSpoofCookies = true
 	){
 		$this->registerPackets();
+
+		$this->currentCookieSalt = $this->previousCookieSalt = self::newCookieSalt();
+	}
+
+	private static function newCookieSalt() : string{
+		return Binary::writeLong(random_int(PHP_INT_MIN, PHP_INT_MAX));
+	}
+
+	public function rotateCookieSalts() : void{
+		$this->previousCookieSalt = $this->currentCookieSalt;
+		$this->currentCookieSalt = self::newCookieSalt();
+		$this->cookieMismatches = 0;
+	}
+
+	private static function calculateCookieWithSalt(InternetAddress $address, string $salt) : int{
+		$preimage = strlen($address->getIp()) . $address->getIp() . Binary::writeShort($address->getPort()) . $salt;
+		return crc32($preimage);
+	}
+
+	/**
+	 * Calculates a cookie using the current cookie salt and the provided IP address.
+	 * Cookie salt is a server-side secret, so the client cannot guess it.
+	 */
+	private function calculateCookie(InternetAddress $address) : int{
+		return self::calculateCookieWithSalt($address, $this->currentCookieSalt);
+	}
+
+	/**
+	 * Returns the number of times we detected a cookie mismatch since the salt was last rotated.
+	 * May be useful for reporting spoofed IP attacks.
+	 */
+	public function getCookieMismatchSinceLastRotation() : int{
+		return $this->cookieMismatches;
 	}
 
 	/**
@@ -82,9 +123,30 @@ class UnconnectedMessageHandler{
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
 				//IP header size (20 bytes) + UDP header size (8 bytes)
-				$this->server->sendPacket(OpenConnectionReply1::create($this->server->getID(), false, $packet->mtuSize + 28), $address);
+				$this->server->sendPacket(OpenConnectionReply1::create(
+					$this->server->getID(),
+					$this->antiIpSpoofCookies ? $this->calculateCookie($address) : null,
+					$packet->mtuSize + 28),
+					$address
+				);
 			}
 		}elseif($packet instanceof OpenConnectionRequest2){
+			if($this->antiIpSpoofCookies){
+				$cookie1 = $this->calculateCookie($address);
+				$cookie2 = self::calculateCookieWithSalt($address, $this->previousCookieSalt);
+				if($packet->cookie !== $cookie1 && $packet->cookie !== $cookie2){
+					$this->cookieMismatches++;
+					//don't log this by default, we don't want to let an attacker LogDoS us
+					//we also don't block the IP since this is probably coming from a spoofed IP
+					//$this->server->getLogger()->debug("Not creating session for $address due to cookie mismatch (expected $cookie1 or $cookie2, but got $packet->cookie)");
+					return true;
+				}else{
+					$this->server->getLogger()->debug("Cookie check succeeded for $address with cookie $packet->cookie (cookie1: $cookie1, cookie2: $cookie2)");
+				}
+			}else{
+				$this->server->getLogger()->debug("No cookie check performed for $address");
+			}
+
 			if($packet->serverAddress->getPort() === $this->server->getPort() or !$this->server->portChecking){
 				if($packet->mtuSize < Session::MIN_MTU_SIZE){
 					$this->server->getLogger()->debug("Not creating session for $address due to bad MTU size $packet->mtuSize");

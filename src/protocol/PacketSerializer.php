@@ -29,6 +29,18 @@ use const AF_INET6;
 
 final class PacketSerializer extends BinaryStream{
 
+	public const IPV4_SIZE =
+		1 + //type
+		4 + //ip
+		2; //port
+	public const IPV6_SIZE =
+		1 + //type
+		2 + //family
+		2 + //port
+		4 + //flow info
+		16 + //ip
+		4; //scope ID
+
 	/**
 	 * @throws BinaryDataException
 	 */
