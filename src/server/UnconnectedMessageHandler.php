@@ -45,6 +45,8 @@ class UnconnectedMessageHandler{
 	 * @phpstan-var \SplFixedArray<OfflineMessage>
 	 */
 	private \SplFixedArray $packetPool;
+	/** @var PendingConnection[] */
+	private array $pendingConnections = [];
 
 	private string $currentCookieSalt;
 	private string $previousCookieSalt;
@@ -122,6 +124,8 @@ class UnconnectedMessageHandler{
 				$this->server->sendPacket(IncompatibleProtocolVersion::create($this->protocolAcceptor->getPrimaryVersion(), $this->server->getID()), $address);
 				$this->server->getLogger()->notice("Refused connection from $address due to incompatible RakNet protocol version (version $packet->protocol)");
 			}else{
+				$this->pendingConnections[$address->toString()] = new PendingConnection($packet->protocol);
+
 				//IP header size (20 bytes) + UDP header size (8 bytes)
 				$this->server->sendPacket(OpenConnectionReply1::create(
 					$this->server->getID(),
@@ -159,9 +163,17 @@ class UnconnectedMessageHandler{
 					$this->server->getLogger()->debug("Not creating session for $address due to session already opened");
 					return true;
 				}
+				if(!isset($this->pendingConnections[$address->toString()])){
+					// we should always except OpenConnectionRequest1 before OpenConnectionRequeqst2
+					$this->server->getLogger()->debug("Not creating session for $address due to no pending connection");;
+					return true;
+				}
+				$pendingConnection = $this->pendingConnections[$address->toString()];
+				unset($this->pendingConnections[$address->toString()]);
+
 				$mtuSize = min($packet->mtuSize, $this->server->getMaxMtuSize()); //Max size, do not allow creating large buffers to fill server memory
 				$this->server->sendPacket(OpenConnectionReply2::create($this->server->getID(), $address, $mtuSize, false), $address);
-				$this->server->createSession($address, $packet->clientID, $mtuSize);
+				$this->server->createSession($address, $packet->clientID, $mtuSize, $pendingConnection->getProtocol());
 			}else{
 				$this->server->getLogger()->debug("Not creating session for $address due to mismatched port, expected " . $this->server->getPort() . ", got " . $packet->serverAddress->getPort());
 			}
@@ -170,6 +182,15 @@ class UnconnectedMessageHandler{
 		}
 
 		return true;
+	}
+
+	public function update(float $time) : void{
+		foreach($this->pendingConnections as $address => $pendingConnection){
+			if($pendingConnection->getCreatedAt() + 10 < $time){
+				$this->server->getLogger()->debug("Timed out pending connection from $address");
+				unset($this->pendingConnections[$address]);
+			}
+		}
 	}
 
 	/**

@@ -20,7 +20,7 @@ use raklib\generic\DisconnectReason;
 
 interface ServerEventListener{
 
-	public function onClientConnect(int $sessionId, string $address, int $port, int $clientID) : void;
+	public function onClientConnect(int $sessionId, string $address, int $port, int $clientID, int $protocol) : void;
 
 	/**
 	 * @param int $reason one of the DisconnectReason constants
