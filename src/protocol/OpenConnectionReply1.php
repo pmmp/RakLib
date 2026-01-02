@@ -25,13 +25,13 @@ class OpenConnectionReply1 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 
 	public int $serverID;
-	public bool $serverSecurity = false;
+	public ?int $cookie = null;
 	public int $mtuSize;
 
-	public static function create(int $serverId, bool $serverSecurity, int $mtuSize) : self{
+	public static function create(int $serverId, ?int $cookie, int $mtuSize) : self{
 		$result = new self;
 		$result->serverID = $serverId;
-		$result->serverSecurity = $serverSecurity;
+		$result->cookie = $cookie;
 		$result->mtuSize = $mtuSize;
 		return $result;
 	}
@@ -39,14 +39,26 @@ class OpenConnectionReply1 extends OfflineMessage{
 	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
 		BE::writeUnsignedLong($out, $this->serverID);
-		Byte::writeUnsigned($out, $this->serverSecurity ? 1 : 0);
+		if($this->cookie !== null){
+			Byte::writeUnsigned($out, 1);
+			BE::writeUnsignedInt($out, $this->cookie);
+			//TODO: If the client supports libcat security, we're expected to send a public key here.
+			//However this would require context-specific logic and I really cba with it
+		}else{
+			Byte::writeUnsigned($out, 0);
+		}
 		BE::writeUnsignedShort($out, $this->mtuSize);
 	}
 
 	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
 		$this->serverID = BE::readUnsignedLong($in);
-		$this->serverSecurity = Byte::readUnsigned($in) !== 0;
+		if(Byte::readUnsigned($in) !== 0){
+			$this->cookie = BE::readUnsignedInt($in);
+			//TODO: If the server supports libcat security, it'll send a public key here.
+		}else{
+			$this->cookie = null;
+		}
 		$this->mtuSize = BE::readUnsignedShort($in);
 	}
 }
