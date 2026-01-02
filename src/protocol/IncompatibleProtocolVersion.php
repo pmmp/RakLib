@@ -16,6 +16,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+
 class IncompatibleProtocolVersion extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_INCOMPATIBLE_PROTOCOL_VERSION;
 
@@ -29,15 +34,15 @@ class IncompatibleProtocolVersion extends OfflineMessage{
 		return $result;
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putByte($this->protocolVersion);
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, $this->protocolVersion);
 		$this->writeMagic($out);
-		$out->putLong($this->serverId);
+		BE::writeUnsignedLong($out, $this->serverId);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->protocolVersion = $in->getByte();
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$this->protocolVersion = Byte::readUnsigned($in);
 		$this->readMagic($in);
-		$this->serverId = $in->getLong();
+		$this->serverId = BE::readUnsignedLong($in);
 	}
 }

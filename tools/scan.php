@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-use pocketmine\utils\Limits;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\generic\SocketException;
 use raklib\protocol\MessageIdentifiers;
-use raklib\protocol\PacketSerializer;
 use raklib\protocol\UnconnectedPing;
 use raklib\server\ServerSocket;
 use raklib\utils\InternetAddress;
@@ -28,7 +27,7 @@ if(str_contains($broadcastAddress, ".")){
 
 $socket = new ServerSocket($bindAddress);
 $socket->enableBroadcast();
-$clientId = mt_rand(0, Limits::INT32_MAX);
+$clientId = mt_rand(0, 0x7f_ff_ff_ff);
 \GlobalLogger::get()->info("Listening on " . $bindAddress);
 \GlobalLogger::get()->info("Press CTRL+C to stop");
 
@@ -37,9 +36,9 @@ function sendPing(ServerSocket $socket, string $broadcastAddress, int $port, int
 	$ping->clientId = $clientId;
 	$ping->sendPingTime = intdiv(hrtime(true), 1_000_000);
 
-	$serializer = new PacketSerializer();
+	$serializer = new ByteBufferWriter();
 	$ping->encode($serializer);
-	$socket->writePacket($serializer->getBuffer(), $broadcastAddress, $port);
+	$socket->writePacket($serializer->getData(), $broadcastAddress, $port);
 }
 sendPing($socket, $broadcastAddress, $port, $clientId);
 

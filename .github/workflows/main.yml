@@ -17,9 +17,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.32.0
+        uses: shivammathur/setup-php@2.35.4
         with:
           php-version: ${{ matrix.php }}
+          extensions: encoding-pmmp/ext-encoding@1.0.0
 
       - name: Cache Composer packages
         id: composer-cache

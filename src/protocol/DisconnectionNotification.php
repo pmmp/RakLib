@@ -16,14 +16,17 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+
 class DisconnectionNotification extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 
 	}
 }

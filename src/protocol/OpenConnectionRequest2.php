@@ -16,9 +16,11 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\Binary;
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\utils\InternetAddress;
-use function strlen;
 
 class OpenConnectionRequest2 extends OfflineMessage{
 	public static $ID = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
@@ -32,33 +34,29 @@ class OpenConnectionRequest2 extends OfflineMessage{
 	public ?int $cookie = null;
 	public int $mtuSize;
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
 		if($this->cookie !== null){
-			$out->putInt($this->cookie);
-			$out->putByte(0); //TODO: encryption challenge - not supported for now because RakNet sucks and we don't need it
+			BE::writeUnsignedInt($out, $this->cookie);
+			Byte::writeUnsigned($out, 0); //TODO: encryption challenge - not supported for now because RakNet sucks and we don't need it
 		}
-		$out->putAddress($this->serverAddress);
-		$out->putShort($this->mtuSize);
-		$out->putLong($this->clientID);
+		PacketSerializer::putAddress($out, $this->serverAddress);
+		BE::writeUnsignedShort($out, $this->mtuSize);
+		BE::writeUnsignedLong($out, $this->clientID);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
 
-		$remaining = strlen($in->getBuffer()) - $in->getOffset();
+		$remaining = $in->getUnreadLength();
 		if($remaining !== self::TAIL_FIELDS_SIZE_IPV4 && $remaining !== self::TAIL_FIELDS_SIZE_IPV6){
-			$this->cookie = $in->getInt();
-			if($this->cookie < 0){
-				//BinaryStream moment
-				$this->cookie = Binary::unsignInt($this->cookie);
-			}
+			$this->cookie = BE::readUnsignedInt($in);
 			//TODO: encryption challenge - not supported for now because RakNet sucks and we don't need it
 			//we could handle this by looking at the remaining length of the packet, but it's not worth the complexity
-			$in->getByte();
+			Byte::readUnsigned($in);
 		}
-		$this->serverAddress = $in->getAddress();
-		$this->mtuSize = $in->getShort();
-		$this->clientID = $in->getLong();
+		$this->serverAddress = PacketSerializer::getAddress($in);
+		$this->mtuSize = BE::readUnsignedShort($in);
+		$this->clientID = BE::readUnsignedLong($in);
 	}
 }

@@ -16,40 +16,43 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\DataDecodeException;
 
 abstract class Packet{
 	/** @var int */
 	public static $ID = -1;
 
-	public function encode(PacketSerializer $out) : void{
+	public function encode(ByteBufferWriter $out) : void{
 		$this->encodeHeader($out);
 		$this->encodePayload($out);
 	}
 
-	protected function encodeHeader(PacketSerializer $out) : void{
-		$out->putByte(static::$ID);
+	protected function encodeHeader(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, static::$ID);
 	}
 
-	abstract protected function encodePayload(PacketSerializer $out) : void;
+	abstract protected function encodePayload(ByteBufferWriter $out) : void;
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
-	public function decode(PacketSerializer $in) : void{
+	public function decode(ByteBufferReader $in) : void{
 		$this->decodeHeader($in);
 		$this->decodePayload($in);
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
-	protected function decodeHeader(PacketSerializer $in) : void{
-		$in->getByte(); //PID
+	protected function decodeHeader(ByteBufferReader $in) : void{
+		Byte::readUnsigned($in); //PID
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
-	abstract protected function decodePayload(PacketSerializer $in) : void;
+	abstract protected function decodePayload(ByteBufferReader $in) : void;
 }

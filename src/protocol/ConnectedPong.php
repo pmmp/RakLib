@@ -16,6 +16,10 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+
 class ConnectedPong extends ConnectedPacket{
 	public static $ID = MessageIdentifiers::ID_CONNECTED_PONG;
 
@@ -29,13 +33,13 @@ class ConnectedPong extends ConnectedPacket{
 		return $result;
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLong($this->sendPingTime);
-		$out->putLong($this->sendPongTime);
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		BE::writeUnsignedLong($out, $this->sendPingTime);
+		BE::writeUnsignedLong($out, $this->sendPongTime);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->sendPingTime = $in->getLong();
-		$this->sendPongTime = $in->getLong();
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$this->sendPingTime = BE::readUnsignedLong($in);
+		$this->sendPongTime = BE::readUnsignedLong($in);
 	}
 }

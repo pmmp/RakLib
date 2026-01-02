@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
+use pmmp\encoding\ByteBufferReader;
 use raklib\generic\Session;
 use raklib\protocol\ConnectionRequest;
 use raklib\protocol\ConnectionRequestAccepted;
@@ -23,7 +24,6 @@ use raklib\protocol\MessageIdentifiers;
 use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\Packet;
 use raklib\protocol\PacketReliability;
-use raklib\protocol\PacketSerializer;
 use raklib\utils\InternetAddress;
 use function ord;
 
@@ -72,7 +72,7 @@ class ServerSession extends Session{
 		$id = ord($packet[0]);
 		if($id === MessageIdentifiers::ID_CONNECTION_REQUEST){
 			$dataPacket = new ConnectionRequest();
-			$dataPacket->decode(new PacketSerializer($packet));
+			$dataPacket->decode(new ByteBufferReader($packet));
 			$this->queueConnectedPacket(ConnectionRequestAccepted::create(
 				$this->address,
 				[],
@@ -81,7 +81,7 @@ class ServerSession extends Session{
 			), PacketReliability::UNRELIABLE, 0, true);
 		}elseif($id === MessageIdentifiers::ID_NEW_INCOMING_CONNECTION){
 			$dataPacket = new NewIncomingConnection();
-			$dataPacket->decode(new PacketSerializer($packet));
+			$dataPacket->decode(new ByteBufferReader($packet));
 
 			if($dataPacket->address->getPort() === $this->server->getPort() or !$this->server->portChecking){
 				$this->state = self::STATE_CONNECTED; //FINALLY!

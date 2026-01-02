@@ -16,8 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use pocketmine\utils\Binary;
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\BE;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\DataDecodeException;
 use raklib\generic\Session;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\MessageIdentifiers;
@@ -26,7 +27,6 @@ use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
 use raklib\protocol\OpenConnectionRequest1;
 use raklib\protocol\OpenConnectionRequest2;
-use raklib\protocol\PacketSerializer;
 use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPingOpenConnections;
 use raklib\protocol\UnconnectedPong;
@@ -61,7 +61,7 @@ class UnconnectedMessageHandler{
 	}
 
 	private static function newCookieSalt() : string{
-		return Binary::writeLong(random_int(PHP_INT_MIN, PHP_INT_MAX));
+		return BE::packUnsignedLong(random_int(PHP_INT_MIN, PHP_INT_MAX));
 	}
 
 	public function rotateCookieSalts() : void{
@@ -71,7 +71,7 @@ class UnconnectedMessageHandler{
 	}
 
 	private static function calculateCookieWithSalt(InternetAddress $address, string $salt) : int{
-		$preimage = strlen($address->getIp()) . $address->getIp() . Binary::writeShort($address->getPort()) . $salt;
+		$preimage = strlen($address->getIp()) . $address->getIp() . BE::packUnsignedShort($address->getPort()) . $salt;
 		return crc32($preimage);
 	}
 
@@ -92,7 +92,7 @@ class UnconnectedMessageHandler{
 	}
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
 	public function handleRaw(string $payload, InternetAddress $address) : bool{
 		if($payload === ""){
@@ -102,13 +102,13 @@ class UnconnectedMessageHandler{
 		if($pk === null){
 			return false;
 		}
-		$reader = new PacketSerializer($payload);
+		$reader = new ByteBufferReader($payload);
 		$pk->decode($reader);
 		if(!$pk->isValid()){
 			return false;
 		}
-		if(!$reader->feof()){
-			$remains = substr($reader->getBuffer(), $reader->getOffset());
+		if($reader->getOffset() < strlen($reader->getData())){
+			$remains = substr($reader->getData(), $reader->getOffset());
 			$this->server->getLogger()->debug("Still " . strlen($remains) . " bytes unread in " . get_class($pk) . " from $address");
 		}
 		return $this->handle($pk, $address);

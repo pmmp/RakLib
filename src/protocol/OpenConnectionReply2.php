@@ -16,6 +16,10 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use raklib\utils\InternetAddress;
 
 class OpenConnectionReply2 extends OfflineMessage{
@@ -35,19 +39,19 @@ class OpenConnectionReply2 extends OfflineMessage{
 		return $result;
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out) : void{
 		$this->writeMagic($out);
-		$out->putLong($this->serverID);
-		$out->putAddress($this->clientAddress);
-		$out->putShort($this->mtuSize);
-		$out->putByte($this->serverSecurity ? 1 : 0);
+		BE::writeUnsignedLong($out, $this->serverID);
+		PacketSerializer::putAddress($out, $this->clientAddress);
+		BE::writeUnsignedShort($out, $this->mtuSize);
+		Byte::writeUnsigned($out, $this->serverSecurity ? 1 : 0);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in) : void{
 		$this->readMagic($in);
-		$this->serverID = $in->getLong();
-		$this->clientAddress = $in->getAddress();
-		$this->mtuSize = $in->getShort();
-		$this->serverSecurity = $in->getByte() !== 0;
+		$this->serverID = BE::readUnsignedLong($in);
+		$this->clientAddress = PacketSerializer::getAddress($in);
+		$this->mtuSize = BE::readUnsignedShort($in);
+		$this->serverSecurity = Byte::readUnsigned($in) !== 0;
 	}
 }

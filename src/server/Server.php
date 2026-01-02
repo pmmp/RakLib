@@ -16,7 +16,9 @@ declare(strict_types=1);
 
 namespace raklib\server;
 
-use pocketmine\utils\BinaryDataException;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\DataDecodeException;
 use raklib\generic\DisconnectReason;
 use raklib\generic\PacketHandlingException;
 use raklib\generic\Session;
@@ -26,7 +28,6 @@ use raklib\protocol\Datagram;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\NACK;
 use raklib\protocol\Packet;
-use raklib\protocol\PacketSerializer;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function asort;
@@ -284,7 +285,7 @@ class Server implements ServerInterface{
 					}else{
 						$packet = new Datagram();
 					}
-					$packet->decode(new PacketSerializer($buffer));
+					$packet->decode(new ByteBufferReader($buffer));
 					try{
 						$session->handlePacket($packet);
 					}catch(PacketHandlingException $e){
@@ -315,7 +316,7 @@ class Server implements ServerInterface{
 					$this->logger->debug("Ignored packet from $address due to no session opened (0x" . bin2hex($buffer[0]) . ")");
 				}
 			}
-		}catch(BinaryDataException $e){
+		}catch(DataDecodeException $e){
 			if($this->packetErrorsSinceLastUpdate < $this->packetErrorSuppressionThreshold){
 				$logFn = function() use ($address, $e, $buffer) : void{
 					$this->logger->debug("Packet from $address (" . strlen($buffer) . " bytes): 0x" . bin2hex($buffer));
@@ -341,10 +342,10 @@ class Server implements ServerInterface{
 	}
 
 	public function sendPacket(Packet $packet, InternetAddress $address) : void{
-		$out = new PacketSerializer(); //TODO: reusable streams to reduce allocations
+		$out = new ByteBufferWriter(); //TODO: reusable streams to reduce allocations
 		$packet->encode($out);
 		try{
-			$this->sendBytes += $this->socket->writePacket($out->getBuffer(), $address->getIp(), $address->getPort());
+			$this->sendBytes += $this->socket->writePacket($out->getData(), $address->getIp(), $address->getPort());
 		}catch(SocketException $e){
 			$this->logger->debug($e->getMessage());
 		}

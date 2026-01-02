@@ -16,10 +16,14 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\Binary;
-use function chr;
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use function count;
 use function sort;
+use function strlen;
 use const SORT_NUMERIC;
 
 abstract class AcknowledgePacket extends Packet{
@@ -29,8 +33,8 @@ abstract class AcknowledgePacket extends Packet{
 	/** @var int[] */
 	public array $packets = [];
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$payload = "";
+	protected function encodePayload(ByteBufferWriter $out) : void{
+		$subWriter = new ByteBufferWriter();
 		sort($this->packets, SORT_NUMERIC);
 		$count = count($this->packets);
 		$records = 0;
@@ -47,13 +51,13 @@ abstract class AcknowledgePacket extends Packet{
 					$last = $current;
 				}elseif($diff > 1){ //Forget about duplicated packets (bad queues?)
 					if($start === $last){
-						$payload .= chr(self::RECORD_TYPE_SINGLE);
-						$payload .= Binary::writeLTriad($start);
+						Byte::writeUnsigned($subWriter, self::RECORD_TYPE_SINGLE);
+						LE::writeUnsignedTriad($subWriter, $start);
 						$start = $last = $current;
 					}else{
-						$payload .= chr(self::RECORD_TYPE_RANGE);
-						$payload .= Binary::writeLTriad($start);
-						$payload .= Binary::writeLTriad($last);
+						Byte::writeUnsigned($subWriter, self::RECORD_TYPE_RANGE);
+						LE::writeUnsignedTriad($subWriter, $start);
+						LE::writeUnsignedTriad($subWriter, $last);
 						$start = $last = $current;
 					}
 					++$records;
@@ -61,28 +65,29 @@ abstract class AcknowledgePacket extends Packet{
 			}
 
 			if($start === $last){
-				$payload .= chr(self::RECORD_TYPE_SINGLE);
-				$payload .= Binary::writeLTriad($start);
+				Byte::writeUnsigned($subWriter, self::RECORD_TYPE_SINGLE);
+				LE::writeUnsignedTriad($subWriter, $start);
 			}else{
-				$payload .= chr(self::RECORD_TYPE_RANGE);
-				$payload .= Binary::writeLTriad($start);
-				$payload .= Binary::writeLTriad($last);
+				Byte::writeUnsigned($subWriter, self::RECORD_TYPE_RANGE);
+				LE::writeUnsignedTriad($subWriter, $start);
+				LE::writeUnsignedTriad($subWriter, $last);
 			}
 			++$records;
 		}
 
-		$out->putShort($records);
-		$out->put($payload);
+		BE::writeUnsignedShort($out, $records);
+		$out->writeByteArray($subWriter->getData());
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$count = $in->getShort();
+	protected function decodePayload(ByteBufferReader $in) : void{
+		$count = BE::readUnsignedShort($in);
 		$this->packets = [];
 		$cnt = 0;
-		for($i = 0; $i < $count and !$in->feof() and $cnt < 4096; ++$i){
-			if($in->getByte() === self::RECORD_TYPE_RANGE){
-				$start = $in->getLTriad();
-				$end = $in->getLTriad();
+		$len = strlen($in->getData());
+		for($i = 0; $i < $count and $in->getOffset() < $len and $cnt < 4096; ++$i){
+			if(Byte::readUnsigned($in) === self::RECORD_TYPE_RANGE){
+				$start = LE::readUnsignedTriad($in);
+				$end = LE::readUnsignedTriad($in);
 				if(($end - $start) > 512){
 					$end = $start + 512;
 				}
@@ -90,7 +95,7 @@ abstract class AcknowledgePacket extends Packet{
 					$this->packets[$cnt++] = $c;
 				}
 			}else{
-				$this->packets[$cnt++] = $in->getLTriad();
+				$this->packets[$cnt++] = LE::readUnsignedTriad($in);
 			}
 		}
 	}

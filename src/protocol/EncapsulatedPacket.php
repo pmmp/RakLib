@@ -16,11 +16,13 @@ declare(strict_types=1);
 
 namespace raklib\protocol;
 
-use pocketmine\utils\Binary;
-use pocketmine\utils\BinaryDataException;
-use pocketmine\utils\BinaryStream;
+use pmmp\encoding\BE;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\DataDecodeException;
+use pmmp\encoding\LE;
 use function ceil;
-use function chr;
 use function strlen;
 
 class EncapsulatedPacket{
@@ -41,63 +43,64 @@ class EncapsulatedPacket{
 	public ?int $identifierACK = null;
 
 	/**
-	 * @throws BinaryDataException
+	 * @throws DataDecodeException
 	 */
-	public static function fromBinary(BinaryStream $stream) : EncapsulatedPacket{
+	public static function fromBinary(ByteBufferReader $stream) : EncapsulatedPacket{
 		$packet = new EncapsulatedPacket();
 
-		$flags = $stream->getByte();
+		$flags = Byte::readUnsigned($stream);
 		$packet->reliability = $reliability = ($flags & self::RELIABILITY_FLAGS) >> self::RELIABILITY_SHIFT;
 		$hasSplit = ($flags & self::SPLIT_FLAG) !== 0;
 
-		$length = (int) ceil($stream->getShort() / 8);
+		$length = (int) ceil(BE::readUnsignedShort($stream) / 8);
 		if($length === 0){
-			throw new BinaryDataException("Encapsulated payload length cannot be zero");
+			throw new DataDecodeException("Encapsulated payload length cannot be zero");
 		}
 
 		if(PacketReliability::isReliable($reliability)){
-			$packet->messageIndex = $stream->getLTriad();
+			$packet->messageIndex = LE::readUnsignedTriad($stream);
 		}
 
 		if(PacketReliability::isSequenced($reliability)){
-			$packet->sequenceIndex = $stream->getLTriad();
+			$packet->sequenceIndex = LE::readUnsignedTriad($stream);
 		}
 
 		if(PacketReliability::isSequencedOrOrdered($reliability)){
-			$packet->orderIndex = $stream->getLTriad();
-			$packet->orderChannel = $stream->getByte();
+			$packet->orderIndex = LE::readUnsignedTriad($stream);
+			$packet->orderChannel = Byte::readUnsigned($stream);
 		}
 
 		if($hasSplit){
-			$splitCount = $stream->getInt();
-			$splitID = $stream->getShort();
-			$splitIndex = $stream->getInt();
+			$splitCount = BE::readUnsignedInt($stream);
+			$splitID = BE::readUnsignedShort($stream);
+			$splitIndex = BE::readUnsignedInt($stream);
 			$packet->splitInfo = new SplitPacketInfo($splitID, $splitIndex, $splitCount);
 		}
 
-		$packet->buffer = $stream->get($length);
+		$packet->buffer = $stream->readByteArray($length);
 		return $packet;
 	}
 
-	public function toBinary() : string{
-		return
-			chr(($this->reliability << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0)) .
-			Binary::writeShort(strlen($this->buffer) << 3) .
-			(PacketReliability::isReliable($this->reliability) ?
-				Binary::writeLTriad($this->messageIndex ?? throw new \LogicException("Message index must be set for reliability $this->reliability")) :
-				""
-			) .
-			(PacketReliability::isSequenced($this->reliability) ?
-				Binary::writeLTriad($this->sequenceIndex ?? throw new \LogicException("Sequence index must be set for reliability $this->reliability")) :
-				""
-			) .
-			(PacketReliability::isSequencedOrOrdered($this->reliability) ?
-				Binary::writeLTriad($this->orderIndex ?? throw new \LogicException("Order index must be set for reliability $this->reliability")) .
-					chr($this->orderChannel ?? throw new \LogicException("Order channel must be set for reliability $this->reliability")) :
-				""
-			) .
-			($this->splitInfo !== null ? Binary::writeInt($this->splitInfo->getTotalPartCount()) . Binary::writeShort($this->splitInfo->getId()) . Binary::writeInt($this->splitInfo->getPartIndex()) : "")
-			. $this->buffer;
+	public function toBinary(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, ($this->reliability << self::RELIABILITY_SHIFT) | ($this->splitInfo !== null ? self::SPLIT_FLAG : 0));
+
+		BE::writeUnsignedShort($out, strlen($this->buffer) << 3);
+		if(PacketReliability::isReliable($this->reliability)){
+			LE::writeUnsignedTriad($out, $this->messageIndex ?? throw new \LogicException("Message index must be set for reliability $this->reliability"));
+		}
+		if(PacketReliability::isSequenced($this->reliability)){
+			LE::writeUnsignedTriad($out, $this->sequenceIndex ?? throw new \LogicException("Sequence index must be set for reliability $this->reliability"));
+		}
+		if(PacketReliability::isSequencedOrOrdered($this->reliability)){
+			LE::writeUnsignedTriad($out, $this->orderIndex ?? throw new \LogicException("Order index must be set for reliability $this->reliability"));
+			Byte::writeUnsigned($out, $this->orderChannel ?? throw new \LogicException("Order channel must be set for reliability $this->reliability"));
+		}
+		if($this->splitInfo !== null){
+			BE::writeUnsignedInt($out, $this->splitInfo->getTotalPartCount());
+			BE::writeUnsignedShort($out, $this->splitInfo->getId());
+			BE::writeUnsignedInt($out, $this->splitInfo->getPartIndex());
+		}
+		$out->writeByteArray($this->buffer);
 	}
 
 	/**
@@ -115,9 +118,5 @@ class EncapsulatedPacket{
 
 	public function getTotalLength() : int{
 		return $this->getHeaderLength() + strlen($this->buffer);
-	}
-
-	public function __toString() : string{
-		return $this->toBinary();
 	}
 }
